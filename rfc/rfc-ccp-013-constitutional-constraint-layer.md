@@ -1,7 +1,8 @@
 # RFC-CCP-013: Constitutional Constraint Layer
 
 Status: Draft  
-Author: CCP Project  
+Author: Kevin "Andie" Williams
+
 Intended Status: Informational  
 Created: 2026-03-14
 
