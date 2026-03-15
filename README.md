@@ -126,6 +126,22 @@ The CCP stack includes several layers that work together to govern decisions.
 
 Together these components form a **constitutional operating system for decisions**.
 
+## CCP as Kubernetes for Decisions
+
+![CCP as Kubernetes for Decisions](diagrams/ccp_kubernetes_for_decisions.jpg)
+
+## CCP Governance State Machine
+
+![CCP Governance State Machine](diagrams/ccp_governance_state_machine.jpg)
+
+## CCP Protocol Suite
+
+![CCP Protocol Suite](diagrams/ccp_protocol_suite.jpg)
+
+## Life of a Proposal
+
+![CCP Life of a Proposal](diagrams/ccp_life_of_proposal.jpg)
+
 ---
 
 # RFC Series
@@ -201,3 +217,4 @@ CCP explores a simple idea:
 Just as modern computing developed operating systems and control planes to manage complexity, increasingly automated societies will require governance infrastructure capable of ensuring that decisions remain accountable, contestable, and legitimate.
 
 CCP is an attempt to build that infrastructure.
+
