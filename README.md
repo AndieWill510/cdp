@@ -144,7 +144,7 @@ Together these components form a **constitutional operating system for decisions
 
 ## CCP Inside an AI System
 
-![CCP Inside an AI System](diagrams/ccp_inside_ai_system.jpg)
+![CCP Inside an AI System](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_inside_ai_system.jpg)
 ---
 
 # RFC Series
