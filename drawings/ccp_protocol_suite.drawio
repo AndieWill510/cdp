@@ -1,0 +1,44 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="CCP Protocol Suite">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1"
+      connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800"
+      pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="CCP Protocol Suite" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=26;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="650" y="20" width="500" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="L1" value="Constitutional Layer&#xa;RFC-CCP-013 Constitutional Constraint Layer&#xa;RFC-CCP-014 Legitimacy Protocol" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="300" y="140" width="1200" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="L2" value="Governance Protocol&#xa;RFC-CCP-004 Governance API&#xa;RFC-CCP-005 Appeals Model&#xa;RFC-CCP-006 Policy Constraint Language" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="300" y="255" width="1200" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="L3" value="Distributed Governance&#xa;RFC-CCP-009 Distributed Governance Consensus" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="300" y="370" width="1200" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="L4" value="Decision Lifecycle&#xa;RFC-CCP-010 Governance State Machine" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="300" y="485" width="1200" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="L5" value="Decision History&#xa;RFC-CCP-011 Event Log and Replay&#xa;RFC-CCP-012 Failure Recovery" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="300" y="600" width="1200" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="L6" value="Identity & Trust&#xa;RFC-CCP-002 Attestation Protocol&#xa;RFC-CCP-008 Identity and Trust" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="300" y="715" width="1200" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="L7" value="Architecture Foundation&#xa;RFC-CCP-001 Architecture" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="300" y="830" width="1200" height="95" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
