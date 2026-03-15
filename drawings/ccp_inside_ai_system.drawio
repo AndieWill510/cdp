@@ -1,0 +1,49 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="CCP Inside AI System">
+    <mxGraphModel dx="1800" dy="900" grid="1" gridSize="10" guides="1"
+      tooltips="1" connect="1" arrows="1" fold="1" page="1"
+      pageScale="1" pageWidth="1800" pageHeight="900">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="layer1" value="LLM / Agent Layer&#xa;(reasoning, planning, proposals)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="450" y="120" width="900" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="arrow1" style="endArrow=block;html=1;" edge="1" parent="1" source="layer1" target="layer2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="layer2" value="CCP Governance Layer&#xa;(challenge, testing, adjudication)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="450" y="240" width="900" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="arrow2" style="endArrow=block;html=1;" edge="1" parent="1" source="layer2" target="layer3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="layer3" value="Execution Environment&#xa;(APIs, workflows, infrastructure)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="450" y="360" width="900" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="arrow3" style="endArrow=block;html=1;" edge="1" parent="1" source="layer3" target="layer4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="layer4" value="Record Plane&#xa;(transcripts, evidence, audit logs)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="450" y="480" width="900" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="arrow4" style="endArrow=block;html=1;" edge="1" parent="1" source="layer4" target="layer5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="layer5" value="Learning Loop&#xa;(policy updates, model feedback)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="450" y="600" width="900" height="90" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
