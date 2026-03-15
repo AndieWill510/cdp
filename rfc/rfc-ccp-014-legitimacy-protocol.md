@@ -1,7 +1,8 @@
 # RFC-CCP-014: Legitimacy Protocol
 
 Status: Draft  
-Author: CCP Project  
+Author: Kevin "Andie" Williams
+
 Intended Status: Informational  
 Created: 2026-03-14
 
