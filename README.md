@@ -17,6 +17,10 @@ The project introduces infrastructure for decision processes that are:
 
 CCP combines ideas from distributed systems, constitutional governance, adversarial legal processes, and the scientific method to create a protocol for trustworthy decision systems.
 
+## From Information Infrastructure to Decision Infrastructure
+
+![Internet vs CCP](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_internet_vs_decisions.jpg)
+
 ---
 
 # Capabilities
