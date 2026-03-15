@@ -55,7 +55,7 @@ CCP encodes that principle directly into decision infrastructure.
 
 ## Why CCP?
 
-![Why CCP](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_kubernetes_for_decisions.jpg)
+![Why CCP](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_problem_framing.jpg)
 
 ---
 
