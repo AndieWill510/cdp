@@ -1,12 +1,12 @@
-# CCP — Cognitive Control Plane
+# C3P — Constiutional Cognitive Control Plane
 
-**A constitutional cognitive control plane for resilient decisions across synthetic and institutional systems.**
+**A constitutional cognitive control plane for resilient decisions across synthetic, human and institutional systems.**
 
-CCP is a governance protocol stack for accountable decision systems.
+C3P is a governance protocol stack for accountable decision systems.
 
 Modern systems increasingly rely on automated agents, machine learning models, and distributed decision processes. Yet most decision infrastructure lacks mechanisms for contestability, auditability, and constitutional constraint.
 
-**CCP provides a control plane for decisions.**
+**C3P provides a control plane for decisions.**
 
 The project introduces infrastructure for decision processes that are:
 
@@ -15,17 +15,17 @@ The project introduces infrastructure for decision processes that are:
 - accountable  
 - resilient  
 
-CCP combines ideas from distributed systems, constitutional governance, adversarial legal processes, and the scientific method to create a protocol for trustworthy decision systems.
+C3P combines ideas from distributed systems, constitutional governance, adversarial legal processes, and the scientific method to create a protocol for trustworthy decision systems.
 
 ## From Information Infrastructure to Decision Infrastructure
 
-![Internet vs CCP](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_internet_vs_decisions.jpg)
+![Internet vs C3P](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_internet_vs_decisions.jpg)
 
 ---
 
 # Capabilities
 
-CCP enables systems to:
+C3P enables systems to:
 
 - propose actions  
 - challenge and test decisions  
@@ -38,7 +38,7 @@ These capabilities allow both automated and institutional systems to make decisi
 
 ---
 
-# Why CCP?
+# Why C3P?
 
 Decision systems today are powerful but fragile.
 
@@ -52,20 +52,20 @@ Many systems lack:
 
 As automated systems take on more responsibility, the absence of governance infrastructure becomes a systemic risk.
 
-CCP addresses this gap by introducing a **control plane for decision-making**, analogous to the way modern infrastructure uses control planes to manage complex distributed systems.
+C3P addresses this gap by introducing a **control plane for decision-making**, analogous to the way modern infrastructure uses control planes to manage complex distributed systems.
 
 We believe **adversarial dialogue leads to better innovation**.  
-CCP encodes that principle directly into decision infrastructure.
+C3P encodes that principle directly into decision infrastructure.
 
 ## The Problem We Seek To Solve
 
-![Why CCP](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_problem_framing.jpg)
+![Why C3P](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_problem_framing.jpg)
 
 ---
 
 # Design Principles
 
-CCP is guided by several core principles.
+C3P is guided by several core principles.
 
 ### Contestability
 
@@ -109,7 +109,7 @@ Failures should produce insights that strengthen policy, testing, and decision p
 
 # Architecture
 
-The CCP stack includes several layers that work together to govern decisions.
+The C3P stack includes several layers that work together to govern decisions.
 
 1. **Constitutional Constraint Layer**  
    Defines non-overridable governance constraints.
@@ -134,30 +134,30 @@ The CCP stack includes several layers that work together to govern decisions.
 
 Together these components form a **constitutional operating system for decisions**.
 
-## CCP as Kubernetes for Decisions
+## C3P as Kubernetes for Decisions
 
-![CCP as Kubernetes for Decisions](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_kubernetes_for_decisions.jpg)
+![C3P as Kubernetes for Decisions](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_kubernetes_for_decisions.jpg)
 
-## CCP Governance State Machine
+## C3P Governance State Machine
 
-![CCP Governance State Machine](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_governance_state_machine.jpg)
+![C3P Governance State Machine](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_governance_state_machine.jpg)
 
-## CCP Protocol Suite
+## C3P Protocol Suite
 
-![CCP Protocol Suite](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_protocol_suite.jpg)
+![C3P Protocol Suite](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_protocol_suite.jpg)
 
 ## Life of a Proposal
 
-![CCP Life of a Proposal](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_life_of_a_proposal.jpg)
+![C3P Life of a Proposal](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_life_of_a_proposal.jpg)
 
-## CCP Inside an AI System
+## C3P Inside an AI System
 
-![CCP Inside an AI System](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_inside_ai_system.jpg)
+![C3P Inside an AI System](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_inside_ai_system.jpg)
 ---
 
 # RFC Series
 
-The CCP protocol is defined through a series of evolving specifications located in `/rfc`.
+The C3P protocol is defined through a series of evolving specifications located in `/rfc`.
 
 Current drafts include:
 
@@ -180,7 +180,7 @@ Current drafts include:
 
 # Project Status
 
-CCP is an early-stage open protocol effort.
+C3P is an early-stage open protocol effort.
 
 The project currently includes:
 
@@ -221,11 +221,11 @@ This project is released under the **Apache License 2.0**.
 
 # Vision
 
-CCP explores a simple idea:
+C3P explores a simple idea:
 
 **Decisions deserve infrastructure.**
 
 Just as modern computing developed operating systems and control planes to manage complexity, increasingly automated societies will require governance infrastructure capable of ensuring that decisions remain accountable, contestable, and legitimate.
 
-CCP is an attempt to build that infrastructure.
+C3P is an attempt to build that infrastructure.
 
