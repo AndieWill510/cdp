@@ -1,4 +1,4 @@
-# C3P — Constiutional Cognitive Control Plane
+# C3P — Constitutional Cognitive Control Plane
 
 **A constitutional cognitive control plane for resilient decisions across synthetic, human and institutional systems.**
 
