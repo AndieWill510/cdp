@@ -125,10 +125,10 @@ Planned:
 
 ---
 
-## Getting Started
+## Getting Started -- coming soon!
 
 ```bash
 git clone https://github.com/AndieWill510/cdp
 cd cdp
-cp .env.example .env
-docker compose up --build
+# cp .env.example .env
+# docker compose up --build
