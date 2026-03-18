@@ -1,231 +1,158 @@
-# C3P — Constitutional Cognitive Control Plane
+# CDP — Constitutional Decision Plane
 
-**A constitutional cognitive control plane for resilient decisions across synthetic, human and institutional systems.**
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-early--stage-orange)]()
+[![Protocol](https://img.shields.io/badge/protocol-RFC--driven-purple)]()
+[![Focus](https://img.shields.io/badge/focus-decision%20governance-black)]()
 
-C3P is a governance protocol stack for accountable decision systems.
-
-Modern systems increasingly rely on automated agents, machine learning models, and distributed decision processes. Yet most decision infrastructure lacks mechanisms for contestability, auditability, and constitutional constraint.
-
-**C3P provides a control plane for decisions.**
-
-The project introduces infrastructure for decision processes that are:
-
-- contestable  
-- observable  
-- accountable  
-- resilient  
-
-C3P combines ideas from distributed systems, constitutional governance, adversarial legal processes, and the scientific method to create a protocol for trustworthy decision systems.
-
-## From Information Infrastructure to Decision Infrastructure
-
-![Internet vs C3P](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_internet_vs_decisions.jpg)
+**A constitutional decision plane for resilient decisions across synthetic, human, and institutional systems.**
 
 ---
 
-# Capabilities
+## TL;DR
 
-C3P enables systems to:
+**CDP is a control plane for decisions.**
+
+It makes decisions:
+- contestable  
+- auditable  
+- accountable  
+- replayable  
+- legitimate  
+
+---
+
+## Why This Exists
+
+Modern systems can *decide*, but they cannot reliably:
+
+- justify decisions  
+- withstand challenge  
+- produce audit trails  
+- enforce constraints on authority  
+- learn from failure  
+
+That gap is becoming a **systemic risk**, especially in AI-driven systems.
+
+CDP introduces governance infrastructure for decisions—  
+the same way Kubernetes introduced control planes for compute.
+
+> **Adversarial process produces legitimate decisions.**
+
+---
+
+## What CDP Does
+
+CDP enables systems to:
 
 - propose actions  
-- challenge and test decisions  
+- challenge decisions  
+- test assumptions  
 - adjudicate outcomes  
 - verify legitimacy  
-- record governance history  
-- execute decisions safely  
-
-These capabilities allow both automated and institutional systems to make decisions that are transparent, reviewable, and accountable.
+- execute safely  
+- record and replay decisions  
 
 ---
 
-# Why C3P?
+## Architecture
 
-Decision systems today are powerful but fragile.
-
-Many systems lack:
-
-- structured challenge mechanisms  
-- verifiable decision transcripts  
-- institutional oversight  
-- replayable governance history  
-- constitutional constraints on authority  
-
-As automated systems take on more responsibility, the absence of governance infrastructure becomes a systemic risk.
-
-C3P addresses this gap by introducing a **control plane for decision-making**, analogous to the way modern infrastructure uses control planes to manage complex distributed systems.
-
-We believe **adversarial dialogue leads to better innovation**.  
-C3P encodes that principle directly into decision infrastructure.
-
-## The Problem We Seek To Solve
-
-![Why C3P](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_problem_framing.jpg)
-
----
-
-# Design Principles
-
-C3P is guided by several core principles.
-
-### Contestability
-
-All decisions must be open to challenge.
-
-Systems that cannot be questioned cannot be trusted.
-
----
-
-### Falsifiability
-
-Proposals and claims must be testable.
-
-Decisions should be subject to validation, simulation, and adversarial review before execution.
-
----
-
-### Constitutional Constraint
-
-Authority must operate within defined limits.
-
-Certain rules must be non-bypassable, even by powerful actors or automated systems.
-
----
-
-### Transparency
-
-Decisions must produce auditable records.
-
-Governance processes should generate structured transcripts that allow institutions to understand how and why decisions were made.
-
----
-
-### Learning from Failure
-
-Governance systems must improve over time.
-
-Failures should produce insights that strengthen policy, testing, and decision processes.
-
----
-
-# Architecture
-
-The C3P stack includes several layers that work together to govern decisions.
+CDP is composed of layered governance infrastructure:
 
 1. **Constitutional Constraint Layer**  
-   Defines non-overridable governance constraints.
+   Non-bypassable rules
 
 2. **Governance Protocol**  
-   Coordinates proposals, challenges, and adjudication.
+   Proposal → Challenge → Adjudication → Legitimacy
 
-3. **Distributed Consensus**  
-   Enables governance across federated institutions.
+3. **Governance State Machine**  
+   Formal lifecycle of decisions
 
-4. **Governance State Machine**  
-   Defines the lifecycle of proposals and decisions.
+4. **Event Log & Replay**  
+   Immutable decision history
 
-5. **Event Log and Replay**  
-   Records governance history and enables auditing.
+5. **Identity & Attestation**  
+   Who acted, and with what authority
 
-6. **Identity and Attestation**  
-   Verifies actors participating in governance.
-
-7. **Execution Authorization**  
-   Ensures that actions occur only after legitimate decisions.
-
-Together these components form a **constitutional operating system for decisions**.
-
-## C3P as Kubernetes for Decisions
-
-![C3P as Kubernetes for Decisions](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_kubernetes_for_decisions.jpg)
-
-## C3P Governance State Machine
-
-![C3P Governance State Machine](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_governance_state_machine.jpg)
-
-## C3P Protocol Suite
-
-![C3P Protocol Suite](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_protocol_suite.jpg)
-
-## Life of a Proposal
-
-![C3P Life of a Proposal](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_life_of_a_proposal.jpg)
-
-## C3P Inside an AI System
-
-![C3P Inside an AI System](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_inside_ai_system.jpg)
----
-
-# RFC Series
-
-The C3P protocol is defined through a series of evolving specifications located in `/rfc`.
-
-Current drafts include:
-
-- RFC-CCP-001 — Architecture  
-- RFC-CCP-002 — Attestation Protocol  
-- RFC-CCP-003 — Decision Transcript Format  
-- RFC-CCP-004 — Governance API  
-- RFC-CCP-005 — Appeals Model  
-- RFC-CCP-006 — Policy Constraint Language  
-- RFC-CCP-007 — Observability Infrastructure  
-- RFC-CCP-008 — Identity and Trust Infrastructure  
-- RFC-CCP-009 — Distributed Governance Consensus  
-- RFC-CCP-010 — Governance State Machine  
-- RFC-CCP-011 — Event Log and Replay  
-- RFC-CCP-012 — Failure Recovery and Rollback  
-- RFC-CCP-013 — Constitutional Constraint Layer  
-- RFC-CCP-014 — Legitimacy Verification Protocol  
+6. **Execution Authorization**  
+   No execution without legitimacy
 
 ---
 
-# Project Status
+## Visuals
 
-C3P is an early-stage open protocol effort.
+### CDP vs Traditional Systems
+![Internet vs CDP](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_internet_vs_decisions.jpg)
 
-The project currently includes:
+### Governance State Machine
+![State Machine](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_governance_state_machine.jpg)
 
-- RFC-style specifications  
-- initial architecture design  
-- reference implementation planning  
-
-Future work will include:
-
-- a Rust governance kernel  
-- simulation environments for decision systems  
-- reference APIs for governance workflows  
-- federated governance experiments  
+### Protocol Suite
+![Protocol](https://github.com/AndieWill510/ccp/blob/main/drawings/ccp_protocol_suite.jpg)
 
 ---
 
-# Contributing
+## Design Principles
 
-Contributions are welcome.
+### Contestability
+All decisions must be challengeable.
 
-Areas where help is especially valuable include:
+### Falsifiability
+Claims must be testable before execution.
 
-- protocol design  
-- Rust implementation  
-- governance simulations  
-- policy language development  
-- documentation and diagrams  
+### Constitutional Constraint
+Authority operates within non-bypassable limits.
 
-Please see `CONTRIBUTING.md` for details.
+### Transparency
+Every decision produces an auditable transcript.
 
----
-
-# License
-
-This project is released under the **Apache License 2.0**.
+### Learning
+Failure strengthens the system.
 
 ---
 
-# Vision
+## RFC Series
 
-C3P explores a simple idea:
+The protocol is defined via RFCs in `/rfc`:
 
-**Decisions deserve infrastructure.**
+- RFC-CDP-001 — Architecture  
+- RFC-CDP-002 — Attestation  
+- RFC-CDP-003 — Decision Transcript  
+- RFC-CDP-004 — Governance API  
+- RFC-CDP-005 — Appeals  
+- RFC-CDP-006 — Policy Language  
+- RFC-CDP-007 — Observability  
+- RFC-CDP-008 — Identity  
+- RFC-CDP-009 — Consensus  
+- RFC-CDP-010 — State Machine  
+- RFC-CDP-011 — Event Log  
+- RFC-CDP-012 — Recovery  
+- RFC-CDP-013 — Constraint Layer  
+- RFC-CDP-014 — Legitimacy  
 
-Just as modern computing developed operating systems and control planes to manage complexity, increasingly automated societies will require governance infrastructure capable of ensuring that decisions remain accountable, contestable, and legitimate.
+---
 
-C3P is an attempt to build that infrastructure.
+## Status
 
+Early-stage, RFC-driven.
+
+Current:
+- Protocol definitions
+- Reference architecture
+- Local-first implementation (FastAPI + Postgres)
+
+Planned:
+- Governance kernel
+- Simulation environments
+- Federated governance
+- Production-grade identity + attestation
+
+---
+
+## Getting Started
+
+```bash
+git clone https://github.com/AndieWill510/cdp
+cd cdp
+cp .env.example .env
+docker compose up --build
