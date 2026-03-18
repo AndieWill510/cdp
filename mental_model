@@ -1,0 +1,47 @@
+flowchart TD
+
+%% Governance Layer
+subgraph Governance
+    P[Propose]
+    C[Challenge]
+    T[Test]
+    A[Adjudicate]
+    L[Legitimize]
+end
+
+%% Execution Layer
+subgraph Execution
+    E[Execute]
+    R[Record]
+    N[Learn]
+end
+
+%% Trust Layer
+subgraph Trust
+    ID[Identify]
+    AT[Attest]
+end
+
+%% Structure Layer
+subgraph Structure
+    ENV[Envelope]
+    DEC[Decision]
+end
+
+%% Control Layer
+subgraph Control
+    GSM[Governance SM]
+    XSM[Execution SM]
+end
+
+%% Flow
+P --> C --> T --> A --> L --> E --> R --> N
+N --> P
+
+%% Overlays
+ID --> P
+AT --> P
+ENV --> P
+DEC --> P
+GSM --> P
+XSM --> E
