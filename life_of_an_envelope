@@ -1,0 +1,39 @@
+sequenceDiagram
+    participant Actor
+    participant API as Governance API
+    participant GSM as Governance State Machine
+    participant DB as Decision Store
+    participant XSM as Execution State Machine
+
+    Actor->>API: Envelope(PROPOSE)
+    API->>GSM: validate + transition(DRAFT → PROPOSED)
+    GSM->>DB: persist decision + history
+
+    Actor->>API: Envelope(CHALLENGE)
+    API->>GSM: transition(PROPOSED → UNDER_DELIBERATION)
+    GSM->>DB: store challenge
+
+    Actor->>API: Envelope(TEST)
+    API->>GSM: transition(→ UNDER_TEST)
+    GSM->>DB: store test results
+
+    Actor->>API: Envelope(ADJUDICATE)
+    API->>GSM: validate challenges resolved
+    GSM->>DB: set ADJUDICATED
+
+    Actor->>API: Envelope(LEGITIMIZE)
+    API->>GSM: validate authority
+    GSM->>DB: set LEGITIMIZED
+
+    Actor->>API: Envelope(EXECUTE)
+    API->>XSM: dispatch execution
+    XSM->>DB: update execution state
+
+    XSM->>API: execution result
+    API->>DB: record outcome
+
+    Actor->>API: Envelope(RECORD)
+    API->>DB: persist record
+
+    Actor->>API: Envelope(LEARN)
+    API->>DB: store lessons
