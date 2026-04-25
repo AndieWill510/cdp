@@ -72,7 +72,9 @@ CDP is composed of layered governance infrastructure:
 
 ---
 
-**The problem with RAG or other discover-as-policy tools is not primarily legibility. The problem is legitimacy. Retrieval can make a decision explainable without making it authorized, contestable, or valid.**
+**The Problem With RAG**
+
+The problem with discovery-as-policy discovery tools is not primarily legibility. The problem is legitimacy. Retrieval can make a decision explainable without making it authorized, contestable, or valid.
 
 ---
 
