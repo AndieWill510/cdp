@@ -82,6 +82,23 @@ The problem with discovery-as-policy tools is not legibility. The problem is leg
 
 ---
 
+## Diplomatic Pouch for Decisions
+
+A CDP-style system says every meaningful agentic decision needs a procedural envelope:
+
+1. Proposal — What action is being requested?
+2. Standing — Who or what has authority to propose it?
+3. Evidence — What data, policies, and precedents support it?
+4. Challenge — What objections must be considered?
+5. Adjudication — How are conflicts resolved?
+6. Legitimation — Why is the final decision valid?
+7. Execution — What may now happen?
+8. Record — What must be preserved for audit, appeal, and learning?
+
+That’s the difference between an agent that can act and an institution that can decide.
+
+---
+
 ## RFC Series
 
 The CDP protocol is defined via RFCs in `/rfc`:
