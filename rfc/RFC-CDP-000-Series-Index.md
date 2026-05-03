@@ -1,7 +1,7 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.1  
+Status: Draft v0.2  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 3, 2026
 
@@ -110,9 +110,9 @@ Rules:
 | `020–029` | Core Objects and Schemas | Decision object, Envelope, payload registry, artifact schemas |
 | `030–039` | Trust, Identity, and Authority | Identify, Attest, authority, delegation, revocation |
 | `040–049` | Lifecycle Protocols | Nemawashi, Propose, Challenge, Test, Adjudicate, Legitimize, Execute, Record, Learn |
-| `050–059` | Execution Control Extensions | queued execution, decision-type maturity, presence-bound authority, kill switch, rollback controls |
+| `050–059` | Execution Safety, Rollback, and Remedy | queued execution, maturity gates, presence, emergency override, kill switch, rollback, compensation, remedy |
 | `060–069` | Covenant and AIITL | covenant protocol, AIITL/HITL, schema drift, consentful collaboration, relational duties |
-| `070–079` | Repair, Appeal, and Sovereignty | appeals, repair agendas, breach records, affected-party review, anti-erasure, sovereignty claims |
+| `070–079` | Repair, Reparations, Rematriation, Appeal, and Sovereignty | appeals, repair agendas, breach records, affected-party review, anti-erasure, sovereignty claims, rematriation-capable repair |
 | `080–089` | APIs and Transports | governance API, deliberation API, event streams, webhooks, SDK profiles |
 | `090–099` | State Machines | governance lifecycle, execution lifecycle, repair lifecycle, covenant lifecycle |
 | `100–119` | Security, Audit, and Compliance | privacy, evidence handling, retention, audit profiles, compliance mappings |
@@ -134,6 +134,7 @@ Each RFC SHOULD declare one status.
 | `Deprecated` | Retained for history; should not be used for new work. |
 | `Experimental` | Exploratory; may change or be removed. |
 | `Informational` | Useful explanatory material; not normative. |
+| `Reserved` | Number intentionally held for future work; file may not yet exist. |
 
 ### 5.1 Recommended Header
 
@@ -182,7 +183,7 @@ Depends On:
 |---:|---|---|---|
 | `030` | Identify Protocol | `RFC-CDP-030-Identify-Protocol.md` | Draft |
 | `031` | Attest Protocol | `RFC-CDP-031-Attest-Protocol.md` | Draft |
-| `032` | Authority and Delegation Model | `RFC-CDP-032-Authority-and-Delegation-Model.md` | Reserved |
+| `032` | Authority and Delegation Model | `RFC-CDP-032-Authority-and-Delegation-Model.md` | Draft |
 
 ### 6.5 Lifecycle Protocols
 
@@ -198,32 +199,34 @@ Depends On:
 | `047` | Record Protocol | `RFC-CDP-047-Record-Protocol.md` | Draft |
 | `048` | Learn Protocol | `RFC-CDP-048-Learn-Protocol.md` | Draft |
 
-### 6.6 Execution Control Extensions
+### 6.6 Execution Safety, Rollback, and Remedy
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
 | `050` | Decision-Type Maturity and Queued Execution Gates | `RFC-CDP-050-Decision-Type-Maturity-and-Queued-Execution-Gates.md` | Draft |
 | `051` | Presence-Bound Execution Authority | `RFC-CDP-051-Presence-Bound-Execution-Authority.md` | Draft |
-| `052` | Emergency Override and Kill Switch | `RFC-CDP-052-Emergency-Override-and-Kill-Switch.md` | Reserved |
-| `053` | Rollback and Compensation Protocol | `RFC-CDP-053-Rollback-and-Compensation-Protocol.md` | Reserved |
+| `052` | Emergency Override and Kill Switch | `RFC-CDP-052-Emergency-Override-and-Kill-Switch.md` | Draft |
+| `053` | Rollback and Compensation Protocol | `RFC-CDP-053-Rollback-and-Compensation-Protocol.md` | Draft |
+| `054` | Compensation Determination and Remedy Protocol | `RFC-CDP-054-Compensation-Determination-and-Remedy-Protocol.md` | Draft |
 
 ### 6.7 Covenant and AIITL
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
 | `060` | Covenant Protocol and AIITL | `RFC-CDP-060-Covenant-Protocol-and-AIITL.md` | Draft |
-| `061` | Schema Drift and Context Preservation | `RFC-CDP-061-Schema-Drift-and-Context-Preservation.md` | Reserved |
+| `061` | Schema Drift and Context Preservation | `RFC-CDP-061-Schema-Drift-and-Context-Preservation.md` | Draft |
 | `062` | HITL-AIITL Role Boundaries | `RFC-CDP-062-HITL-AIITL-Role-Boundaries.md` | Reserved |
 
-### 6.8 Repair, Appeal, and Sovereignty
+### 6.8 Repair, Reparations, Rematriation, Appeal, and Sovereignty
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
 | `070` | Appeals and Contestability Model | `RFC-CDP-070-Appeals-and-Contestability-Model.md` | Reserved |
 | `071` | Twenty Points Repair Protocol | `RFC-CDP-071-Twenty-Points-Repair-Protocol.md` | Draft |
-| `072` | Breach Record and Repair Agenda Schema | `RFC-CDP-072-Breach-Record-and-Repair-Agenda-Schema.md` | Reserved |
-| `073` | Affected-Party Review and Anti-Erasure | `RFC-CDP-073-Affected-Party-Review-and-Anti-Erasure.md` | Reserved |
-| `074` | Sovereignty Claims and Authority Pluralism | `RFC-CDP-074-Sovereignty-Claims-and-Authority-Pluralism.md` | Reserved |
+| `072` | Breach Record and Repair Agenda Schema | `RFC-CDP-072-Breach-Record-and-Repair-Agenda-Schema.md` | Draft |
+| `073` | Affected-Party Review and Anti-Erasure | `RFC-CDP-073-Affected-Party-Review-and-Anti-Erasure.md` | Draft |
+| `074` | Sovereignty Claims and Authority Pluralism | `RFC-CDP-074-Sovereignty-Claims-and-Authority-Pluralism.md` | Draft |
+| `075` | Rematriation and Land/Resource Return Protocol | `RFC-CDP-075-Rematriation-and-Land-Resource-Return-Protocol.md` | Reserved |
 
 ### 6.9 APIs and Transports
 
@@ -239,12 +242,31 @@ Depends On:
 |---:|---|---|---|
 | `090` | Governance State Machine | `RFC-CDP-090-Governance-State-Machine.md` | Draft |
 | `091` | Execution State Machine | `RFC-CDP-091-Execution-State-Machine.md` | Draft |
-| `092` | Repair State Machine | `RFC-CDP-092-Repair-State-Machine.md` | Reserved |
-| `093` | Covenant State Machine | `RFC-CDP-093-Covenant-State-Machine.md` | Reserved |
+| `092` | Repair State Machine | `RFC-CDP-092-Repair-State-Machine.md` | Draft |
+| `093` | Covenant State Machine | `RFC-CDP-093-Covenant-State-Machine.md` | Draft |
 
 ---
 
-## 7. Legacy Mapping
+## 7. Repair, Reparations, and Rematriation Spine
+
+The current repair/remedy corpus includes:
+
+| RFC | Function |
+|---:|---|
+| `053` | Determines when rollback, mitigation, or compensation is triggered and how those paths are tracked. |
+| `054` | Defines the actual compensation/remedy mechanism: claim, harm assessment, remedy proposal, authorization, delivery, sufficiency review. |
+| `071` | Defines the constitutional repair protocol and anti-flattening requirements for enumerated repair agendas. |
+| `072` | Defines the objects that preserve breach, repair agenda, repair point, response, commitment, evidence, review, and dissent. |
+| `073` | Defines affected-party review, anti-erasure, closure blocking, and contestability. |
+| `074` | Defines sovereignty claims and authority pluralism. |
+| `075` | Reserved for rematriation, land/resource return, and return-to-right-relationship mechanisms. |
+| `092` | Defines the repair state machine. |
+
+This spine supports reparations and rematriation-capable governance by preserving harm, authority, affected-party review, sovereignty claims, remedy mechanisms, return obligations, completion evidence, and learning.
+
+---
+
+## 8. Legacy Mapping
 
 The following table maps earlier filenames to canonical filenames.
 
@@ -277,7 +299,7 @@ The following table maps earlier filenames to canonical filenames.
 
 ---
 
-## 8. How to Add a New RFC
+## 9. How to Add a New RFC
 
 A new RFC proposal SHOULD:
 
@@ -295,7 +317,7 @@ A new RFC MUST NOT silently redefine an existing RFC’s authority, state transi
 
 ---
 
-## 9. Promotion Rules
+## 10. Promotion Rules
 
 A staging draft MAY be promoted to canonical when:
 
@@ -311,7 +333,7 @@ Promotion SHOULD preserve history where possible. If repository tooling cannot p
 
 ---
 
-## 10. Supersession and Deprecation
+## 11. Supersession and Deprecation
 
 When an RFC supersedes another RFC, the new RFC SHOULD declare:
 
@@ -329,7 +351,7 @@ Deprecated RFCs SHOULD remain discoverable unless removal is required for legal,
 
 ---
 
-## 11. Constitutional Invariant
+## 12. Constitutional Invariant
 
 The RFC series itself is governed material.
 
@@ -341,14 +363,15 @@ The corpus MUST preserve:
 - supersession history;
 - dependency relationships;
 - status;
-- repair and correction history.
+- repair and correction history;
+- reparations and rematriation history where applicable.
 
 A constitutional system should remember its own renamings.
 
 ---
 
-## 12. Summary
+## 13. Summary
 
 This Series Index is the canonical map for the CDP RFC corpus.
 
-It defines the numbering bands, canonical files, folder policy, status taxonomy, legacy mapping, and promotion rules needed to keep the protocol suite legible, auditable, and repairable over time.
+It defines the numbering bands, canonical files, folder policy, status taxonomy, legacy mapping, promotion rules, and repair/remedy spine needed to keep the protocol suite legible, auditable, contestable, and repairable over time.
