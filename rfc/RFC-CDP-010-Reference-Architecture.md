@@ -1,7 +1,7 @@
 # RFC-CDP-010 — Reference Architecture
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.4  
+Status: Draft v0.5  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 3, 2026
 
@@ -9,17 +9,17 @@ Date: May 3, 2026
 
 This document defines the major planes, layers, reference topology, and cross-cutting trust functions of CDP.
 
-CDP is a constitutional control-plane architecture for legitimate decisions, bounded execution, covenantal participation, durable record, learning, and repair.
+CDP is a constitutional control-plane architecture for legitimate decisions, bounded execution, covenantal participation, durable record, learning, repair, reparations, rematriation-capable return, compensation, and remedy.
 
 ## 1. Purpose
 
 The Reference Architecture RFC answers:
 
 - what the major architectural planes are;
-- how the Decision Plane, Execution Plane, Covenant Plane, and Repair Plane relate;
-- how Decision Kernel, Protocol Layer, Execution Control, Covenant, Repair, Record, Learning, and Trust functions fit together;
+- how the Decision Plane, Execution and Remedy Plane, Covenant Plane, and Repair/Reparations/Rematriation/Sovereignty Plane relate;
+- how Decision Kernel, Protocol Layer, Execution Control, Remedy Control, Covenant, Repair, Record, Learning, and Trust functions fit together;
 - what minimal and fuller implementation topologies look like;
-- where authority, identity, attestation, presence, record, and learning are enforced.
+- where authority, identity, attestation, presence, record, remedy, repair, sovereignty, and learning are enforced.
 
 ## 2. Architectural Planes
 
@@ -43,9 +43,9 @@ It includes:
 
 The Decision Plane determines whether a Decision has moved through a legitimate governance path.
 
-### 2.2 Execution Plane
+### 2.2 Execution and Remedy Plane
 
-The Execution Plane governs whether a legitimate Decision may become action.
+The Execution and Remedy Plane governs whether a legitimate Decision may become action and what happens after action if harm, failure, excess authority, emergency, rollback, compensation, or remedy is required.
 
 It includes:
 
@@ -57,11 +57,20 @@ It includes:
 - presence tokens;
 - quorum presence;
 - emergency override handling;
-- pause, kill switch, rollback, and compensation controls;
+- kill-switch controls;
+- pause, halt, quarantine, and termination controls;
+- rollback planning;
+- mitigation;
+- compensation triggering;
+- remedy determination;
+- resource authorization;
+- remedy delivery;
+- sufficiency review;
+- residual-harm tracking;
 - execution telemetry;
 - dead-letter and exception handling.
 
-Legitimacy authorizes consideration for execution. Execution Control authorizes action.
+Legitimacy authorizes consideration for execution. Execution Control authorizes action. Remedy Control governs response when action must be stopped, reversed, compensated, mitigated, repaired, or reviewed for sufficiency.
 
 ### 2.3 Covenant Plane
 
@@ -75,14 +84,15 @@ It includes:
 - truthful witnessing;
 - dignity and agency preservation;
 - contestability duties;
-- repair-on-error requirements;
+- boundary issue detection;
+- covenant repair;
 - relationship-aware records.
 
 Covenant governs participation conditions, not final authority.
 
-### 2.4 Repair Plane
+### 2.4 Repair, Reparations, Rematriation, and Sovereignty Plane
 
-The Repair Plane governs historic breach, institutional harm, affected-party claims, sovereignty claims, and repair agendas.
+The Repair, Reparations, Rematriation, and Sovereignty Plane governs historic breach, institutional harm, affected-party claims, reparations claims, rematriation-capable return obligations, sovereignty claims, and repair agendas.
 
 It includes:
 
@@ -91,13 +101,17 @@ It includes:
 - breach records;
 - affected-party review;
 - sovereignty claims;
+- authority conflicts;
 - institutional response states;
 - anti-erasure controls;
 - repair commitments;
+- land/resource return obligations where explicitly in scope;
 - completion evidence;
+- residual harm;
+- sufficiency review;
 - repair learning.
 
-Repair claims are not ordinary stakeholder comments.
+Repair claims are not ordinary stakeholder comments. Sovereignty claims are not preferences. Return obligations are not decorative metadata.
 
 ## 3. Architectural Layers
 
@@ -115,7 +129,7 @@ The Decision Kernel MUST preserve state, status, history, policy scope, authorit
 
 ### 3.3 Protocol Layer
 
-The Protocol Layer validates governed acts such as Nemawashi, Propose, Challenge, Test, Adjudicate, Legitimize, Execute, Record, Learn, Identify, Attest, and extension protocols.
+The Protocol Layer validates governed acts such as Nemawashi, Propose, Challenge, Test, Adjudicate, Legitimize, Execute, Record, Learn, Identify, Attest, Emergency Override, Rollback, Compensation, Covenant, Repair, and extension protocols.
 
 Protocols provide motion. They do not silently create authority outside policy.
 
@@ -145,13 +159,31 @@ It SHOULD evaluate:
 
 Execution MUST fail closed when authority, scope, policy, or presence checks fail.
 
-### 3.6 Nemawashi Layer
+### 3.6 Remedy Control Layer
+
+The Remedy Control Layer evaluates and coordinates rollback, mitigation, compensation, remedy determination, resource authorization, remedy delivery, sufficiency review, and residual-harm tracking.
+
+It SHOULD evaluate:
+
+- whether rollback is possible and safe;
+- whether mitigation is required;
+- whether compensation is required;
+- whether a remedy proposal exists;
+- whether resources are authorized;
+- whether remedy delivery occurred;
+- whether remedy sufficiency is contested;
+- whether residual harm remains;
+- whether affected-party or sovereign-party review is required.
+
+Remedy delivery is not necessarily remedy sufficiency.
+
+### 3.7 Nemawashi Layer
 
 The Nemawashi Layer manages stakeholder surfacing, readiness, friction, and pre-formal alignment.
 
 Nemawashi may improve deliberation, but it MUST NOT replace Challenge, suppress dissent, or confer legitimacy.
 
-### 3.7 Covenant Layer
+### 3.8 Covenant Layer
 
 The Covenant Layer manages relationship-aware participation.
 
@@ -159,25 +191,25 @@ It records participant roles, duties, boundaries, schema drift, challenge, conse
 
 The Covenant Layer MUST NOT assert unsupported AI personhood, consciousness, legal sovereignty, or moral equivalence.
 
-### 3.8 Repair Layer
+### 3.9 Repair Layer
 
 The Repair Layer manages repair-class claims and agendas.
 
-It preserves enumerated claims, affected-party authority, breach records, institutional responses, dissent, commitments, completion evidence, and learning.
+It preserves enumerated claims, affected-party authority, breach records, institutional responses, dissent, commitments, completion evidence, sovereignty claims, return obligations, residual harm, and learning.
 
 The Repair Layer MUST NOT collapse repair demands into generic sentiment, stakeholder input, or public-relations language.
 
-### 3.9 Record Layer
+### 3.10 Record Layer
 
-The Record Layer preserves lineage, envelopes, evidence references, transcripts, challenges, tests, adjudications, legitimacy artifacts, execution results, repair records, covenant records, outcomes, and replay artifacts.
+The Record Layer preserves lineage, envelopes, evidence references, transcripts, challenges, tests, adjudications, legitimacy artifacts, execution results, emergency records, rollback records, compensation records, remedy records, repair records, covenant records, outcomes, and replay artifacts.
 
 A record can be auditable without being universally public. Implementations MAY require access controls, redaction, affected-party review, or culturally appropriate handling.
 
-### 3.10 Learning Layer
+### 3.11 Learning Layer
 
-The Learning Layer transforms recorded outcomes into precedent, policy revision, schema revision, operational safeguards, repair lessons, and governance improvement.
+The Learning Layer transforms recorded outcomes into precedent, policy revision, schema revision, operational safeguards, remedy lessons, repair lessons, and governance improvement.
 
-Learning MUST NOT erase breach history, dissent, adverse outcomes, repair obligations, or prior record.
+Learning MUST NOT erase breach history, dissent, adverse outcomes, residual harm, repair obligations, sovereignty claims, or prior record.
 
 ## 4. Cross-Cutting Trust and Authority Fabric
 
@@ -197,10 +229,13 @@ Cross-cutting trust functions include:
 - policy evaluation;
 - rate limiting and friction controls;
 - challenge preservation;
+- emergency authority;
 - replay and audit;
 - escalation and appeals;
 - affected-party review;
 - repair authority;
+- remedy authority;
+- resource authorization;
 - sovereignty-claim preservation.
 
 Authority types include:
@@ -213,8 +248,12 @@ Authority types include:
 - legitimacy authority;
 - execution authority;
 - presence authority;
-- delegated authority;
 - emergency authority;
+- rollback authority;
+- compensation authority;
+- resource authorization authority;
+- remedy sufficiency review authority;
+- delegated authority;
 - repair authority;
 - affected-party authority;
 - sovereignty authority;
@@ -233,6 +272,8 @@ A minimal implementation MAY consist of:
 - local policy module;
 - basic identity and attestation checks;
 - basic execution gate evaluation;
+- basic emergency pause/halt control;
+- basic rollback or compensation record;
 - basic record writer.
 
 A fuller implementation MAY add:
@@ -243,9 +284,12 @@ A fuller implementation MAY add:
 - execution review queue;
 - approved execution queue;
 - challenge-required queue;
+- emergency escalation queue;
+- remedy review queue;
 - dead-letter or exception queue;
 - maturity-event queue;
 - repair-commitment tracker;
+- remedy-delivery tracker;
 - covenant record store;
 - external trust registry;
 - policy engine such as OPA or Cedar;
@@ -264,15 +308,17 @@ A fuller implementation MAY add:
 5. Record Layer persists lineage and artifacts.
 6. Learning Layer consumes recorded outcomes when eligible.
 
-### 6.2 Execution Flow
+### 6.2 Execution and Remedy Flow
 
 1. Decision reaches a legitimacy-eligible state.
 2. Execution Control evaluates maturity, risk, challenge state, and policy.
 3. If gated, execution request is routed to review or queue.
 4. If required, Presence Grant or quorum presence is obtained.
 5. Executor acts within scope and time bounds.
-6. Execution telemetry and outcome are recorded.
-7. Learn evaluates maturity, safeguards, defects, and repair implications.
+6. Emergency or kill-switch controls may pause, halt, quarantine, revoke, or terminate action.
+7. Rollback, mitigation, compensation, or remedy determination may be triggered.
+8. Remedy delivery and sufficiency review are recorded where applicable.
+9. Learn evaluates maturity, safeguards, defects, residual harm, and repair implications.
 
 ### 6.3 Covenant Flow
 
@@ -282,27 +328,33 @@ A fuller implementation MAY add:
 4. Challenges, clarifications, dissent, and repair obligations are recorded.
 5. Learn updates future participation guidance without erasing prior record.
 
-### 6.4 Repair Flow
+### 6.4 Repair, Reparations, Rematriation, and Sovereignty Flow
 
 1. Repair Agenda or Repair Point is submitted or identified.
-2. Affected peoples, authority claims, and provenance are preserved.
+2. Affected peoples, authority claims, sovereignty claims, and provenance are preserved.
 3. Each point receives its own record and response state.
 4. Challenges and affected-party review are allowed.
-5. Institutional commitments are tracked through execution or failure.
-6. Completion evidence, dissent, non-response, and learning are recorded.
+5. Institutional commitments, remedy obligations, and return obligations are tracked through execution, completion evidence, insufficiency, or failure.
+6. Completion evidence, sufficiency review, residual harm, dissent, non-response, and learning are recorded.
 
 ## 7. Architectural Rules
 
-Envelope provides context. Decision provides structure. Protocols provide motion. Authority bounds action. Covenant governs participation. Repair preserves breach and response. Record makes memory. Learn changes the future.
+Envelope provides context. Decision provides structure. Protocols provide motion. Authority bounds action. Covenant governs participation. Remedy addresses harm after action. Repair preserves breach and response. Record makes memory. Learn changes the future.
 
 Implementations MUST distinguish:
 
 - legibility from legitimacy;
 - legitimacy from execution authority;
 - access from presence;
+- emergency from unreviewed exception;
+- rollback from repair;
+- compensation offer from compensation sufficiency;
+- remedy delivery from remedy sufficiency;
+- residual harm from closure;
 - consultation from consent;
 - stakeholder input from sovereignty claim;
 - repair commitment from repair completion;
+- return obligation from symbolic acknowledgment;
 - AI participation from AI final authority;
 - record from public disclosure;
 - learning from erasure.
@@ -323,14 +375,24 @@ The architecture MUST distinguish:
 - execution gate failure;
 - presence failure;
 - quorum failure;
+- emergency override failure or abuse;
+- kill-switch failure;
 - execution failure;
-- rollback or compensation failure;
+- rollback failure;
+- mitigation failure;
+- compensation failure;
+- remedy determination failure;
+- resource authorization failure;
+- remedy delivery failure;
+- sufficiency review failure;
+- residual harm;
 - persistence failure;
 - record integrity failure;
 - covenant boundary failure;
 - schema drift;
 - repair erasure;
 - affected-party review failure;
+- sovereignty preservation failure;
 - learning failure.
 
 ## 9. Design Constraints
@@ -341,9 +403,19 @@ Automation is not a switch. Automation is a governed maturity state.
 
 Legitimate decisions MUST NOT become ambiently executable merely because credentials, tools, or queues exist.
 
+Stopping harm should have lower friction than expanding power.
+
+Emergency does not erase governance. Emergency creates a debt to record, review, repair, and learn.
+
+Rollback failure is not closure.
+
+Compensation is not whatever the institution is willing to offer. Compensation is a governed remedy process.
+
 Covenant language MUST remain precise and bounded.
 
-Repair records MUST preserve claim structure, provenance, authority, dissent, response, commitment, and completion evidence.
+Repair records MUST preserve claim structure, provenance, authority, dissent, response, commitment, completion evidence, residual harm, and sufficiency review.
+
+Return obligations MUST NOT be collapsed into symbolic acknowledgment when land, resources, records, access, or authority are explicitly in scope.
 
 ## 10. Minimal Compliance
 
@@ -354,11 +426,14 @@ A minimal CDP implementation SHOULD support:
 - Identify and Attest checks;
 - Propose, Challenge, Test, Adjudicate, Legitimize, Execute, Record, and Learn protocols;
 - basic execution gate policy;
+- basic emergency pause/halt control;
+- basic rollback or compensation record;
 - basic record and replay;
 - explicit treatment of authority failure;
 - explicit treatment of active challenge;
 - explicit record of repair-class claims when present;
-- explicit role boundaries for synthetic participants when present.
+- explicit role boundaries for synthetic participants when present;
+- explicit record of residual harm when remedy or rollback is incomplete.
 
 ## 11. Implementation Note
 
