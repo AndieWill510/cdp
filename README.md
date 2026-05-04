@@ -360,3 +360,23 @@ Planned:
 - Federated governance
 - Production-grade identity and attestation
 - Canonical RFC migration using the v2 banded index
+
+---
+
+## Full Local Verification
+
+After the local stack is built and running, run the full verification suite:
+
+```bash
+make up-build
+make verify
+```
+
+`make verify` runs both:
+
+```text
+make smoke
+make test
+```
+
+This verifies the Docker stack, API health endpoint, Postgres/pgvector initialization, Redis, Qdrant, and LocalStack resources.
