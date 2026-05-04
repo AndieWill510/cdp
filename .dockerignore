@@ -1,0 +1,67 @@
+# Git / repo metadata
+.git
+.gitignore
+.gitattributes
+.github
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local environment / secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Node/frontend artifacts, if added later
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local data volumes and generated outputs
+data/
+.tmp/
+tmp/
+logs/
+*.log
+
+# Docker / compose local state
+.docker/
+
+# Large generated docs/exports
+exports/
+artifacts/
