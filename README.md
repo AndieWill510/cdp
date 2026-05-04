@@ -144,6 +144,52 @@ That is the difference between an agent that can act and an institution that can
 
 ---
 
+## Local Development
+
+CDP now includes a local Docker stack for laptop development.
+
+Run from the repository root:
+
+```bash
+git clone https://github.com/AndieWill510/cdp
+cd cdp
+make up-build
+make smoke
+```
+
+Stop the stack:
+
+```bash
+make down
+```
+
+Remove local volumes:
+
+```bash
+make down-volumes
+```
+
+The local stack includes:
+
+- `cdp-api` — FastAPI service with `/health`
+- `cdp-worker` — safe no-op worker loop
+- `postgres` — Postgres with `pgvector`
+- `qdrant` — vector search service
+- `redis` — cache / short-lived grants
+- `localstack` — local AWS service emulation
+
+LocalStack currently bootstraps:
+
+- S3 buckets for evidence, artifacts, and exports
+- SQS queues for intake, review, execution, appeal, repair, and dead-letter handling
+- EventBridge bus for CDP domain events
+- DynamoDB table for idempotency / lightweight locks
+- SSM parameters and Secrets Manager values for local config
+
+See [`docker/README.md`](docker/README.md) for detailed run commands, ports, health checks, and troubleshooting.
+
+---
+
 ## RFC Series
 
 The CDP protocol is defined via RFCs in `/rfc` and staged/recovered drafts in `/rfcs`.
@@ -300,24 +346,17 @@ Current:
 - Protocol definitions
 - Reference architecture
 - Local-first implementation patterns
+- Local Docker stack with Postgres/pgvector, Qdrant, Redis, and LocalStack
+- Minimal FastAPI `/health` endpoint
+- Safe no-op worker loop
 - Banded RFC index proposal v2
 - Canonical/staging RFC split under review
 
 Planned:
 
 - Governance kernel
+- Real queue consumers for intake, review, execution, appeal, and repair
 - Simulation environments
 - Federated governance
 - Production-grade identity and attestation
 - Canonical RFC migration using the v2 banded index
-
----
-
-## Getting Started — coming soon
-
-```bash
-git clone https://github.com/AndieWill510/cdp
-cd cdp
-# cp .env.example .env
-# docker compose up --build
-```
