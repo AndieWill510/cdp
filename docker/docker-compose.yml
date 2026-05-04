@@ -1,0 +1,158 @@
+# CDP local development stack
+#
+# Run from the repository root with:
+#   docker compose -f docker/docker-compose.yml up --build
+#
+# This compose file is intentionally local-first. It wires concrete runnable
+# infrastructure for CDP without requiring cloud credentials.
+
+name: cdp-local
+
+services:
+  cdp-api:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    container_name: cdp-api
+    environment:
+      CDP_ENV: local
+      DATABASE_URL: postgresql+psycopg://cdp:cdp@postgres:5432/cdp
+      QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379/0
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      CDP_EVENT_BUS_NAME: cdp-events-local
+      CDP_EVIDENCE_BUCKET: cdp-evidence-local
+      CDP_ARTIFACTS_BUCKET: cdp-artifacts-local
+      CDP_EXPORTS_BUCKET: cdp-exports-local
+      CDP_INTAKE_QUEUE_NAME: cdp-intake-queue
+      CDP_REVIEW_QUEUE_NAME: cdp-review-queue
+      CDP_EXECUTION_QUEUE_NAME: cdp-execution-queue
+      CDP_APPEAL_QUEUE_NAME: cdp-appeal-queue
+      CDP_REPAIR_QUEUE_NAME: cdp-repair-queue
+      CDP_DEAD_LETTER_QUEUE_NAME: cdp-dead-letter-queue
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    networks:
+      - cdp-net
+
+  cdp-worker:
+    build:
+      context: ..
+      dockerfile: docker/worker.Dockerfile
+    container_name: cdp-worker
+    environment:
+      CDP_ENV: local
+      DATABASE_URL: postgresql+psycopg://cdp:cdp@postgres:5432/cdp
+      QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379/0
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      CDP_EVENT_BUS_NAME: cdp-events-local
+      CDP_EVIDENCE_BUCKET: cdp-evidence-local
+      CDP_ARTIFACTS_BUCKET: cdp-artifacts-local
+      CDP_EXPORTS_BUCKET: cdp-exports-local
+      CDP_INTAKE_QUEUE_NAME: cdp-intake-queue
+      CDP_REVIEW_QUEUE_NAME: cdp-review-queue
+      CDP_EXECUTION_QUEUE_NAME: cdp-execution-queue
+      CDP_APPEAL_QUEUE_NAME: cdp-appeal-queue
+      CDP_REPAIR_QUEUE_NAME: cdp-repair-queue
+      CDP_DEAD_LETTER_QUEUE_NAME: cdp-dead-letter-queue
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    networks:
+      - cdp-net
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cdp-postgres
+    environment:
+      POSTGRES_DB: cdp
+      POSTGRES_USER: cdp
+      POSTGRES_PASSWORD: cdp
+    ports:
+      - "5432:5432"
+    volumes:
+      - cdp-postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cdp -d cdp"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cdp-net
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: cdp-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - cdp-qdrant-data:/qdrant/storage
+    networks:
+      - cdp-net
+
+  redis:
+    image: redis:latest
+    container_name: cdp-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cdp-net
+
+  localstack:
+    image: localstack/localstack:latest
+    container_name: cdp-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,sqs,sns,events,lambda,secretsmanager,ssm,dynamodb,stepfunctions
+      AWS_DEFAULT_REGION: us-east-1
+      DEBUG: "1"
+    volumes:
+      - cdp-localstack-data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./localstack/init:/etc/localstack/init/ready.d:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - cdp-net
+
+volumes:
+  cdp-postgres-data:
+  cdp-qdrant-data:
+  cdp-localstack-data:
+
+networks:
+  cdp-net:
+    driver: bridge
