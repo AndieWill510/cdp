@@ -1,6 +1,7 @@
 COMPOSE_FILE ?= docker/docker-compose.yml
+PYTEST ?= pytest
 
-.PHONY: help up up-build down down-volumes ps logs logs-api logs-worker logs-localstack smoke shell-postgres localstack-health localstack-buckets localstack-queues
+.PHONY: help up up-build down down-volumes ps logs logs-api logs-worker logs-localstack smoke test verify shell-postgres localstack-health localstack-buckets localstack-queues
 
 help:
 	@echo "CDP local development commands"
@@ -14,7 +15,9 @@ help:
 	@echo "  make logs-api           Tail API logs"
 	@echo "  make logs-worker        Tail worker logs"
 	@echo "  make logs-localstack    Tail LocalStack logs"
-	@echo "  make smoke              Run local smoke tests"
+	@echo "  make smoke              Run shell-based local smoke tests"
+	@echo "  make test               Run pytest build verification tests"
+	@echo "  make verify             Run smoke + pytest verification tests"
 	@echo "  make shell-postgres     Open psql in the Postgres container"
 	@echo "  make localstack-health  Check LocalStack health endpoint"
 	@echo "  make localstack-buckets List LocalStack S3 buckets"
@@ -49,6 +52,11 @@ logs-localstack:
 
 smoke:
 	bash docker/smoke-test.sh
+
+test:
+	$(PYTEST) tests/test_build_verification.py
+
+verify: smoke test
 
 shell-postgres:
 	docker compose -f $(COMPOSE_FILE) exec postgres psql -U cdp -d cdp
