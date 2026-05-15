@@ -1,11 +1,11 @@
 # RFC-CDP-066 — Control Tower and Workflow Observability Protocol
 
 Author: Kevin “Andie” Williams / AIITL contribution  
-Status: Draft v0.1  
+Status: Draft v0.2  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 15, 2026  
-Depends On: RFC-CDP-001, RFC-CDP-010, RFC-CDP-020, RFC-CDP-021, RFC-CDP-040, RFC-CDP-041, RFC-CDP-042, RFC-CDP-043, RFC-CDP-044, RFC-CDP-045, RFC-CDP-046, RFC-CDP-047, RFC-CDP-048, RFC-CDP-060, RFC-CDP-061, RFC-CDP-062, RFC-CDP-063, RFC-CDP-064, RFC-CDP-065  
-Updates: RFC-CDP-010, RFC-CDP-047, RFC-CDP-048, RFC-CDP-061, RFC-CDP-062, RFC-CDP-063, RFC-CDP-064, RFC-CDP-065
+Depends On: RFC-CDP-001, RFC-CDP-010, RFC-CDP-020, RFC-CDP-021, RFC-CDP-040, RFC-CDP-041, RFC-CDP-042, RFC-CDP-043, RFC-CDP-044, RFC-CDP-045, RFC-CDP-046, RFC-CDP-047, RFC-CDP-048, RFC-CDP-049, RFC-CDP-060, RFC-CDP-061, RFC-CDP-062, RFC-CDP-063, RFC-CDP-064, RFC-CDP-065  
+Updates: RFC-CDP-010, RFC-CDP-047, RFC-CDP-048, RFC-CDP-049, RFC-CDP-061, RFC-CDP-062, RFC-CDP-063, RFC-CDP-064, RFC-CDP-065
 
 ---
 
@@ -16,6 +16,8 @@ This RFC defines the **Control Tower and Workflow Observability Protocol** for t
 CDP introduces governed workflows for proposals, challenges, tests, adjudications, legitimations, executions, records, learning, witness review, surface integrity, canonical record adequacy, semantic synthesis, appeals, and repair. These workflows may be valid in isolation but overwhelming in operation without visual analytics, graph awareness, queue visibility, bottleneck detection, and stuck-flow monitoring.
 
 This RFC defines a control-tower layer for CDP: a visual and operational observability plane that helps humans and AIITL systems understand what is happening, where work is stuck, what is blocked, what is aging, what is looping, what lacks authority, what lacks witness testimony, what lacks adjudication, what lacks repair, and what is at risk of silent legitimacy failure.
+
+RFC-CDP-049 defines observability for the core decision lifecycle. This RFC generalizes that observability pattern across the broader CDP control tower, including witness records, human-readable surfaces, canonical record adequacy, semantic review, appeals, repair, and cross-workflow dependency traffic.
 
 The core principle is:
 
@@ -31,6 +33,7 @@ This RFC answers:
 
 - how CDP operators know what is happening across the control plane;
 - how stuck decisions, challenges, adjudications, witnesses, surfaces, repairs, and executions are detected;
+- how lifecycle observability defined in RFC-CDP-049 feeds the broader Control Tower;
 - how visual analytics support legitimacy rather than merely operational efficiency;
 - how workflow states, queues, dependencies, and blockers are represented;
 - how graph-style analysis can reveal hidden bottlenecks, loops, orphaned records, or silent drift;
@@ -49,6 +52,7 @@ A decision may be proposed, challenged, witnessed, tested, adjudicated, legitima
 CDP MUST therefore distinguish:
 
 - process definition from process visibility;
+- lifecycle observability from whole-control-plane observability;
 - database state from operational awareness;
 - queue depth from legitimacy risk;
 - workflow completion from meaningful resolution;
@@ -89,29 +93,41 @@ The lifecycle protocols define Nemawashi, Propose, Challenge, Test, Adjudicate, 
 
 This RFC defines how operators observe work moving across those protocols and detect when work is stalled, looping, or improperly bypassing required steps.
 
-### 3.5 RFC-CDP-061 Schema Drift and Context Preservation
+### 3.5 RFC-CDP-049 Decision Lifecycle Observability Protocol
+
+RFC-CDP-049 defines observability for the main decision lifecycle:
+
+```text
+Nemawashi → Propose → Challenge → Test → Adjudicate → Legitimize → Execute → Record → Learn
+```
+
+This RFC generalizes that lifecycle observability into a broader Control Tower for cross-workflow traffic, including witness work, surface integrity, adequacy review, semantic review, appeals, repair, and other non-linear governance workflows.
+
+In operational terms, RFC-CDP-049 is the runway tower for the decision lifecycle. RFC-CDP-066 is air traffic control for the whole airport.
+
+### 3.6 RFC-CDP-061 Schema Drift and Context Preservation
 
 Workflow observability SHOULD surface schema drift signals when objects accumulate mismatched states, missing context, stale authority, or incompatible interpretations.
 
-### 3.6 RFC-CDP-062 Interpretive Witness and Synoptic Review Protocol
+### 3.7 RFC-CDP-062 Interpretive Witness and Synoptic Review Protocol
 
 Witness Records may be pending, missing, divergent, insufficient, or blocked.
 
 This RFC defines how witness workflow state becomes visible.
 
-### 3.7 RFC-CDP-063 Human-Readable Surface Integrity Protocol
+### 3.8 RFC-CDP-063 Human-Readable Surface Integrity Protocol
 
 Human-readable surfaces may be draft, under review, challenged, published, superseded, repaired, or retracted.
 
 This RFC defines how surface lifecycle state appears in the control tower.
 
-### 3.8 RFC-CDP-064 Canonical Record Adequacy Protocol
+### 3.9 RFC-CDP-064 Canonical Record Adequacy Protocol
 
 Adequacy reviews may block downstream witness, surface, adjudication, execution, or repair.
 
 This RFC defines how adequacy blockers are visualized and monitored.
 
-### 3.9 RFC-CDP-065 Semantic Layer and Meta-Review Protocol
+### 3.10 RFC-CDP-065 Semantic Layer and Meta-Review Protocol
 
 Semantic synthesis may reveal corpus-level patterns, bottlenecks, recurring drift, or repeated stuck states.
 
@@ -231,6 +247,8 @@ The protocol does not require a graph database.
 
 The protocol DOES require graph-aware questions to be answerable.
 
+RFC-CDP-049 lifecycle events SHOULD be treated as first-class workflow events in the Control Tower.
+
 ---
 
 ## 6. Required Observability Questions
@@ -239,6 +257,7 @@ A CDP Control Tower SHOULD answer, at minimum:
 
 - What decisions are currently active?
 - What state is each decision in?
+- What core lifecycle items are stuck under RFC-CDP-049?
 - What is waiting for human review?
 - What is waiting for AIITL witness work?
 - What is waiting for adjudication?
@@ -297,6 +316,8 @@ Recommended generic states include:
 - `archived`.
 
 Protocol-specific RFCs MAY define specialized states, but Control Tower views SHOULD normalize them into a common observability model.
+
+RFC-CDP-049 lifecycle states SHOULD map into this common observability model without losing protocol-specific detail.
 
 ---
 
@@ -730,7 +751,7 @@ This RFC does not require:
 - exposing sensitive workflow data to unauthorized viewers;
 - treating dashboards as final adjudication.
 
-This protocol governs workflow observability. It does not replace Challenge, Adjudicate, Legitimize, Execute, Record, Learn, Witness, Surface Integrity, Adequacy Review, Semantic Review, Appeal, or Repair.
+This protocol governs workflow observability. It does not replace Decision Lifecycle Observability, Challenge, Adjudicate, Legitimize, Execute, Record, Learn, Witness, Surface Integrity, Adequacy Review, Semantic Review, Appeal, or Repair.
 
 ---
 
@@ -741,6 +762,10 @@ CDP creates governed workflows.
 Governed workflows create traffic.
 
 Traffic creates queues, blockers, aging, loops, hidden dependencies, and legitimacy risk.
+
+RFC-CDP-049 observes the main decision lifecycle.
+
+RFC-CDP-066 extends that pattern to the whole CDP airport: witnesses, surfaces, adequacy, semantic review, appeals, repairs, and cross-workflow dependencies.
 
 Without a Control Tower, CDP may become procedurally correct but operationally blind.
 
