@@ -67,15 +67,15 @@ The following Session 001 proposals remain in `collab/` until separately adjudic
 
 ### 0.3 Current Session 002 Adjudication
 
-Session 002 accepted one narrow canonical move:
+Session 002 accepted a stronger canonical move:
 
-> Reserve RFC-CDP-033 for a Standing and Recusal Model.
+> Create `RFC-CDP-033-Standing-and-Recusal-Model.md` as a Draft RFC.
 
-This reservation acknowledges Standing and Recusal as a first-class candidate primitive without promoting the full Session 002 challenge memo, schema seed, AI functional standing framework, or tiered recusal model into canon.
+This promotes Standing and Recusal as first-class CDP concepts while preserving unresolved design questions in the draft.
 
-The following Session 002 proposals remain in `collab/` until separately adjudicated:
+The following Session 002 questions remain open within the RFC and collaboration record:
 
-- minimum viable standing schema;
+- minimum viable standing schema stabilization;
 - functional standing framework for AI participants;
 - tiered recusal model;
 - root authority / constitutional standing question;
@@ -252,7 +252,7 @@ Depends On:
 | `030` | Identify Protocol | `RFC-CDP-030-Identify-Protocol.md` | Draft |
 | `031` | Attest Protocol | `RFC-CDP-031-Attest-Protocol.md` | Draft |
 | `032` | Authority and Delegation Model | `RFC-CDP-032-Authority-and-Delegation-Model.md` | Draft |
-| `033` | Standing and Recusal Model | `RFC-CDP-033-Standing-and-Recusal-Model.md` | Reserved |
+| `033` | Standing and Recusal Model | `RFC-CDP-033-Standing-and-Recusal-Model.md` | Draft |
 
 ### 6.5 Lifecycle Protocols
 
