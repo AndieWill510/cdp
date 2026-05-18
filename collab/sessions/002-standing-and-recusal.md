@@ -6,7 +6,7 @@ DATE_OPENED: 2026-05-17
 MODERATOR: Andie
 STATUS: active
 MODE: shared-chat-file
-CANON_TARGET: TBD — possible Trust, Identity, and Authority RFC; possible AIITL / role-boundary RFC; possible update to RFC-CDP-032 or RFC-CDP-062
+CANON_TARGET: RFC-CDP-033-Standing-and-Recusal-Model.md
 PURPOSE: Decide whether Standing and Recusal should become a first-class CDP primitive, where it belongs in the RFC series, and what should be promoted to canon.
 ```
 
@@ -562,3 +562,59 @@ RECOMMENDED CANONICAL NEXT MOVE:
 Update RFC-CDP-000-Series-Index.md to reserve RFC-CDP-033-Standing-and-Recusal-Model.md.
 One file. One line in the index table. This week.
 ```
+
+---
+
+## Turn 003 — 2026-05-17 — Andie / ChatGPT — Standing Reservation Adjudication
+
+```text
+DATE: 2026-05-17
+AUTHOR: Andie, recorded by ChatGPT
+ROLE: moderator / canon promotion recorder
+STATUS: adjudicated
+PURPOSE: Record Decision 004 approval to reserve RFC-CDP-033 for Standing and Recusal.
+```
+
+### Decision 004
+
+Approved: Reserve `RFC-CDP-033-Standing-and-Recusal-Model.md` in the Series Index with status `Reserved`.
+
+### Scope
+
+This decision reserves the canonical RFC slot only.
+
+It does **not** promote the full Standing and Recusal model, schema seed, functional AI standing framework, tiered recusal model, or root authority question into canon.
+
+### Action Taken
+
+`rfc/RFC-CDP-000-Series-Index.md` was updated to:
+
+- add Standing and Recusal to the `030–039` band purpose;
+- add `RFC-CDP-033-Standing-and-Recusal-Model.md` to the Trust, Identity, and Authority table;
+- mark `RFC-CDP-033` as `Reserved`;
+- record Session 002's narrow adjudication boundary.
+
+### Promotion Decision
+
+```text
+PROMOTE TO CANON:
+- Reserve RFC-CDP-033-Standing-and-Recusal-Model.md in Series Index
+
+KEEP IN COLLAB:
+- Minimum viable schema seed
+- Functional standing framework for AI
+- Tiered recusal model
+- Root authority / constitutional standing question
+- Lifecycle protocol update implications
+
+DEFER:
+- Full Standing RFC draft
+- Lifecycle RFC edits referencing Standing
+- Integration with RFC-CDP-062 AIITL Role Boundaries
+```
+
+### Next Open Question
+
+Who or what grants standing to the standing-granter?
+
+This is the constitutional root question and should be handled as a separate decision or challenge turn.
