@@ -1,7 +1,7 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.3  
+Status: Draft v0.4  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 17, 2026
 
@@ -80,6 +80,8 @@ The following Session 002 questions remain open within the RFC and collaboration
 - tiered recusal model;
 - root authority / constitutional standing question;
 - lifecycle protocol updates referencing Standing.
+
+Session 002 also prompted a load-bearing check against `RFC-CDP-001-Vision-Scope-Principles.md`. That check resulted in RFC 001 being updated to Draft v0.6 so the vision layer explicitly supports constitutional standing as axiomatic.
 
 ---
 
@@ -228,8 +230,8 @@ Depends On:
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
-| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft |
-| `001` | Vision, Scope, and Principles | `RFC-CDP-001-Vision-Scope-Principles.md` | Draft |
+| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v0.4 |
+| `001` | Vision, Scope, and Principles | `RFC-CDP-001-Vision-Scope-Principles.md` | Draft v0.6 |
 
 ### 6.2 Reference Architecture
 
@@ -252,7 +254,7 @@ Depends On:
 | `030` | Identify Protocol | `RFC-CDP-030-Identify-Protocol.md` | Draft |
 | `031` | Attest Protocol | `RFC-CDP-031-Attest-Protocol.md` | Draft |
 | `032` | Authority and Delegation Model | `RFC-CDP-032-Authority-and-Delegation-Model.md` | Draft |
-| `033` | Standing and Recusal Model | `RFC-CDP-033-Standing-and-Recusal-Model.md` | Draft |
+| `033` | Standing and Recusal Model | `RFC-CDP-033-Standing-and-Recusal-Model.md` | Draft v0.2 |
 
 ### 6.5 Lifecycle Protocols
 
