@@ -4,7 +4,9 @@ This index tracks active and completed collaboration sessions.
 
 ## Active Sessions
 
-None.
+| Session | Topic | Status | Moderator | Canon Target |
+|---|---|---|---|---|
+| [003](sessions/003-decision-envelope.md) | Decision Envelope | active | Andie | RFC-CDP-021-Envelope-Schema.md |
 
 ## Closed Sessions
 
@@ -38,3 +40,4 @@ Nothing currently queued.
 - Should the Standing Record schema be stabilized in RFC-CDP-033 or moved to a dedicated schema RFC?
 - Should lifecycle RFCs reference RFC-CDP-033 Standing and Recusal now, or only after schema stabilization?
 - How should AI Functional Standing integrate with RFC-CDP-062 HITL-AIITL Role Boundaries?
+- How should RFC-CDP-021 carry or reference standing, evidence, challenge, legitimacy, execution, record, repair, and learning without becoming a junk drawer?
