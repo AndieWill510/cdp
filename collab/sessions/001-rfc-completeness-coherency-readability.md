@@ -832,3 +832,74 @@ DEFER:
 RECOMMENDED CANONICAL NEXT MOVE:
 Draft RFC-CDP-000-Series-Index.md this week.
 ```
+
+---
+
+## Turn 005 — 2026-05-17 — Andie / ChatGPT — Map-First Adjudication
+
+```text
+DATE: 2026-05-17
+AUTHOR: Andie, recorded by ChatGPT
+ROLE: moderator / canon promotion recorder
+STATUS: adjudicated
+PURPOSE: Record the narrow Session 001 decision to promote the RFC Series Index / Map first.
+```
+
+### Decision
+
+Accept Sonnet's recommendation that the next canonical move is to refine and promote the RFC Series Index / Map.
+
+This decision is intentionally narrow.
+
+### Scope
+
+Promote only the map-first action:
+
+```text
+RFC-CDP-000-Series-Index.md
+```
+
+Do **not** promote the full contents of Turn 004 as canon.
+
+The following remain proposed, contested, or deferred:
+
+- Standing primitive proposal;
+- Decision Envelope sequencing proposal;
+- Legitimize precision challenge;
+- Framing / Nemawashi governance proposal;
+- schema drift mechanism options;
+- lifecycle protocol revisions.
+
+### Action Taken
+
+`rfc/RFC-CDP-000-Series-Index.md` was updated to Draft v0.3 with:
+
+- a new reader path / map diet section;
+- new collaborator entry points;
+- explicit Session 001 adjudication boundary;
+- a collaboration-to-canon promotion path.
+
+### Rationale
+
+A serious new collaborator needs a clear map before deeper RFC review can be coherent.
+
+The map identifies where to start, what is canonical, what is provisional, and how collaboration material moves toward canon.
+
+### Promotion Decision
+
+```text
+PROMOTE TO CANON:
+- RFC-CDP-000-Series-Index.md map refinement
+
+KEEP IN COLLAB:
+- Standing primitive proposal
+- Decision Envelope seed
+- Legitimize precision challenge
+- Framing / Nemawashi governance proposal
+- Schema drift mechanism options
+
+DEFER:
+- Lifecycle protocol revisions
+- Implementation schemas
+- Security and audit profiles
+```
