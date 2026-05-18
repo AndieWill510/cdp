@@ -4,9 +4,9 @@
 SESSION: 003-decision-envelope
 DATE_OPENED: 2026-05-17
 MODERATOR: Andie
-STATUS: active
+STATUS: promotion-applied
 MODE: shared-chat-file
-CANON_TARGET: RFC-CDP-021-Envelope-Schema.md
+CANON_TARGET: RFC-CDP-021-Envelope-Schema.md; RFC-CDP-023-Decision-Lifecycle-Envelope.md
 PURPOSE: Define or refine the Decision Envelope as the container that carries decision context, standing, evidence, challenge, adjudication, legitimacy, execution constraints, record, and learning.
 ```
 
@@ -868,13 +868,85 @@ This keeps the architecture cleaner and prevents an overloaded RFC from becoming
 
 ---
 
-## Promotion Decision
+## Turn 005 — 2026-05-17 — Andie / ChatGPT — Envelope Split Adjudication
 
-Pending.
+```text
+DATE: 2026-05-17
+AUTHOR: Andie, recorded by ChatGPT
+ROLE: moderator / canon promotion recorder
+STATUS: adjudicated-and-promoted
+PURPOSE: Record Decision 012 approval to split wire-message and decision-lifecycle envelopes.
+```
+
+### Decision 012
+
+Approved: Split the Decision Lifecycle Envelope into a new RFC, leaving RFC-CDP-021 as the Wire Message Envelope.
+
+### Action Taken
+
+Updated:
+
+```text
+rfc/RFC-CDP-021-Envelope-Schema.md
+```
+
+to clarify it as:
+
+```text
+RFC-CDP-021 — Wire Message Envelope Schema
+```
+
+Created:
+
+```text
+rfc/RFC-CDP-023-Decision-Lifecycle-Envelope.md
+```
+
+as the governed path index for a complete decision lifecycle.
+
+Updated:
+
+```text
+rfc/RFC-CDP-000-Series-Index.md
+```
+
+to add RFC-CDP-023 and mark the envelope split in the canonical map.
+
+### Promotion Decision
 
 ```text
 PROMOTE TO CANON:
-PROMOTE WITH CHANGES:
-DO NOT PROMOTE:
+- RFC-CDP-021 as Wire Message Envelope Schema, Draft v0.4
+- RFC-CDP-023 as Decision Lifecycle Envelope, Draft v0.1
+- Series Index update, Draft v0.5
+
+PROMOTE WITH OPEN QUESTIONS:
+- governed_path_hash exact construction
+- lifecycle_stage enum ownership
+- implementation profiles for embedded or sealed payloads
+
 DEFER:
+- lifecycle RFC updates referencing RFC-CDP-023
+- final schema acceptance
+- implementation profile for embedded payloads
+```
+
+---
+
+## Promotion Decision
+
+```text
+PROMOTE TO CANON:
+- RFC-CDP-021 as Wire Message Envelope Schema
+- RFC-CDP-023 as Decision Lifecycle Envelope
+- RFC-CDP-000 Series Index update
+
+PROMOTE WITH CHANGES:
+- Sonnet's Decision Lifecycle Envelope patch was promoted into RFC-CDP-023 rather than inserted into RFC-CDP-021.
+
+DEFER:
+- governed_path_hash definition
+- lifecycle_stage enum ownership
+- embedded/sealed payload implementation profile
+- lifecycle RFC updates
 ```
