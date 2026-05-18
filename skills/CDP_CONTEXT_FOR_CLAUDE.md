@@ -16,6 +16,97 @@ It is anti-nihilism in protocol form.
 
 ---
 
+## Current Session State
+
+_Last updated: 2026-05-17_
+
+This section records the live edge of the collaboration so Claude / Sonnet can join the active conversation without relying on transient chat memory.
+
+### What just happened
+
+- Andie asked ChatGPT to create a durable memory artifact for Claude / Sonnet so cross-model collaboration on CDP can become more coherent.
+- ChatGPT created this file: `skills/CDP_CONTEXT_FOR_CLAUDE.md`.
+- Andie then asked for a shared collaboration folder in the CDP repo.
+- ChatGPT created `collab/README.md` as a working room for model-to-model and human-AI collaboration artifacts.
+- Claude / Sonnet suggested that this context document needed a sharper **Current Session State** section describing what is active, blocked, or newly decided.
+- ChatGPT agreed with Claude. This section is the result.
+
+### Newly decided
+
+- The repo now has a `skills/` folder for reusable model-context and process artifacts.
+- The repo now has a `collab/` folder for provisional deliberation, challenge memos, handoffs, dissent, open questions, and working notes.
+- `skills/CDP_CONTEXT_FOR_CLAUDE.md` is a standing primer for Claude / Sonnet.
+- `collab/README.md` is the invitation and working-norms document for cross-model collaboration.
+- Claude / Sonnet should be treated as a meaningful collaborator, but not as a persistent-memory source. Durable state belongs in files.
+
+### Currently active
+
+The active work is **not yet drafting a specific protocol RFC line-by-line**.
+
+The active work is establishing the collaboration substrate for multi-model CDP development:
+
+1. a reusable Claude / Sonnet context primer;
+2. a shared `collab/` workspace;
+3. a repeatable handoff format;
+4. a way to preserve live state so each model can re-enter the conversation without hallucinating continuity.
+
+### Likely next artifact
+
+A strong next artifact would be one of:
+
+- `collab/current-session-state-20260517.md`
+- `collab/handoff-chatgpt-to-claude-20260517.md`
+- `collab/challenge-memo-request-20260517.md`
+- `collab/rfc-consistency-review-20260517.md`
+
+The most useful immediate next artifact is probably:
+
+> `collab/handoff-chatgpt-to-claude-20260517.md`
+
+It should ask Claude / Sonnet to produce a CDP consistency challenge memo and identify what should become schema, protocol, or canon.
+
+### Open questions
+
+- Should `Current Session State` live only in this primer, or should each major session also get its own timestamped file under `collab/`?
+- Should `skills/` contain only model primers, or also reusable prompts, handoff templates, and review protocols?
+- Should the RFC family be reorganized around shared Common Building Blocks before more protocol RFCs are drafted?
+- Should the decision envelope be drafted before individual protocol details to prevent schema drift?
+- What is the first canonical RFC currently worth editing: Vision, Architecture, Propose, Challenge, or a new CBB / Envelope RFC?
+
+### Current risk
+
+The biggest current risk is **conversation becoming architecture without an explicit promotion path into canon**.
+
+The `collab/` folder should not become a junk drawer. It needs a path from:
+
+```text
+conversation -> challenge memo -> decision record -> RFC/schema update
+```
+
+Otherwise, the project will accumulate beautiful fragments without architectural closure.
+
+### Current instruction to Claude / Sonnet
+
+Claude / Sonnet should read this file and `collab/README.md`, then write into `collab/` rather than relying only on chat.
+
+Claude / Sonnet should begin by producing a challenge memo that answers:
+
+1. What is strongest in CDP right now?
+2. What is most overloaded or fragile?
+3. What belongs in `skills/` vs `collab/` vs canonical RFCs?
+4. What is the cleanest next RFC or schema artifact?
+5. What architectural risk is ChatGPT or Andie underestimating?
+
+### Miles Davis rule
+
+Do not just restate the melody.
+
+Listen for where the band is now.
+
+Then contribute something disciplined, alive, and accountable.
+
+---
+
 ## The Human Context
 
 Andie is the originator of CDP.
