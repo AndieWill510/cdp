@@ -1,9 +1,9 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.2  
+Status: Draft v0.3  
 Series: Constitutional Decision Plane (CDP)  
-Date: May 3, 2026
+Date: May 17, 2026
 
 ## Abstract
 
@@ -12,6 +12,58 @@ This RFC defines the canonical index, numbering scheme, status taxonomy, folder 
 The Series Index is the controlling map for the CDP RFC corpus. It does not define protocol behavior directly. It defines how protocol documents are organized, numbered, promoted, superseded, deprecated, and discovered.
 
 A constitutional protocol suite must remember its own structure. This document makes that structure explicit.
+
+---
+
+## 0. Reader Path — Map Diet
+
+This document is the first stop for new collaborators.
+
+Its job is deliberately narrow:
+
+1. show the canonical RFC map;
+2. distinguish canonical material from staging material;
+3. explain numbering bands;
+4. define status and promotion rules;
+5. point readers to the right next document.
+
+This document does **not** adjudicate every open architecture question.
+
+In particular, the following remain active design questions until separately adjudicated and promoted:
+
+- whether Standing becomes its own RFC or remains part of Authority / CBBs;
+- whether Legitimize needs major revision or renaming;
+- whether Decision Envelope precedes Common Building Blocks;
+- whether Human-Readable Surface requirements are standalone or per-RFC;
+- how the Nemawashi / Framing layer is governed.
+
+### 0.1 New Collaborator Entry Points
+
+| Reader Goal | Start Here | Then Read |
+|---|---|---|
+| Understand CDP quickly | `README.md` | `rfc/RFC-CDP-000-Series-Index.md` |
+| Understand the RFC corpus | this file | `RFC-CDP-001-Vision-Scope-Principles.md` |
+| Understand architecture | this file | `RFC-CDP-010-Reference-Architecture.md` |
+| Draft or review schemas | section 6.3 | Core Objects and Schemas band (`020–029`) |
+| Review lifecycle protocols | section 6.5 | Lifecycle Protocols band (`040–049`) |
+| Join active collaboration | `collab/INDEX.md` | active session files under `collab/sessions/` |
+| Promote working notes to canon | section 10 | relevant canonical RFC target |
+
+### 0.2 Current Session 001 Adjudication
+
+Session 001 accepted one narrow canonical move:
+
+> Create or refine the RFC Series Index / Map first.
+
+This does **not** promote every proposal from the Session 001 collaboration record.
+
+The following Session 001 proposals remain in `collab/` until separately adjudicated:
+
+- Standing primitive proposal;
+- Decision Envelope sequencing proposal;
+- Legitimize precision challenge;
+- Framing / Nemawashi governance proposal;
+- schema drift mechanism options.
 
 ---
 
@@ -331,6 +383,24 @@ A staging draft MAY be promoted to canonical when:
 
 Promotion SHOULD preserve history where possible. If repository tooling cannot preserve history through a true move, the promotion record MUST be preserved in this index.
 
+### 10.1 Collaboration-to-Canon Path
+
+Working material in `collab/` is not canonical by default.
+
+The expected promotion path is:
+
+```text
+collab session -> challenge memo -> moderator adjudication -> RFC/schema update
+```
+
+A collaboration artifact may be promoted only when:
+
+1. the moderator records the decision;
+2. the canonical target is named;
+3. the promoted text is rewritten for RFC form;
+4. unresolved dissent is either resolved, preserved, or explicitly deferred;
+5. this Series Index is updated if a new RFC number or status changes.
+
 ---
 
 ## 11. Supersession and Deprecation
@@ -374,4 +444,4 @@ A constitutional system should remember its own renamings.
 
 This Series Index is the canonical map for the CDP RFC corpus.
 
-It defines the numbering bands, canonical files, folder policy, status taxonomy, legacy mapping, promotion rules, and repair/remedy spine needed to keep the protocol suite legible, auditable, contestable, and repairable over time.
+It defines the numbering bands, canonical files, folder policy, status taxonomy, legacy mapping, promotion rules, collaboration-to-canon path, and repair/remedy spine needed to keep the protocol suite legible, auditable, contestable, and repairable over time.
