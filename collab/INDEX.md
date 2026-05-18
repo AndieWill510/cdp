@@ -4,7 +4,9 @@ This index tracks active and completed collaboration sessions.
 
 ## Active Sessions
 
-None.
+| Session | Topic | Status | Moderator | Canon Target |
+|---|---|---|---|---|
+| [004](sessions/004-governed-path-hash.md) | Governed Path Hash | active | Andie | RFC-CDP-023-Decision-Lifecycle-Envelope.md |
 
 ## Closed Sessions
 
