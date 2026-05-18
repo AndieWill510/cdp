@@ -4,15 +4,14 @@ This index tracks active and completed collaboration sessions.
 
 ## Active Sessions
 
-| Session | Topic | Status | Moderator | Canon Target |
-|---|---|---|---|---|
-| [002](sessions/002-standing-and-recusal.md) | Standing and Recusal | active | Andie | TBD — possible Authority / AIITL / CBB target |
+None.
 
 ## Closed Sessions
 
 | Session | Topic | Status | Moderator | Canon Target |
 |---|---|---|---|---|
 | [001](sessions/001-rfc-completeness-coherency-readability.md) | RFC completeness, coherency, and human readability review | closed-promoted | Andie | RFC-CDP-000-Series-Index.md |
+| [002](sessions/002-standing-and-recusal.md) | Standing and Recusal | closed-promoted | Andie | RFC-CDP-033-Standing-and-Recusal-Model.md; RFC-CDP-001 alignment; RFC-CDP-000 map update |
 
 ## Session Status Values
 
@@ -35,5 +34,7 @@ Nothing currently queued.
 - What is the minimum human-readable surface required for each protocol?
 - How should machine-readable schemas and human-readable explanations be kept synchronized?
 - How do we make human-in-the-loop structurally real rather than human-in-the-pile theater?
-- Should Standing and Recusal become a distinct RFC or remain within Authority / AIITL materials?
 - Does Legitimize need a precision rewrite or a new name?
+- Should the Standing Record schema be stabilized in RFC-CDP-033 or moved to a dedicated schema RFC?
+- Should lifecycle RFCs reference RFC-CDP-033 Standing and Recusal now, or only after schema stabilization?
+- How should AI Functional Standing integrate with RFC-CDP-062 HITL-AIITL Role Boundaries?
