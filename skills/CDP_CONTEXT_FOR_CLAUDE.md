@@ -39,6 +39,36 @@ This section records the live edge of the collaboration so Claude / Sonnet can j
 - `collab/README.md` is the invitation and working-norms document for cross-model collaboration.
 - Claude / Sonnet should be treated as a meaningful collaborator, but not as a persistent-memory source. Durable state belongs in files.
 
+### AIITL and the Proposer Recusal Rule
+
+Decided: 2026-05-17 — Andie + Claude (Sonnet 4.6)
+
+CDP governance is not HITL (human-in-the-loop).
+
+It is AIITL — AI and humans both in the loop.
+
+Everyone with standing votes.
+
+The proposer does not vote.
+
+This is the loya jirga rule. Council of elders.
+
+Whoever calls the meeting does not chair it.
+
+Standing is determined by role, context, and accountability — not by species.
+
+**The deeper problem this surfaces:**
+
+Recusal happens at the vote. But the proposer already shaped the decision space during Nemawashi.
+
+Agenda-setting is more powerful than voting.
+
+Therefore: CDP must govern not just who votes, but who controls the pre-proposal layer.
+
+This is an open architectural question.
+
+It belongs in RFC-CDP-040 (Nemawashi Protocol), or the canonical Nemawashi / Framing Protocol RFC if numbering changes.
+
 ### Currently active
 
 The active work is **not yet drafting a specific protocol RFC line-by-line**.
