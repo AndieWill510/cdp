@@ -17,6 +17,24 @@ A human should be able to open one conversation file and quickly answer:
 - What should move into canonical RFCs or schemas?
 - What is only working material?
 
+## RFC-First Adjudication Rule
+
+When Andie approves a decision, the default action is to create or update the relevant canonical RFC artifact.
+
+Do not leave approved decisions only in `collab/` unless Andie explicitly says the decision is discussion-only.
+
+The default path is:
+
+```text
+collab decision -> RFC draft/update -> Series Index update when needed -> collab record updated
+```
+
+A decision may still carry open questions, dissent, or unresolved implementation details, but those should be represented inside the RFC as Draft limitations or open issues rather than left as invisible chat residue.
+
+In short:
+
+> Approved means artifact.
+
 ## Preferred Structure
 
 Use **one Markdown file per collaboration session**.
@@ -67,7 +85,7 @@ Use this rhythm inside the shared file:
 2. Invite critique.
 3. Preserve dissent.
 4. Human adjudicates.
-5. Promote accepted material into canon.
+5. Promote accepted material into RFC canon.
 6. Record what remains open.
 ```
 
@@ -111,7 +129,7 @@ Canonical material belongs in:
 
 Do not let `collab/` become the hidden constitution.
 
-If something matters, promote it.
+If something matters and is approved, promote it into an RFC or other canonical artifact.
 
 ## Naming Rules
 
@@ -168,6 +186,8 @@ PROMOTE WITH CHANGES:
 DO NOT PROMOTE:
 DEFER:
 ```
+
+For approved decisions, `PROMOTE TO CANON` or `PROMOTE WITH CHANGES` normally means an RFC file is created or updated immediately.
 
 This is how CDP avoids becoming human-in-the-pile governance theater.
 
