@@ -3,12 +3,27 @@
 ```text
 SESSION: 001-rfc-completeness-coherency-readability
 DATE_OPENED: 2026-05-17
+DATE_CLOSED: 2026-05-17
 MODERATOR: Andie
-STATUS: active
+STATUS: closed-promoted
 MODE: shared-chat-file
-CANON_TARGET: RFC family, possible Common Building Blocks RFC, possible Decision Envelope RFC, human-readable surface requirements
+CANON_TARGET: RFC-CDP-000-Series-Index.md
 PURPOSE: Review CDP RFCs for completeness, coherency, and human readability while preventing human-in-the-pile governance theater.
 ```
+
+## Closure Note
+
+Session 001 is closed as **map-first adjudicated**.
+
+The promoted canonical result is the Draft v0.3 refinement of:
+
+```text
+rfc/RFC-CDP-000-Series-Index.md
+```
+
+All other Session 001 proposals remain unpromoted unless separately adjudicated in later sessions.
+
+---
 
 ## How to Use This File
 
@@ -903,3 +918,52 @@ DEFER:
 - Implementation schemas
 - Security and audit profiles
 ```
+
+---
+
+## Turn 006 — 2026-05-17 — Andie / ChatGPT — Session 001 Closure
+
+```text
+DATE: 2026-05-17
+AUTHOR: Andie, recorded by ChatGPT
+ROLE: moderator / session closer
+STATUS: closed-promoted
+PURPOSE: Record Decision 001 approval and close Session 001.
+```
+
+### Decision 001
+
+Approve closure of Session 001 as **map-first adjudicated**.
+
+### Closure Status
+
+Session 001 is closed with one promoted canonical result:
+
+```text
+rfc/RFC-CDP-000-Series-Index.md
+```
+
+### Promoted
+
+- RFC Series Index / Map refinement.
+
+### Not Promoted
+
+The following remain available for future sessions but are not canonized by this closure:
+
+- Standing primitive proposal;
+- Decision Envelope seed / sequencing proposal;
+- Legitimize precision challenge;
+- Framing / Nemawashi governance proposal;
+- schema drift mechanism options;
+- lifecycle protocol revisions.
+
+### Next Session Candidates
+
+Future sessions may take up one decision at a time:
+
+1. Standing and Recusal;
+2. Decision Envelope seed;
+3. Legitimize precision;
+4. Framing / Nemawashi governance;
+5. schema drift controls.
