@@ -4,7 +4,9 @@ This index tracks active and completed collaboration sessions.
 
 ## Active Sessions
 
-None.
+| Session | Topic | Status | Moderator | Canon Target |
+|---|---|---|---|---|
+| [002](sessions/002-standing-and-recusal.md) | Standing and Recusal | active | Andie | TBD — possible Authority / AIITL / CBB target |
 
 ## Closed Sessions
 
