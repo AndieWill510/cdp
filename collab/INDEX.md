@@ -4,9 +4,13 @@ This index tracks active and completed collaboration sessions.
 
 ## Active Sessions
 
+None.
+
+## Closed Sessions
+
 | Session | Topic | Status | Moderator | Canon Target |
 |---|---|---|---|---|
-| [001](sessions/001-rfc-completeness-coherency-readability.md) | RFC completeness, coherency, and human readability review | active | Andie | RFC family, possible CBB / Envelope RFC |
+| [001](sessions/001-rfc-completeness-coherency-readability.md) | RFC completeness, coherency, and human readability review | closed-promoted | Andie | RFC-CDP-000-Series-Index.md |
 
 ## Session Status Values
 
@@ -20,7 +24,7 @@ This index tracks active and completed collaboration sessions.
 
 ## Canon Promotion Queue
 
-Nothing yet.
+Nothing currently queued.
 
 ## Open Cross-Session Questions
 
@@ -29,3 +33,5 @@ Nothing yet.
 - What is the minimum human-readable surface required for each protocol?
 - How should machine-readable schemas and human-readable explanations be kept synchronized?
 - How do we make human-in-the-loop structurally real rather than human-in-the-pile theater?
+- Should Standing and Recusal become a distinct RFC or remain within Authority / AIITL materials?
+- Does Legitimize need a precision rewrite or a new name?
