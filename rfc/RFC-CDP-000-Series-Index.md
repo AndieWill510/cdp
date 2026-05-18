@@ -1,7 +1,7 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.4  
+Status: Draft v0.5  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 17, 2026
 
@@ -82,6 +82,15 @@ The following Session 002 questions remain open within the RFC and collaboration
 - lifecycle protocol updates referencing Standing.
 
 Session 002 also prompted a load-bearing check against `RFC-CDP-001-Vision-Scope-Principles.md`. That check resulted in RFC 001 being updated to Draft v0.6 so the vision layer explicitly supports constitutional standing as axiomatic.
+
+### 0.4 Current Session 003 Adjudication
+
+Session 003 split envelope semantics into two canonical RFCs:
+
+- `RFC-CDP-021-Wire-Message-Envelope-Schema` — per-message protocol envelope;
+- `RFC-CDP-023-Decision-Lifecycle-Envelope` — per-decision governed path index.
+
+This split prevents the wire-message transport object and the decision lifecycle governance object from becoming one overloaded schema.
 
 ---
 
@@ -177,7 +186,7 @@ Rules:
 |---:|---|---|
 | `000–009` | Series / Constitutional Frame | index, vision, scope, principles, terminology, doctrine |
 | `010–019` | Reference Architecture | architecture, topology, layers, threat model, trust model |
-| `020–029` | Core Objects and Schemas | Decision object, Envelope, payload registry, artifact schemas |
+| `020–029` | Core Objects and Schemas | Decision object, wire envelopes, lifecycle envelopes, payload registry, artifact schemas |
 | `030–039` | Trust, Identity, and Authority | Identify, Attest, authority, delegation, standing, recusal, revocation |
 | `040–049` | Lifecycle Protocols | Nemawashi, Propose, Challenge, Test, Adjudicate, Legitimize, Execute, Record, Learn |
 | `050–059` | Execution Safety, Rollback, and Remedy | queued execution, maturity gates, presence, emergency override, kill switch, rollback, compensation, remedy |
@@ -230,7 +239,7 @@ Depends On:
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
-| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v0.4 |
+| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v0.5 |
 | `001` | Vision, Scope, and Principles | `RFC-CDP-001-Vision-Scope-Principles.md` | Draft v0.6 |
 
 ### 6.2 Reference Architecture
@@ -244,8 +253,9 @@ Depends On:
 | RFC | Title | File | Status |
 |---:|---|---|---|
 | `020` | Decision Object Schema | `RFC-CDP-020-Decision-Object-Schema.md` | Draft |
-| `021` | Envelope Schema | `RFC-CDP-021-Envelope-Schema.md` | Draft |
+| `021` | Wire Message Envelope Schema | `RFC-CDP-021-Envelope-Schema.md` | Draft v0.4 |
 | `022` | Protocol Payload Schema Registry | `RFC-CDP-022-Protocol-Payload-Schema-Registry.md` | Draft |
+| `023` | Decision Lifecycle Envelope | `RFC-CDP-023-Decision-Lifecycle-Envelope.md` | Draft v0.1 |
 
 ### 6.4 Trust, Identity, and Authority
 
