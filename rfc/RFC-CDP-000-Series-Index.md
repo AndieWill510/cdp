@@ -1,7 +1,7 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.5  
+Status: Draft v0.6  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 17, 2026
 
@@ -91,6 +91,12 @@ Session 003 split envelope semantics into two canonical RFCs:
 - `RFC-CDP-023-Decision-Lifecycle-Envelope` — per-decision governed path index.
 
 This split prevents the wire-message transport object and the decision lifecycle governance object from becoming one overloaded schema.
+
+### 0.5 Current Session 004 Adjudication
+
+Session 004 defined `governed_path_hash` for the Decision Lifecycle Envelope.
+
+RFC-CDP-023 was advanced to Draft v0.2 with a canonicalized Governed Path Manifest, referenced record hashes, canonicalization rules, and supersession/update behavior.
 
 ---
 
@@ -239,7 +245,7 @@ Depends On:
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
-| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v0.5 |
+| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v0.6 |
 | `001` | Vision, Scope, and Principles | `RFC-CDP-001-Vision-Scope-Principles.md` | Draft v0.6 |
 
 ### 6.2 Reference Architecture
@@ -255,7 +261,7 @@ Depends On:
 | `020` | Decision Object Schema | `RFC-CDP-020-Decision-Object-Schema.md` | Draft |
 | `021` | Wire Message Envelope Schema | `RFC-CDP-021-Envelope-Schema.md` | Draft v0.4 |
 | `022` | Protocol Payload Schema Registry | `RFC-CDP-022-Protocol-Payload-Schema-Registry.md` | Draft |
-| `023` | Decision Lifecycle Envelope | `RFC-CDP-023-Decision-Lifecycle-Envelope.md` | Draft v0.1 |
+| `023` | Decision Lifecycle Envelope | `RFC-CDP-023-Decision-Lifecycle-Envelope.md` | Draft v0.2 |
 
 ### 6.4 Trust, Identity, and Authority
 
