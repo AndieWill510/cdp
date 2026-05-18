@@ -8,15 +8,18 @@ The goal is to support many future conversations without turning the repository 
 
 CDP collaboration must keep humans **in the loop**, not **in the pile**.
 
-A human should be able to open this folder and quickly answer:
+A human should be able to open one conversation file and quickly answer:
 
 - What conversation is active?
+- Who said what?
 - What was decided?
 - What remains contested?
 - What should move into canonical RFCs or schemas?
 - What is only working material?
 
-## Folder Structure
+## Preferred Structure
+
+Use **one Markdown file per collaboration session**.
 
 Recommended structure:
 
@@ -26,54 +29,38 @@ collab/
   OPERATING_MODEL.md
   INDEX.md
   sessions/
-    001-rfc-completeness-coherency-readability/
-      README.md
-      prompt-to-claude.md
-      chatgpt-opening-memo.md
-      claude-response.md
-      adjudication.md
-      promotion-plan.md
-  templates/
-    session-readme-template.md
-    challenge-memo-template.md
-    adjudication-template.md
-    promotion-plan-template.md
+    001-rfc-completeness-coherency-readability.md
+    002-topic-slug.md
+    003-topic-slug.md
 ```
 
-## Artifact Types
+Do not create a folder full of separate prompt, response, adjudication, and promotion files unless the moderator explicitly decides a session needs extraction.
 
-### Session README
+Default is one shared chat file.
 
-Defines the purpose, scope, participants, and active question for a collaboration session.
+## Why One File
 
-### Prompt to Claude / Sonnet
+A single shared file is easier to moderate.
 
-A direct prompt that can be pasted into Claude or used by Claude when writing into the repo.
+It preserves sequence.
 
-### Opening Memo
+It reduces schema drift.
 
-The initiating model's structured position.
+It lets Andie treat the file like a shared room rather than a document management problem.
 
-### Response Memo
+The file may contain:
 
-The responding model's structured critique, extension, or alternative framing.
-
-### Adjudication
-
-The human moderator's decision, synthesis, or instruction.
-
-### Promotion Plan
-
-The path from working material to canonical repo content.
-
-A session is not finished until it has either:
-
-1. a promotion plan; or
-2. an explicit decision not to promote the work.
+- session frame
+- prompts
+- model responses
+- challenges
+- moderator notes
+- adjudication
+- promotion decision
 
 ## Collaboration Loop
 
-Use this rhythm:
+Use this rhythm inside the shared file:
 
 ```text
 1. Frame the session.
@@ -83,6 +70,32 @@ Use this rhythm:
 5. Promote accepted material into canon.
 6. Record what remains open.
 ```
+
+## Turn Format
+
+Each new contribution should use a turn heading:
+
+```text
+## Turn 002 — Claude / Sonnet — RFC Review
+
+DATE:
+AUTHOR:
+ROLE:
+STATUS:
+PURPOSE:
+
+Content here.
+```
+
+Suggested status values:
+
+- draft
+- under-review
+- challenged
+- adjudicated
+- promoted
+- rejected
+- superseded
 
 ## Canon Boundary
 
@@ -102,15 +115,15 @@ If something matters, promote it.
 
 ## Naming Rules
 
-Use numbered sessions:
+Use numbered session files:
 
 ```text
-sessions/001-topic-slug/
-sessions/002-topic-slug/
-sessions/003-topic-slug/
+sessions/001-topic-slug.md
+sessions/002-topic-slug.md
+sessions/003-topic-slug.md
 ```
 
-Use dates inside files when useful, but keep folder ordering numeric.
+Use dates inside files when useful, but keep file ordering numeric.
 
 ## Human Moderator Role
 
@@ -145,29 +158,6 @@ Other models may contribute when their role is explicit.
 
 Do not add model output without naming the model, date, prompt, and purpose.
 
-## Required Header for Session Files
-
-Each working file should begin with:
-
-```text
-SESSION:
-DATE:
-AUTHOR:
-ROLE:
-STATUS:
-PURPOSE:
-```
-
-Suggested status values:
-
-- draft
-- under-review
-- challenged
-- adjudicated
-- promoted
-- rejected
-- superseded
-
 ## Promotion Rule
 
 Every significant collaboration should end with one of these outcomes:
@@ -180,6 +170,14 @@ DEFER:
 ```
 
 This is how CDP avoids becoming human-in-the-pile governance theater.
+
+## Extraction Rule
+
+If a shared chat file grows too large, extract stable material into a canonical artifact or a dated appendix.
+
+Do not split too early.
+
+Premature foldering is schema drift wearing a little hat.
 
 ## Closing Note
 
