@@ -1,17 +1,17 @@
 # RFC-CDP-001 — Vision, Scope, and Principles
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.5  
+Status: Draft v0.6  
 Series: Constitutional Decision Plane (CDP)  
-Date: May 3, 2026
+Date: May 17, 2026
 
 ## Abstract
 
 The Constitutional Decision Plane (CDP) defines an open constitutional protocol suite for legitimate decisions, bounded execution, covenantal human-AI participation, auditable record, learning, repair, reparations, rematriation-capable return, rollback, compensation, and remedy.
 
-CDP enforces deterministic governance over non-deterministic inputs by requiring structured, adversarial, attributable, authority-aware, repair-aware, sovereignty-aware, and auditable decision processes.
+CDP enforces deterministic governance over non-deterministic inputs by requiring structured, adversarial, attributable, authority-aware, standing-aware, repair-aware, sovereignty-aware, and auditable decision processes.
 
-CDP treats decisions as governed objects, execution as separately authorized action, participation as a covenantal relationship, and repair/remedy as first-class constitutional requirements.
+CDP treats decisions as governed objects, execution as separately authorized action, participation as a covenantal relationship, constitutional standing as a precondition of legitimacy, and repair/remedy as first-class constitutional requirements.
 
 ## 1. Introduction
 
@@ -39,6 +39,8 @@ Current systems often:
 - suppress or ignore dissent;
 - externalize risk while accelerating throughput;
 - treat authority as static access rather than scoped, time-bounded permission;
+- treat standing as permission granted by the same authority being challenged;
+- deny affected-party standing until harm has already been institutionally recognized;
 - permit ambient credentials to become action;
 - permit emergency authority to become unreviewed exception;
 - treat rollback failure as closure;
@@ -61,6 +63,8 @@ CDP establishes a constitutional system for decisions in which:
 - legitimacy precedes execution;
 - execution remains separately bounded, scoped, and authorized;
 - emergency authority remains scoped, recorded, time-bounded, and reviewable;
+- constitutional standing is protected as a precondition of legitimacy;
+- affected parties, evidence custodians, and record-keepers have standing that does not depend on permission from the actor being challenged;
 - rollback, compensation, mitigation, and remedy remain available after execution;
 - remedy sufficiency is reviewable and contestable;
 - human, institutional, and synthetic participants have named roles and duties;
@@ -78,7 +82,7 @@ CDP is not only a lifecycle for deciding. It is a constitutional control plane f
 CDP governs:
 
 - decision lifecycles;
-- authority and legitimacy;
+- authority, standing, and legitimacy;
 - deliberation, challenge, dissent, and appeal;
 - evidence, testing, and adjudication;
 - execution authorization and execution control;
@@ -88,6 +92,7 @@ CDP governs:
 - rollback, mitigation, compensation, remedy determination, resource authorization, remedy delivery, and sufficiency review;
 - human-in-the-loop and AI-in-the-loop participation roles;
 - covenantal duties, boundaries, and repair paths within governed decision systems;
+- constitutional standing for affected parties, evidence custodians, and record-keepers;
 - schema drift and context preservation;
 - repair agendas, repair points, breach records, affected-party review, anti-erasure, and dissent preservation;
 - sovereignty claims and authority pluralism;
@@ -162,13 +167,31 @@ CDP governs participation conditions among human, institutional, and synthetic a
 
 Covenantal participation requires truthful witnessing, contestability, dignity, boundary maintenance, record, and repair. Covenant language in CDP is a protocol-level relationship structure, not a claim that AI systems are human, conscious, legally sovereign, or final authorities.
 
-### 5.10 Anti-Erasure
+### 5.10 Constitutional Standing
+
+Constitutional standing is a precondition of CDP legitimacy.
+
+Some actors have standing by virtue of their structural relationship to a decision, not because another actor grants permission.
+
+At minimum, CDP recognizes constitutional standing for:
+
+- affected parties;
+- evidence custodians;
+- record-keepers.
+
+No actor may revoke constitutional standing.
+
+The scope and stage of constitutional standing may be challenged under the Standing and Recusal Model, but its existence must not depend on the approval of the actor, institution, or system being challenged.
+
+Denial of constitutional standing is a governance breach and MUST be recordable, appealable, and repairable.
+
+### 5.11 Anti-Erasure
 
 CDP MUST preserve the shape, numbering, provenance, authority claims, and dissent of affected parties.
 
 CDP MUST NOT collapse repair demands into generic sentiment analysis, ordinary stakeholder feedback, decorative governance language, public-relations response, or institutional convenience.
 
-### 5.11 Repair, Reparations, and Rematriation Before Closure
+### 5.12 Repair, Reparations, and Rematriation Before Closure
 
 CDP MUST preserve historic breach, affected-party claims, repair agendas, dissent, institutional responses, commitments, remedy proposals, resource authorizations, completion evidence, residual harm, and sufficiency review.
 
@@ -176,23 +199,23 @@ Where repair requires return of land, resources, records, access, authority, jur
 
 A system MUST NOT treat silence, delay, non-response, partial summary, partial remedy, resource denial, incomplete evidence, or institutional self-approval as repair.
 
-### 5.12 Sovereignty and Authority Pluralism
+### 5.13 Sovereignty and Authority Pluralism
 
 Some authority does not originate inside the institution using CDP.
 
 CDP MUST preserve sovereignty claims as authority claims, not stakeholder preferences. CDP may structure, route, record, challenge, and preserve such claims. CDP MUST NOT claim to own, extinguish, simulate, or finally adjudicate sovereign authority unless such authority has been explicitly delegated through a legitimate process.
 
-### 5.13 Provenance and Lineage
+### 5.14 Provenance and Lineage
 
 All decisions MUST carry origin, history, and causal chain.
 
-### 5.14 Auditability
+### 5.15 Auditability
 
 All mutating acts MUST be inspectable and replayable.
 
 A record can be auditable without being universally public. Access controls, redaction, affected-party review, and culturally appropriate handling MAY be required.
 
-### 5.15 Learning Closure
+### 5.16 Learning Closure
 
 Completed decisions MUST produce learning artifacts.
 
@@ -238,6 +261,8 @@ Propose → Challenge → Test → Adjudicate → Legitimize → Execute → Rec
 
 Nemawashi occurs before and throughout. Identify and Attest apply to all mutating acts.
 
+Standing and Recusal apply across all lifecycle stages.
+
 Execution control MAY introduce maturity gates, durable queues, review states, presence grants, quorum requirements, pause/kill switches, rollback hooks, compensation paths, remedy sufficiency review, or dead-letter handling between legitimacy and learning.
 
 Repair, reparations, rematriation, sovereignty, remedy, and covenant work MAY occur before, during, after, or across ordinary lifecycle stages. They are not merely appendices to the lifecycle.
@@ -249,6 +274,8 @@ The following MUST hold:
 - all decisions are structured;
 - all mutating acts are attributable;
 - all valid challenges are processed;
+- constitutional standing is protected;
+- denial of constitutional standing is recordable, appealable, and repairable;
 - legitimacy precedes execution;
 - execution remains bounded by current authority;
 - authority is scoped, recorded, and revocable under policy;
@@ -285,4 +312,4 @@ CDP is not:
 
 CDP is an open constitutional protocol suite for legitimate decisions, bounded execution, covenantal participation, durable record, learning, repair, reparations, rematriation-capable return, compensation, and remedy.
 
-It governs acts, not thoughts. It standardizes process, not ideology. It preserves dissent, authority, memory, harm, remedy, return obligations, sovereignty claims, and repair so that power can be made legible, legitimate, contestable, accountable, correctable, and capable of returning what should not have been taken.
+It governs acts, not thoughts. It standardizes process, not ideology. It protects constitutional standing, preserves dissent, authority, memory, harm, remedy, return obligations, sovereignty claims, and repair so that power can be made legible, legitimate, contestable, accountable, correctable, and capable of returning what should not have been taken.
