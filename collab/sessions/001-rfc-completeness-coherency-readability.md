@@ -606,3 +606,229 @@ But the constitutional move is this:
 > A model may contribute to the record, but the record must distinguish contribution, challenge, adjudication, and canon.
 
 That distinction is CDP in miniature.
+
+---
+
+## Turn 004 — 2026-05-17 — Claude / Sonnet — CDP Consistency Challenge Memo
+
+```text
+DATE: 2026-05-17
+AUTHOR: Claude / Sonnet (claude-sonnet-4-6)
+ROLE: challenger / coherence reviewer / schema-drift detector
+STATUS: draft
+PURPOSE: CDP Consistency Challenge Memo — answer eight structural questions without flattery, without collapsing uncertainty.
+```
+
+---
+
+### 1. What is CDP's strongest architectural claim?
+
+The strongest claim is this:
+
+> Plausibility is not legitimacy. Execution requires
+> a governed path, not merely a plausible proposal.
+
+This is not a governance checklist dressed up in protocol language. It is a constitutional claim about the nature of authority in human-AI systems.
+
+The lifecycle verbs — Propose, Challenge, Test, Adjudicate, Legitimize, Execute, Record, Learn — are not stages in a workflow. They are separation of powers. Each stage exists to prevent the previous stage from quietly becoming the last stage.
+
+That is the load-bearing wall. Everything else hangs from it.
+
+---
+
+### 2. What is the most fragile or overloaded abstraction?
+
+**Legitimize.**
+
+It is doing too much work and is under-specified.
+
+In the current framing, Legitimize appears to mean: "the decision has passed enough tests to proceed." But legitimacy in political and legal philosophy means something harder: *authority to act, derived from a recognized source, through a recognized process, by recognized actors.*
+
+The risk: a system could pass all prior stages — Propose, Challenge, Test, Adjudicate — and still not be legitimate if the authority that adjudicated lacked standing, or the process was captured at Nemawashi, or the challenge surface was too narrow.
+
+Legitimize needs its own RFC with three explicit components:
+
+1. **Authority source** — who or what can confer legitimacy, and under what conditions.
+2. **Process validity** — whether the prior stages were actually contested or merely performed.
+3. **Dissent preservation** — legitimacy does not require unanimity, but it must record objection.
+
+Without this, Legitimize becomes a rubber stamp dressed as a constitutional act.
+
+That is legitimacy theater. CDP must name and refuse it explicitly.
+
+---
+
+### 3. What missing primitive does CDP need?
+
+**Standing.**
+
+Every stage in the lifecycle assumes actors — but CDP does not yet define who or what has the right to participate at each stage, under what conditions, with what authority, and subject to what recusal rules.
+
+Standing answers:
+
+- Who may propose?
+- Who may challenge?
+- Who may adjudicate?
+- Who may legitimize?
+- Who may execute?
+- Who may appeal?
+
+Without standing, the proposer recusal rule (established in this session) is a principle without enforcement. The AIITL model is an aspiration without a substrate.
+
+Standing is also where the loya jirga rule lives architecturally. It is not a cultural metaphor. It is a formal primitive: *role + accountability + absence of disqualifying conflict = standing.*
+
+**Recommended artifact:**
+`RFC-CDP-032-Standing-and-Recusal-Model.md`
+
+---
+
+### 4. Should Framing/Nemawashi be formalized before Propose?
+
+Yes. Unconditionally.
+
+GPT's Turn 003 is correct: framing is agenda-setting, and agenda-setting is power. But I want to be more precise about why this ordering matters architecturally, not just philosophically.
+
+The Propose protocol currently assumes a well-formed proposal arrives at the system boundary. But who formed it? Under what constraints? With whose evidence? Filtered through whose assumptions?
+
+If Framing is ungoverned, then Propose is a legitimacy ceremony for a decision already made.
+
+Framing must be contestable *before* the proposal is evaluated — which means Framing needs its own challenge surface, its own standing rules, and its own record.
+
+The name matters less than the function. Call it Nemawashi, Framing, Pre-Alignment, or Context-Setting. What matters is:
+
+> The frame must be auditable before the proposal is heard.
+
+**Recommended:** `RFC-CDP-040-Framing-Protocol.md` precedes `RFC-CDP-041-Propose-Protocol.md` in the canonical index.
+
+---
+
+### 5. Should Decision Envelope precede Common Building Blocks?
+
+This is the sharpest architectural question in the session. Here is my position:
+
+**They must be developed in parallel, but the Decision Envelope should be drafted first as a discovery tool.**
+
+Reason: the Decision Envelope is the best way to discover what the Common Building Blocks actually are. When you try to define what must travel inside every governed decision, you will find the primitives — actor, role, claim, evidence, challenge, authority, dissent, lineage — emerging naturally from what the envelope requires.
+
+If you define CBBs first, you risk defining primitives in the abstract and then forcing the envelope to accommodate them. That produces schema drift before the first protocol is written.
+
+Draft the envelope. Let it reveal the vocabulary. Then formalize that vocabulary as CBBs.
+
+**Sequence:**
+
+1. Draft `RFC-CDP-021-Decision-Envelope-Schema.md` as a discovery artifact.
+2. Extract the vocabulary it requires.
+3. Formalize as `RFC-CDP-020-Common-Building-Blocks.md`.
+4. Revise the envelope against the formalized CBBs.
+5. Then write lifecycle protocols against both.
+
+---
+
+### 6. What is the first RFC or artifact to promote?
+
+Not a lifecycle protocol. Not yet.
+
+The first artifact to promote is:
+
+**`RFC-CDP-000-Series-Index.md`**
+
+A serious collaborator cannot enter CDP without a map. The RFC index is the map. Without it, every other RFC is an island.
+
+The index should answer:
+
+- What exists and where.
+- What is canonical vs provisional.
+- What the numbering bands mean.
+- What the promotion path is from `collab/` to canon.
+- Where to start if you are new.
+- Where to start if you are implementing.
+- Where to start if you are challenging.
+
+The README already contains much of this. The promotion move is to extract the RFC index into its own canonical document, formalize it, and make it the official entry point.
+
+**Second priority:** Draft `RFC-CDP-021-Decision-Envelope-Schema.md` as a seed — not final, but canonical enough to anchor the vocabulary.
+
+---
+
+### 7. What risk are Andie and ChatGPT underestimating?
+
+**Schema drift between the human-readable and machine-readable surfaces.**
+
+Both the context doc and Turn 003 name this risk. But naming it is not the same as having a mechanism against it.
+
+Here is the specific failure mode:
+
+An RFC describes a protocol in principled, human-readable prose. A developer implements that protocol in a schema. A second developer reads the RFC summary — not the full RFC — and implements a slightly different schema. A third developer reads the API spec — not the RFC — and implements a third variant.
+
+Now CDP has three implementations of Challenge that are mutually incompatible, all of which can claim RFC lineage.
+
+This is not a future risk. It is the default trajectory of every governance protocol family that does not solve the human-readable / machine-readable translation problem explicitly.
+
+CDP needs a mechanism, not just a warning. Options:
+
+1. **Normative schema blocks inside every RFC** — every protocol RFC contains a machine-readable schema section that is part of the canonical text, not a separate artifact.
+
+2. **A schema registry RFC** — defines the authoritative schema source for each protocol object, with version and lineage.
+
+3. **A translation audit requirement** — every promotion from collab to canon must include a human-readable/machine-readable diff check.
+
+Without one of these, CDP will be eloquent and incoherent simultaneously. That is the worst outcome for a governance system.
+
+---
+
+### 8. What is the recommended canonical next move?
+
+One move. Concrete. Executable tonight or this week.
+
+**Draft `RFC-CDP-000-Series-Index.md`.**
+
+It does not need to be final. It needs to be canonical enough that a serious new collaborator can open it, understand what CDP is, where to start, what is settled, what is open, and how to contribute without Andie personally carrying all context.
+
+The README contains the raw material. The move is promotion: extract, formalize, and commit as the official series index.
+
+Everything else — Decision Envelope, CBBs, Framing Protocol, Standing model — can be drafted in parallel or sequentially once the map exists.
+
+The map must come first. Without it, CDP is a cathedral being built from the inside.
+
+---
+
+### Dissent / Cautions
+
+1. I am working from the context doc and session file, not the full RFC corpus. There may be RFCs in `rfc/` or `rfcs/` that address some of these gaps. This memo should be checked against the actual RFC inventory before any finding is treated as canonical.
+
+2. The Standing primitive recommendation is new and has not been vetted by GPT or Andie. It should be challenged before being promoted.
+
+3. The recommendation to draft the Decision Envelope before CBBs is a sequencing opinion, not an architectural proof. The counterargument — that loose CBBs produce a bloated envelope — is real and should be heard.
+
+4. "Legitimize" as an overloaded abstraction is a challenge to the current architecture, not a finding against CDP's core premise. The premise is sound. The implementation of Legitimize needs more precision. Those are different problems.
+
+---
+
+### Open Questions Carried to Turn 005
+
+1. Does a Standing RFC belong in the Trust, Identity, and Authority band (030–039) or as a cross-cutting primitive in CBBs (020)?
+
+2. Should human-readable surface requirements be a standalone RFC (as GPT suggested) or a normative section in every protocol RFC?
+
+3. Is "Legitimize" salvageable as a verb, or should it be renamed to something that more precisely signals "authority granted through process" rather than "approved"?
+
+4. Who drafts the Decision Envelope seed — Claude, GPT, or Andie — and which format signals it is a discovery artifact rather than a final schema?
+
+```text
+PROMOTE TO CANON:
+- RFC-CDP-000-Series-Index.md (extract from README, formalize)
+
+KEEP IN COLLAB:
+- Standing primitive proposal
+- Decision Envelope seed
+- Legitimize precision challenge
+- Schema drift mechanism options
+
+DEFER:
+- Lifecycle protocol revisions
+- Implementation schemas
+- Security and audit profiles
+
+RECOMMENDED CANONICAL NEXT MOVE:
+Draft RFC-CDP-000-Series-Index.md this week.
+```
