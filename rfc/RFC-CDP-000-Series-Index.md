@@ -65,6 +65,22 @@ The following Session 001 proposals remain in `collab/` until separately adjudic
 - Framing / Nemawashi governance proposal;
 - schema drift mechanism options.
 
+### 0.3 Current Session 002 Adjudication
+
+Session 002 accepted one narrow canonical move:
+
+> Reserve RFC-CDP-033 for a Standing and Recusal Model.
+
+This reservation acknowledges Standing and Recusal as a first-class candidate primitive without promoting the full Session 002 challenge memo, schema seed, AI functional standing framework, or tiered recusal model into canon.
+
+The following Session 002 proposals remain in `collab/` until separately adjudicated:
+
+- minimum viable standing schema;
+- functional standing framework for AI participants;
+- tiered recusal model;
+- root authority / constitutional standing question;
+- lifecycle protocol updates referencing Standing.
+
 ---
 
 ## 1. Purpose
@@ -160,7 +176,7 @@ Rules:
 | `000–009` | Series / Constitutional Frame | index, vision, scope, principles, terminology, doctrine |
 | `010–019` | Reference Architecture | architecture, topology, layers, threat model, trust model |
 | `020–029` | Core Objects and Schemas | Decision object, Envelope, payload registry, artifact schemas |
-| `030–039` | Trust, Identity, and Authority | Identify, Attest, authority, delegation, revocation |
+| `030–039` | Trust, Identity, and Authority | Identify, Attest, authority, delegation, standing, recusal, revocation |
 | `040–049` | Lifecycle Protocols | Nemawashi, Propose, Challenge, Test, Adjudicate, Legitimize, Execute, Record, Learn |
 | `050–059` | Execution Safety, Rollback, and Remedy | queued execution, maturity gates, presence, emergency override, kill switch, rollback, compensation, remedy |
 | `060–069` | Covenant and AIITL | covenant protocol, AIITL/HITL, schema drift, consentful collaboration, relational duties |
@@ -236,6 +252,7 @@ Depends On:
 | `030` | Identify Protocol | `RFC-CDP-030-Identify-Protocol.md` | Draft |
 | `031` | Attest Protocol | `RFC-CDP-031-Attest-Protocol.md` | Draft |
 | `032` | Authority and Delegation Model | `RFC-CDP-032-Authority-and-Delegation-Model.md` | Draft |
+| `033` | Standing and Recusal Model | `RFC-CDP-033-Standing-and-Recusal-Model.md` | Reserved |
 
 ### 6.5 Lifecycle Protocols
 
