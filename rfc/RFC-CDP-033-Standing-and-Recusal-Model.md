@@ -1,11 +1,11 @@
 # RFC-CDP-033 — Standing and Recusal Model
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.1  
+Status: Draft v0.2  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 17, 2026  
-Depends On: RFC-CDP-030, RFC-CDP-031, RFC-CDP-032  
-Related: RFC-CDP-040, RFC-CDP-041, RFC-CDP-045, RFC-CDP-050, RFC-CDP-060, RFC-CDP-062
+Depends On: RFC-CDP-030, RFC-CDP-031, RFC-CDP-032, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074, RFC-CDP-075  
+Related: RFC-CDP-040, RFC-CDP-041, RFC-CDP-045, RFC-CDP-050, RFC-CDP-052, RFC-CDP-060, RFC-CDP-062
 
 ## Abstract
 
@@ -13,7 +13,7 @@ This RFC defines **Standing** and **Recusal** as first-class governance concepts
 
 Standing determines whether an actor has the recognized right or responsibility to participate in a specific CDP decision stage.
 
-Recusal determines when that standing must be suspended, limited, or transformed because of conflict, capture risk, proposer status, or compromised independence.
+Recusal determines when that standing must be suspended, limited, or transformed because of conflict, capture risk, proposer status, role conflict, or compromised independence.
 
 The purpose of this model is to prevent **authority capture through participation**: the failure mode in which the governance process appears deliberative, but the outcome is structurally predetermined by who was allowed into the room, in what capacity, and under what conflicts.
 
@@ -317,21 +317,119 @@ Standing contests SHOULD be recorded and linked to the relevant decision envelop
 
 ---
 
-## 11. Open Constitutional Root Question
+## 11. Standing Types and Constitutional Root
 
-This RFC intentionally leaves one question open:
+### 11.1 The Constitutional Root Problem
 
-> Who or what grants standing to the standing-granter?
+Standing requires a granter. But who grants standing to the standing-granter?
 
-Possible answers include:
+CDP resolves this by establishing that some standing types are **constitutional** — granted by the CDP framework itself as a precondition of legitimate governance, not by any actor within the system.
 
-1. **Constitutional standing** — some standing is granted by the CDP framework itself.
-2. **Delegated standing** — standing flows from an authority or institution.
-3. **Affected-party standing** — standing arises from being subject to potential impact.
-4. **Evidence-custodian standing** — standing arises from custody of relevant records.
-5. **Emergency standing** — standing arises temporarily under emergency conditions.
+Constitutional standing requires no granter.
 
-This question MUST be resolved before this RFC can advance beyond Draft.
+It is axiomatic within CDP.
+
+If CDP cannot guarantee standing to affected parties, evidence custodians, and record-keepers, it has no legitimate claim to govern consequential decisions. The constitutional standing types are therefore preconditions of CDP's own legitimacy, not outputs of it.
+
+The regress stops here.
+
+---
+
+### 11.2 Standing Type Taxonomy
+
+CDP recognizes the following standing types:
+
+#### Constitutional Standing
+
+Granted by the CDP framework itself.
+
+Cannot be revoked by any actor.
+
+Requires no granter within the system.
+
+Subtypes:
+
+**Affected-Party Standing**
+
+Arises when a decision may materially affect an actor. The claim of potential impact is sufficient for preliminary standing, subject to scope challenge. No actor may deny affected-party standing on the grounds that impact has not yet been proven.
+
+**Evidence-Custodian Standing**
+
+Arises from custody of decision-relevant records, evidence, or data. Bounded to stages where that evidence is relevant.
+
+**Record-Keeper Standing**
+
+Arises from role responsibility for maintaining the decision record. Unconditional within the Record stage.
+
+#### Delegated Standing
+
+Granted by an actor or institution with recognized authority, traceable to either constitutional standing or an institutionally recognized authority defined in `RFC-CDP-032-Authority-and-Delegation-Model.md`.
+
+Time-bounded and revocable.
+
+#### Emergency Standing
+
+Arises temporarily when normal standing determination is impractical under declared emergency conditions.
+
+Requires: explicit rationale, time boundary, post-hoc review, and record.
+
+Must not become a mechanism for bypassing constitutional standing under urgency.
+
+Detailed emergency conditions are governed by `RFC-CDP-052-Emergency-Override-and-Kill-Switch.md`.
+
+#### Repair Standing
+
+Arises for affected parties and evidence custodians when a governance breach is recognized and a repair process is initiated. Governed by the Repair plane (`RFC-CDP-070` through `RFC-CDP-075`).
+
+#### Appeal Standing
+
+Arises when a completed decision is formally contested. Governed by `RFC-CDP-070-Appeals-and-Contestability-Model.md`.
+
+---
+
+### 11.3 Standing Grant Authority
+
+| Standing Type | Granted By |
+|---|---|
+| Constitutional (all subtypes) | CDP framework |
+| Delegated | Recognized actor or institution |
+| Emergency | CDP framework conditionally; requires human authorization |
+| Repair | CDP framework upon breach recognition |
+| Appeal | CDP framework upon contestation |
+
+---
+
+### 11.4 Constitutional Standing Protection
+
+Denial of constitutional standing is a governance breach.
+
+Any attempt by an actor to prevent an affected party, evidence custodian, or record-keeper from exercising their constitutional standing is subject to the CDP Repair plane.
+
+The record of the denial MUST be preserved.
+
+The affected party MUST be informed of their right to appeal.
+
+---
+
+### 11.5 Contestability Boundaries
+
+Standing contestability is tiered:
+
+**Constitutional standing**
+
+Cannot be contested as to existence. Scope and stage may be challenged.
+
+**Delegated standing**
+
+Fully contestable on grounds of: invalid authority chain, expired delegation, undisclosed conflict, role incompatibility, or improper recusal determination.
+
+**Contestability window**
+
+Standing contests MUST be raised before or during the relevant stage.
+
+Post-execution standing contests belong to the Appeal and Repair planes.
+
+An uncontested standing determination becomes stable for that decision. It remains subject to appeal but does not reopen the decision process.
 
 ---
 
@@ -364,15 +462,17 @@ Promoted into this draft:
 - the authority-capture-through-participation failure mode;
 - the relationship between Standing, Recusal, Identity, Attestation, and Authority;
 - the need for AI Functional Standing without legal personhood claims;
-- a seed Standing Record schema.
+- a seed Standing Record schema;
+- the standing type taxonomy and constitutional root model;
+- constitutional standing protection as a Repair-plane-triggering governance breach.
 
 Not yet resolved:
 
-- who grants standing to the standing-granter;
 - whether the schema belongs here or in a separate schema RFC;
 - how risk classes determine recusal depth;
 - how this model updates lifecycle protocol RFCs;
-- how Functional Standing relates to `RFC-CDP-062-HITL-AIITL-Role-Boundaries.md`.
+- how Functional Standing relates to `RFC-CDP-062-HITL-AIITL-Role-Boundaries.md`;
+- whether `RFC-CDP-001-Vision-Scope-Principles.md` sufficiently supports constitutional standing as axiomatic.
 
 ---
 
@@ -384,6 +484,8 @@ Recusal determines when participation must be limited.
 
 Authority capture through participation is a structural governance failure.
 
+Legitimacy by infinite delegation is a constitutional-root failure.
+
 CDP must not merely ask whether a decision was reviewed.
 
-It must ask whether the right actors had standing, whether conflicted actors were recused, and whether the process remained genuinely contestable.
+It must ask whether the right actors had standing, whether conflicted actors were recused, whether constitutional standing was protected, and whether the process remained genuinely contestable.
