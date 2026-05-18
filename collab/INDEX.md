@@ -6,7 +6,7 @@ This index tracks active and completed collaboration sessions.
 
 | Session | Topic | Status | Moderator | Canon Target |
 |---|---|---|---|---|
-| [001](sessions/001-rfc-completeness-coherency-readability/) | RFC completeness, coherency, and human readability review | active | Andie | RFC family, possible CBB / Envelope RFC |
+| [001](sessions/001-rfc-completeness-coherency-readability.md) | RFC completeness, coherency, and human readability review | active | Andie | RFC family, possible CBB / Envelope RFC |
 
 ## Session Status Values
 
@@ -28,3 +28,4 @@ Nothing yet.
 - Should CDP create a Decision Envelope RFC before detailed protocol revisions?
 - What is the minimum human-readable surface required for each protocol?
 - How should machine-readable schemas and human-readable explanations be kept synchronized?
+- How do we make human-in-the-loop structurally real rather than human-in-the-pile theater?
