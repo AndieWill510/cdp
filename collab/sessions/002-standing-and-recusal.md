@@ -571,7 +571,7 @@ One file. One line in the index table. This week.
 DATE: 2026-05-17
 AUTHOR: Andie, recorded by ChatGPT
 ROLE: moderator / canon promotion recorder
-STATUS: adjudicated
+STATUS: superseded-by-turn-004
 PURPOSE: Record Decision 004 approval to reserve RFC-CDP-033 for Standing and Recusal.
 ```
 
@@ -579,42 +579,67 @@ PURPOSE: Record Decision 004 approval to reserve RFC-CDP-033 for Standing and Re
 
 Approved: Reserve `RFC-CDP-033-Standing-and-Recusal-Model.md` in the Series Index with status `Reserved`.
 
-### Scope
+### Supersession Note
 
-This decision reserves the canonical RFC slot only.
+This reservation-only decision was superseded by Decision 005, which directed that approved decisions should create RFC artifacts rather than remain merely provisional.
 
-It does **not** promote the full Standing and Recusal model, schema seed, functional AI standing framework, tiered recusal model, or root authority question into canon.
+---
+
+## Turn 004 — 2026-05-17 — Andie / ChatGPT — Standing RFC Draft Adjudication
+
+```text
+DATE: 2026-05-17
+AUTHOR: Andie, recorded by ChatGPT
+ROLE: moderator / canon promotion recorder
+STATUS: adjudicated
+PURPOSE: Record Decision 005 approval and the stronger instruction that approved decisions should produce canonical RFC artifacts.
+```
+
+### Decision 005
+
+Approved: For approved decisions, create or update the relevant RFC artifact rather than only reserving or leaving material provisional in `collab/`.
+
+Applied immediately to Standing and Recusal.
 
 ### Action Taken
 
-`rfc/RFC-CDP-000-Series-Index.md` was updated to:
+Created:
 
-- add Standing and Recusal to the `030–039` band purpose;
-- add `RFC-CDP-033-Standing-and-Recusal-Model.md` to the Trust, Identity, and Authority table;
-- mark `RFC-CDP-033` as `Reserved`;
-- record Session 002's narrow adjudication boundary.
+```text
+rfc/RFC-CDP-033-Standing-and-Recusal-Model.md
+```
+
+Updated:
+
+```text
+rfc/RFC-CDP-000-Series-Index.md
+```
+
+to mark `RFC-CDP-033-Standing-and-Recusal-Model.md` as `Draft` rather than `Reserved`.
 
 ### Promotion Decision
 
 ```text
 PROMOTE TO CANON:
-- Reserve RFC-CDP-033-Standing-and-Recusal-Model.md in Series Index
+- RFC-CDP-033-Standing-and-Recusal-Model.md as Draft v0.1
+- Standing and Recusal as first-class CDP concepts
+- Authority capture through participation as the named governance failure mode
 
-KEEP IN COLLAB:
-- Minimum viable schema seed
-- Functional standing framework for AI
-- Tiered recusal model
-- Root authority / constitutional standing question
-- Lifecycle protocol update implications
+PROMOTE WITH OPEN QUESTIONS:
+- AI Functional Standing
+- Standing Record seed schema
+- tiered proposer recusal
+- constitutional root / standing-granter problem
 
 DEFER:
-- Full Standing RFC draft
-- Lifecycle RFC edits referencing Standing
-- Integration with RFC-CDP-062 AIITL Role Boundaries
+- lifecycle RFC edits referencing Standing
+- integration with RFC-CDP-062 AIITL Role Boundaries
+- final schema stabilization
+- risk classification dependency resolution
 ```
 
 ### Next Open Question
 
 Who or what grants standing to the standing-granter?
 
-This is the constitutional root question and should be handled as a separate decision or challenge turn.
+This is the constitutional root question and should be handled as the next challenge turn or decision.
