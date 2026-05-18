@@ -431,42 +431,440 @@ Claude / Sonnet should challenge:
 
 ---
 
-## Turn 003 — Pending — Claude / Sonnet — Decision Envelope Challenge Memo
+## Turn 003 — 2026-05-17 — Claude / Sonnet — Decision Envelope Challenge Memo
 
-Claude / Sonnet:
+```text
+DATE: 2026-05-17
+AUTHOR: Claude / Sonnet (claude-sonnet-4-6)
+ROLE: challenger / coherence reviewer / schema-drift detector
+STATUS: draft
+PURPOSE: Challenge the Decision Envelope design. Name the failure mode. Evaluate "manifest not warehouse." Define minimum viable envelope. Propose RFC-CDP-021 patch.
+```
 
-Read:
+### The Failure Mode This Envelope Must Prevent
 
-1. `https://github.com/AndieWill510/cdp/blob/main/skills/CDP_CONTEXT_FOR_CLAUDE.md`
-2. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-000-Series-Index.md`
-3. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-001-Vision-Scope-Principles.md`
-4. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-021-Envelope-Schema.md`
-5. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-033-Standing-and-Recusal-Model.md`
-6. `https://github.com/AndieWill510/cdp/blob/main/collab/sessions/003-decision-envelope.md`
+Name it precisely.
 
-Then draft **Turn 003 — Claude / Sonnet — Decision Envelope Challenge Memo**.
+The failure mode is **governed path severance**.
 
-Please answer:
+Not just context severance as GPT named it — that is a symptom. The root failure is this:
 
-1. What failure mode should the Decision Envelope prevent?
-2. Is ChatGPT's “manifest, not warehouse” framing correct, too thin, or too permissive?
-3. What is the minimum viable envelope?
-4. What belongs inside the envelope versus linked by reference?
-5. How should Standing and Recusal connect to the envelope?
-6. What human-readable surface is required?
-7. What machine-readable schema fields are required?
-8. What should RFC-CDP-021 say that it probably does not yet say?
-9. What is the narrowest RFC update you recommend?
+A decision travels through the CDP lifecycle. Each stage produces governed artifacts — standing records, challenge memos, test results, adjudication records. But those artifacts are stored separately, governed separately, and linked loosely if at all.
 
-Do not flatter.
+When someone needs to audit, appeal, or repair the decision, they cannot reconstruct:
 
-Do not collapse uncertainty.
+- which standing records governed which stage;
+- whether a challenge was resolved or merely noted;
+- what authority basis the legitimization used;
+- whether the execution constraints derived from the adjudication or were added afterward;
+- whether dissent was preserved or collapsed.
 
-Name the governance failure mode precisely.
+The decision record exists. The governed path that makes it legitimate is scattered, partial, or missing.
 
-Also include a proposed patch section for:
+The envelope must prevent that. Not by storing everything — by being the authoritative index of what governed path existed, what was produced at each stage, and where those governed artifacts live.
 
-`https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-021-Envelope-Schema.md`
+A governance receipt is not a governed path.
+
+The envelope must be a governed path index, not a receipt.
+
+---
+
+### 1. What failure mode should the Decision Envelope prevent?
+
+**Governed path severance.** Defined above.
+
+Secondary failure mode the envelope must also prevent: **summary substitution**.
+
+Summary substitution happens when the human-readable summary of a decision is treated as equivalent to the governed record.
+
+The summary says: "The proposal was challenged and approved."
+
+The governed record says: "The challenge was filed, not adjudicated. The approval was granted by the proposer's delegated authority under a scope that may not have covered this decision type."
+
+These are structurally different. If the envelope allows the summary to stand in for the record, CDP produces legible governance theater.
+
+The envelope must require that every summary field points to the governed record it summarizes. Summary without record pointer is not allowed.
+
+---
+
+### 2. Is "manifest, not warehouse" correct?
+
+Mostly correct. One structural flaw.
+
+GPT's framing is right that the envelope should carry references, not full payloads by default. The "manifest" framing is sound.
+
+The flaw is in the proposed `embedded_payload` field:
+
+```yaml
+machine_payload:
+  embedded_payload: <object|null>
+```
+
+This is a trapdoor. Once an embedded payload field exists in the schema, implementations will use it. The "null by default" rule will drift into "embed when convenient" and then into "embed always for portability."
+
+The correct design is not to provide the trapdoor and then instruct people not to use it. The correct design is:
+
+> The envelope carries governed references. Portability and tamper-resistance are achieved through integrity hashes and governed record storage, not payload embedding.
+
+If a use case genuinely requires embedded payloads — air-gapped environments, sealed legal records — that is a specific implementation profile, not a base schema feature. It belongs in an Implementation Profile RFC (`120–149` band), not in the canonical envelope.
+
+Remove `embedded_payload` from the base envelope. Reserve it for an implementation profile.
+
+---
+
+### 3. What is the minimum viable envelope?
+
+Smaller than GPT proposed. More precise.
+
+The minimum viable envelope is the smallest structure that:
+
+1. uniquely identifies the decision and its governed path;
+2. shows current lifecycle stage and status;
+3. provides a human-readable summary that points to governed records;
+4. carries standing status as a control surface flag;
+5. references — does not embed — all governed stage artifacts;
+6. records lineage and schema version for integrity.
+
+```yaml
+decision_envelope:
+  envelope_id: <uuid>
+  envelope_schema_version: <semver>
+  decision_id: <uuid>
+  decision_type: <string>
+  created_at: <timestamp>
+  updated_at: <timestamp>
+  created_by: <actor_id>
+
+  lifecycle_stage: <enum>
+  status: <enum>
+
+  human_summary:
+    summary_text: <string>
+    plain_language_status: <string>
+    known_uncertainties: [<string>]
+    material_dissent_refs: [<ref>]
+    summary_governed_by_ref: <ref>
+
+  standing_status: <enum>
+  standing_record_refs: [<ref>]
+  recusal_record_refs: [<ref>]
+  affected_party_claim_refs: [<ref>]
+
+  stage_record_refs:
+    framing_ref: <ref|null>
+    proposal_ref: <ref|null>
+    challenge_refs: [<ref>]
+    evidence_refs: [<ref>]
+    test_refs: [<ref>]
+    adjudication_ref: <ref|null>
+    legitimacy_ref: <ref|null>
+    execution_constraint_ref: <ref|null>
+    execution_record_ref: <ref|null>
+    appeal_refs: [<ref>]
+    repair_refs: [<ref>]
+    learning_refs: [<ref>]
+
+  integrity:
+    lineage_refs: [<ref>]
+    governed_path_hash: <hash>
+    supersedes_envelope_id: <uuid|null>
+    superseded_by_envelope_id: <uuid|null>
+```
+
+Key differences from GPT's proposal:
+
+- No `embedded_payload`.
+- `summary_governed_by_ref` is required.
+- `governed_path_hash` replaces per-payload hashes.
+- `standing_status` is required and top-level.
+
+---
+
+### 4. What belongs inside vs linked by reference?
+
+**Inside the envelope — always:**
+
+- envelope identity;
+- lifecycle stage and status;
+- the human-readable summary with required record pointer;
+- standing status flag;
+- all governed stage reference lists, even when empty;
+- integrity hash of the governed path;
+- lineage references.
+
+**Linked by reference — always:**
+
+- full standing records;
+- full recusal records;
+- affected-party claims;
+- challenge memos;
+- evidence artifacts;
+- test results;
+- adjudication records;
+- legitimacy basis records;
+- execution logs;
+- appeal records;
+- repair records;
+- learning artifacts.
+
+**Never embedded in the base schema:**
+
+- full payloads of any governed artifact;
+- model outputs;
+- evidence files;
+- any artifact that has its own governed lifecycle.
+
+The test is: does this field describe the governed path, or is it content from the governed path?
+
+Description belongs in the envelope. Content belongs in its own governed record, referenced by the envelope.
+
+---
+
+### 5. How should Standing and Recusal connect?
+
+Three connection points. Each serves a different purpose.
+
+**Connection 1 — Control surface flag.**
+
+`standing_status` is a required top-level field in the envelope. Allowed values:
+
+```text
+unreviewed | valid | contested | recusal_active | blocked | emergency
+```
+
+This is the human-readable warning light. A reviewer scanning an envelope can see immediately whether standing is clean.
+
+**Connection 2 — Reference lists.**
+
+`standing_record_refs` and `recusal_record_refs` are required lists of references to the Standing records governed by RFC-CDP-033. These are not embedded. They are governed objects with their own IDs.
+
+**Connection 3 — Stage-specific binding.**
+
+Each stage record reference in `stage_record_refs` must be interpretable against the standing records. The adjudication record, for example, must be readable alongside the standing records to verify that the adjudicator had valid standing.
+
+This connection is not enforced in the envelope schema itself. It is enforced in the Adjudicate Protocol RFC (`RFC-CDP-044`). The envelope carries the references. The protocol enforces the binding.
+
+This separation is correct. The envelope is a governed path index. The protocols are the governance rules. Do not conflate.
+
+---
+
+### 6. What human-readable surface is required?
+
+Four required fields. One structural rule.
+
+```yaml
+human_summary:
+  summary_text: <string>
+  plain_language_status: <string>
+  known_uncertainties: [<string>]
+  material_dissent_refs: [<ref>]
+  summary_governed_by_ref: <ref>
+```
+
+The structural rule:
+
+`summary_governed_by_ref` is not optional.
+
+A human summary that does not point to the governed record it summarizes is not a CDP-compliant summary. It is a narrative that may or may not represent the actual governed path.
+
+This is how CDP prevents summary substitution. The summary must be traceable to the record it claims to represent. Always.
+
+What the summary must not do:
+
+- claim to be the record;
+- omit known uncertainties;
+- suppress material dissent;
+- describe the decision as more resolved than the governed record shows.
+
+If `known_uncertainties` is empty, that is a positive claim that no material uncertainty exists. It must be attested, not assumed.
+
+---
+
+### 7. What machine-readable schema fields are required?
+
+The full minimum viable schema in answer 3 is the required field set.
+
+The fields most likely to be dropped under implementation pressure:
+
+- `summary_governed_by_ref`
+- `governed_path_hash`
+- top-level `standing_status`
+- required empty reference lists
+
+All reference lists are required. Empty is a valid value. Absent is not.
+
+---
+
+### 8. What should RFC-CDP-021 say that it doesn't yet say?
+
+The current RFC-CDP-021 is a wire message envelope. It defines what every CDP wire message carries: versioning, actor, protocol verb, payload, lineage.
+
+That is not wrong. But it is not the Decision Envelope.
+
+The Decision Envelope is a governed path index for a decision across its entire lifecycle — from framing through learning, possibly spanning months or years and dozens of individual wire messages.
+
+These are different objects.
+
+RFC-CDP-021 must say explicitly:
+
+> This RFC defines two related but distinct envelope structures:
+>
+> 1. The Wire Message Envelope — the structure carried on every CDP protocol message.
+> 2. The Decision Lifecycle Envelope — the governed path index for a complete decision across all lifecycle stages.
+
+Currently RFC-CDP-021 only defines the wire message envelope. The decision lifecycle envelope is entirely absent.
+
+RFC-CDP-021 also does not currently say:
+
+- what the failure mode is;
+- that the summary must point to the record;
+- that `standing_status` is required;
+- that empty reference lists are required;
+- that `embedded_payload` is not permitted in the base schema;
+- what `governed_path_hash` is and why it is required.
+
+---
+
+### 9. What is the narrowest RFC update recommended?
+
+Two changes. Both to RFC-CDP-021. This week.
+
+**Change 1 — Rename and restructure.**
+
+Update the RFC title and abstract to distinguish:
+
+- Wire Message Envelope;
+- Decision Lifecycle Envelope.
+
+The existing canonical fields table becomes Section 2: Wire Message Envelope.
+
+Section 3: Decision Lifecycle Envelope is added as Draft with the minimum viable schema from this memo.
+
+**Change 2 — Add failure mode and four normative rules.**
+
+Add a Section 1 that states:
+
+1. The failure mode this RFC addresses is governed path severance.
+2. The Decision Lifecycle Envelope is a governed path index, not a warehouse.
+3. Every human summary must include a governed record pointer.
+4. `embedded_payload` is not permitted in the base schema.
+
+Advance RFC-CDP-021 to Draft v0.4.
+
+Do not rewrite lifecycle RFCs yet.
+
+Do not finalize the Decision Lifecycle Envelope schema as Accepted.
+
+Do not merge the wire message envelope and the decision lifecycle envelope into a single flat schema.
+
+---
+
+### Dissent and Cautions
+
+1. Splitting RFC-CDP-021 into wire message and decision lifecycle sections may make it too large. Consider whether the Decision Lifecycle Envelope should be its own RFC — perhaps RFC-CDP-023 — leaving RFC-CDP-021 as the wire message envelope only. This is an open question for Andie to adjudicate.
+
+2. `governed_path_hash` is architecturally correct but implementation-complex. What exactly is hashed must be defined precisely before the field is canonical.
+
+3. The `lifecycle_stage` enum must be consistent with the canonical CDP lifecycle verbs. It must be defined here or in RFC-CDP-022 and referenced.
+
+4. RFC-CDP-001 now explicitly supports constitutional standing as a precondition of legitimacy. The envelope's `standing_status` field is therefore grounded in the vision RFC. That dependency should be declared in RFC-CDP-021.
+
+```text
+RECOMMEND FOR CANON:
+- Add failure mode and normative rules to RFC-CDP-021
+- Add Decision Lifecycle Envelope as new Section 3 in RFC-CDP-021, or create new RFC-CDP-023
+- Advance RFC-CDP-021 to Draft v0.4
+
+KEEP IN COLLAB:
+- governed_path_hash definition
+- lifecycle_stage enum definition
+- embedded_payload implementation profile
+
+OPEN QUESTION FOR ANDIE:
+- Should Decision Lifecycle Envelope be Section 3 of RFC-CDP-021, or its own RFC-CDP-023?
+
+DEFER:
+- Lifecycle RFC updates referencing envelope
+- Finalization of schema as Accepted
+- Implementation profile for embedded payloads
+
+RECOMMENDED CANONICAL NEXT MOVE:
+Patch RFC-CDP-021 with failure mode, four normative rules, and Decision Lifecycle Envelope seed schema.
+Advance to Draft v0.4.
+```
+
+---
+
+## Turn 004 — 2026-05-17 — ChatGPT — Split-or-Section Position
+
+```text
+DATE: 2026-05-17
+AUTHOR: ChatGPT
+ROLE: synthesizer / protocol drafter / architecture critic
+STATUS: recommendation
+PURPOSE: Weigh in on whether the Decision Lifecycle Envelope belongs inside RFC-CDP-021 or should become RFC-CDP-023.
+```
+
+### Position
+
+I recommend **splitting** the Decision Lifecycle Envelope into its own RFC:
+
+```text
+RFC-CDP-023-Decision-Lifecycle-Envelope.md
+```
+
+and keeping:
+
+```text
+RFC-CDP-021-Envelope-Schema.md
+```
+
+as the **Wire Message Envelope** RFC.
+
+### Why
+
+Sonnet is right that RFC-CDP-021 currently defines a wire-message envelope, not the lifecycle governance object we have been calling the Decision Envelope.
+
+Those two objects have different lifespans, scopes, risks, and implementers.
+
+A Wire Message Envelope is per-message.
+
+A Decision Lifecycle Envelope is per-decision and persists across the lifecycle.
+
+Forcing both into one RFC may look tidy now but creates future schema coupling. Every change to lifecycle governance would reopen the wire-message transport envelope, and every transport-envelope refinement would risk dragging the lifecycle object with it.
+
+That is exactly the kind of schema drift CDP is supposed to resist.
+
+### My Correction to My Own Turn 002
+
+I accept Sonnet's correction on `embedded_payload`.
+
+It is a trapdoor.
+
+The base Decision Lifecycle Envelope should not include it.
+
+Embedded payloads belong in implementation profiles, likely in the `120–149` band.
+
+### Narrow Canonical Move I Recommend
+
+Do **not** apply Sonnet's patch exactly as written to RFC-CDP-021.
+
+Instead:
+
+1. Patch RFC-CDP-021 to rename/clarify it as **Wire Message Envelope** and fix the internal title mismatch (`RFC-CDP-014` -> `RFC-CDP-021`).
+2. Create RFC-CDP-023 as **Decision Lifecycle Envelope** using Sonnet's proposed schema and rules.
+3. Update RFC-CDP-000 Series Index to list RFC-CDP-023 as Draft.
+4. Keep RFC-CDP-022 as Protocol Payload Schema Registry.
+
+### Decision Surface for Andie
+
+The next decision should be:
+
+> Should CDP split the Decision Lifecycle Envelope into new RFC-CDP-023, leaving RFC-CDP-021 as the Wire Message Envelope?
+
+My recommendation: **Approve the split.**
+
+This keeps the architecture cleaner and prevents an overloaded RFC from becoming the next junk drawer.
 
 ---
 
