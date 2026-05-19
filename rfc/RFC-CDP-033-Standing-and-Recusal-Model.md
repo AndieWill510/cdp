@@ -1,9 +1,9 @@
 # RFC-CDP-033 — Standing and Recusal Model
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.2  
+Status: Draft v0.3  
 Series: Constitutional Decision Plane (CDP)  
-Date: May 17, 2026  
+Date: May 19, 2026  
 Depends On: RFC-CDP-030, RFC-CDP-031, RFC-CDP-032, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074, RFC-CDP-075  
 Related: RFC-CDP-040, RFC-CDP-041, RFC-CDP-045, RFC-CDP-050, RFC-CDP-052, RFC-CDP-060, RFC-CDP-062
 
@@ -405,6 +405,8 @@ Denial of constitutional standing is a governance breach.
 
 Any attempt by an actor to prevent an affected party, evidence custodian, or record-keeper from exercising their constitutional standing is subject to the CDP Repair plane.
 
+Denial of constitutional standing MUST automatically generate a Breach Record under `RFC-CDP-072-Breach-Record-and-Repair-Agenda-Schema.md`. This MUST NOT require action by the affected party.
+
 The record of the denial MUST be preserved.
 
 The affected party MUST be informed of their right to appeal.
@@ -454,7 +456,7 @@ Implementations SHOULD consider:
 
 ## 13. Status of This Draft
 
-This RFC was created from Session 002 of the CDP collaboration process.
+This RFC was created from Session 002 of the CDP collaboration process and updated in Session 005.
 
 Promoted into this draft:
 
@@ -464,7 +466,8 @@ Promoted into this draft:
 - the need for AI Functional Standing without legal personhood claims;
 - a seed Standing Record schema;
 - the standing type taxonomy and constitutional root model;
-- constitutional standing protection as a Repair-plane-triggering governance breach.
+- constitutional standing protection as a Repair-plane-triggering governance breach;
+- automatic Breach Record generation when constitutional standing is denied.
 
 Not yet resolved:
 
@@ -488,4 +491,4 @@ Legitimacy by infinite delegation is a constitutional-root failure.
 
 CDP must not merely ask whether a decision was reviewed.
 
-It must ask whether the right actors had standing, whether conflicted actors were recused, whether constitutional standing was protected, and whether the process remained genuinely contestable.
+It must ask whether the right actors had standing, whether conflicted actors were recused, whether constitutional standing was protected, whether constitutional standing denial automatically enters the Repair plane, and whether the process remained genuinely contestable.
