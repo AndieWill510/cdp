@@ -4,7 +4,9 @@ This index tracks active and completed collaboration sessions.
 
 ## Active Sessions
 
-None.
+| Session | Topic | Status | Moderator | Canon Target |
+|---|---|---|---|---|
+| [005](sessions/005-repair-plane-reanchor.md) | Repair Plane Reanchor | active | Andie | RFC-CDP-070 through RFC-CDP-075; RFC-CDP-092; RFC-CDP-000 map if needed |
 
 ## Closed Sessions
 
@@ -27,7 +29,7 @@ None.
 
 ## Canon Promotion Queue
 
-Nothing currently queued.
+Record Hash Propagation remains queued after Repair re-anchor unless Session 005 changes that priority.
 
 ## Open Cross-Session Questions
 
@@ -38,9 +40,10 @@ Nothing currently queued.
 - Does Legitimize need a precision rewrite or a new name?
 - Should the Standing Record schema be stabilized in RFC-CDP-033 or moved to a dedicated schema RFC?
 - Should lifecycle RFCs reference RFC-CDP-033 Standing and Recusal now, or only after schema stabilization?
-- How should AI Functional Standing integrate with RFC-CDP-062 HITL-AIITL Role Boundaries?
+- How should AI Functional Standing integrate with RFC-CDP-062 HITL-AIITL-Role-Boundaries?
 - Should lifecycle stage enums live in RFC-CDP-023, RFC-CDP-022, or a shared CBB/registry RFC?
 - Should embedded or sealed decision payloads be defined as an implementation profile in the 120–149 band?
 - Which lifecycle RFCs should reference RFC-CDP-023 first?
 - Propagate `record_hash` requirements to governed record RFCs in the 040–048 band.
 - Adjudicate lifecycle-stage enum ownership before RFC-CDP-023 advances to Candidate.
+- Verify that Repair remains first-class across Standing, Envelope, Hash, Appeal, Remedy, Learning, Anti-erasure, Sovereignty, and Closure.
