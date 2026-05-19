@@ -1,9 +1,9 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.7  
+Status: Draft v0.8  
 Series: Constitutional Decision Plane (CDP)  
-Date: May 17, 2026
+Date: May 19, 2026
 
 ## Abstract
 
@@ -73,14 +73,6 @@ Session 002 accepted a stronger canonical move:
 
 This promotes Standing and Recusal as first-class CDP concepts while preserving unresolved design questions in the draft.
 
-The following Session 002 questions remain open within the RFC and collaboration record:
-
-- minimum viable standing schema stabilization;
-- functional standing framework for AI participants;
-- tiered recusal model;
-- root authority / constitutional standing question;
-- lifecycle protocol updates referencing Standing.
-
 Session 002 also prompted a load-bearing check against `RFC-CDP-001-Vision-Scope-Principles.md`. That check resulted in RFC 001 being updated to Draft v0.6 so the vision layer explicitly supports constitutional standing as axiomatic.
 
 ### 0.4 Current Session 003 Adjudication
@@ -97,6 +89,14 @@ This split prevents the wire-message transport object and the decision lifecycle
 Session 004 defined and refined `governed_path_hash` for the Decision Lifecycle Envelope.
 
 RFC-CDP-023 was advanced to Draft v0.3 with a canonicalized Governed Path Manifest, registration-time content hashes, sequence position and tiebreaker rules, canonicalization rules, supersession/update behavior, and an explicit distinction between hash integrity and legitimacy.
+
+### 0.6 Current Session 005 Adjudication
+
+Session 005 re-anchored Repair after agenda drift toward technical integrity work.
+
+RFC-CDP-070 was created as the Appeals and Contestability Model to provide the Repair plane with an entry door.
+
+RFC-CDP-033 was advanced to Draft v0.3 so denial of constitutional standing automatically generates a Breach Record under RFC-CDP-072, without requiring action by the affected party.
 
 ---
 
@@ -245,7 +245,7 @@ Depends On:
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
-| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v0.7 |
+| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v0.8 |
 | `001` | Vision, Scope, and Principles | `RFC-CDP-001-Vision-Scope-Principles.md` | Draft v0.6 |
 
 ### 6.2 Reference Architecture
@@ -270,7 +270,7 @@ Depends On:
 | `030` | Identify Protocol | `RFC-CDP-030-Identify-Protocol.md` | Draft |
 | `031` | Attest Protocol | `RFC-CDP-031-Attest-Protocol.md` | Draft |
 | `032` | Authority and Delegation Model | `RFC-CDP-032-Authority-and-Delegation-Model.md` | Draft |
-| `033` | Standing and Recusal Model | `RFC-CDP-033-Standing-and-Recusal-Model.md` | Draft v0.2 |
+| `033` | Standing and Recusal Model | `RFC-CDP-033-Standing-and-Recusal-Model.md` | Draft v0.3 |
 
 ### 6.5 Lifecycle Protocols
 
@@ -308,7 +308,7 @@ Depends On:
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
-| `070` | Appeals and Contestability Model | `RFC-CDP-070-Appeals-and-Contestability-Model.md` | Reserved |
+| `070` | Appeals and Contestability Model | `RFC-CDP-070-Appeals-and-Contestability-Model.md` | Draft v0.1 |
 | `071` | Twenty Points Repair Protocol | `RFC-CDP-071-Twenty-Points-Repair-Protocol.md` | Draft |
 | `072` | Breach Record and Repair Agenda Schema | `RFC-CDP-072-Breach-Record-and-Repair-Agenda-Schema.md` | Draft |
 | `073` | Affected-Party Review and Anti-Erasure | `RFC-CDP-073-Affected-Party-Review-and-Anti-Erasure.md` | Draft |
@@ -342,6 +342,7 @@ The current repair/remedy corpus includes:
 |---:|---|
 | `053` | Determines when rollback, mitigation, or compensation is triggered and how those paths are tracked. |
 | `054` | Defines the actual compensation/remedy mechanism: claim, harm assessment, remedy proposal, authorization, delivery, sufficiency review. |
+| `070` | Defines constitutional entry into appeal and contestability review. |
 | `071` | Defines the constitutional repair protocol and anti-flattening requirements for enumerated repair agendas. |
 | `072` | Defines the objects that preserve breach, repair agenda, repair point, response, commitment, evidence, review, and dissent. |
 | `073` | Defines affected-party review, anti-erasure, closure blocking, and contestability. |
