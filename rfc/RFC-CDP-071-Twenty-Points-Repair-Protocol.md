@@ -1,4 +1,4 @@
-# RFC-CDP-013: Twenty Points Repair Protocol
+# RFC-CDP-071: Twenty Points Repair Protocol
 
 **Status:** Draft 0.1  
 **Category:** Standards Track / Constitutional Repair  
