@@ -156,24 +156,115 @@ Repair is more constitutional than record-hash propagation.
 
 CDP should not accidentally bury Repair while improving integrity machinery.
 
-### Prompt to Claude / Sonnet / C
+---
+
+## Turn 002 — 2026-05-19 — ChatGPT / G — Repair Entry-Door Position
+
+```text
+DATE: 2026-05-19
+AUTHOR: ChatGPT / G
+ROLE: synthesizer / protocol drafter / architecture critic
+STATUS: recommendation
+PURPOSE: State G's position before C challenge: Repair needs an entry door, likely RFC-CDP-070 Appeals and Contestability Model.
+```
+
+### Position
+
+Repair remains present in the canon, but it is procedurally under-anchored.
+
+The next load-bearing Repair artifact should be:
+
+```text
+RFC-CDP-070-Appeals-and-Contestability-Model.md
+```
+
+### Why RFC-CDP-070
+
+Repair needs an entry door.
+
+Without an appeal or contestability model, Repair exists morally and architecturally, but not procedurally.
+
+A system can say it supports repair, remedy, reparations, rematriation, anti-erasure, and affected-party review, but if an actor cannot formally contest a decision and enter the repair path, Repair becomes dependent on institutional permission.
+
+That is precisely what CDP is supposed to prevent.
+
+### Failure Mode
+
+The failure mode is **repair without standing to initiate**.
+
+This occurs when the architecture recognizes repair as important, but affected parties cannot reliably trigger review, appeal, contestability, or repair entry.
+
+The result is a system where Repair exists only after the governing institution agrees that repair exists.
+
+That collapses Repair back into discretion.
+
+### Relationship to Recent Work
+
+RFC-CDP-033 says denial of constitutional standing is a governance breach subject to Repair.
+
+RFC-CDP-023 preserves repair references and appeal references in the Decision Lifecycle Envelope.
+
+But neither document yet defines the procedural door by which a claim becomes an appeal, a contestation, or a repair path.
+
+That door belongs in RFC-CDP-070.
+
+### Narrow Canonical Move Recommended
+
+Create or promote:
+
+```text
+RFC-CDP-070-Appeals-and-Contestability-Model.md
+```
+
+as a Draft RFC with a narrow purpose:
+
+1. define who may initiate appeal or contestability;
+2. define what events trigger appeal or repair review;
+3. define minimum appeal record fields;
+4. define relationship to Standing and Recusal;
+5. define relationship to Decision Lifecycle Envelope repair / appeal refs;
+6. define closure-blocking conditions;
+7. define handoff to Repair Plane RFCs 071–075 and Repair State Machine 092.
+
+### What Not To Do Yet
+
+Do not attempt to rewrite every Repair RFC in this session.
+
+Do not collapse appeal, remedy, compensation, reparations, rematriation, and sovereignty into one giant RFC.
+
+Do not treat Record Hash Propagation as abandoned.
+
+Record Hash Propagation is still valid, but Repair entry is more urgent because it governs who can force the system to notice harm.
+
+### Recommendation to Andie
+
+Ask C to challenge this specific claim:
+
+> Repair needs an entry door, and RFC-CDP-070 Appeals and Contestability Model should be the next canonical artifact.
+
+My recommendation: **approve C challenge before any RFC patch.**
+
+---
+
+## Turn 003 — Pending — Claude / Sonnet / C — Repair Plane Reanchor Challenge Memo
 
 C:
 
 Read the files listed above, especially RFC-CDP-001, RFC-CDP-023, RFC-CDP-033, and the Repair-plane RFCs.
 
-Then draft **Turn 002 — Claude / Sonnet — Repair Plane Reanchor Challenge Memo**.
+Then draft **Turn 003 — Claude / Sonnet — Repair Plane Reanchor Challenge Memo**.
 
 Please answer:
 
 1. Did Repair disappear, or did it remain present but under-prioritized?
 2. What failure mode does this session need to prevent?
-3. Do recent RFCs preserve repair hooks clearly enough?
-4. Does `RFC-CDP-023` need stronger repair references?
-5. Does `RFC-CDP-033` correctly trigger Repair for denial of constitutional standing?
-6. Which Repair RFC is the next load-bearing artifact?
-7. Should Record Hash Propagation wait until Repair is re-anchored?
-8. What is the narrowest RFC update you recommend?
+3. Is G right that Repair needs an entry door before Record Hash Propagation continues?
+4. Is RFC-CDP-070 Appeals and Contestability Model the right next load-bearing artifact?
+5. Do recent RFCs preserve repair hooks clearly enough?
+6. Does `RFC-CDP-023` need stronger repair or appeal references?
+7. Does `RFC-CDP-033` correctly trigger Repair for denial of constitutional standing?
+8. What should RFC-CDP-070 minimally define?
+9. What is the narrowest RFC update you recommend?
 
 Do not flatter.
 
