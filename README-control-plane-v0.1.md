@@ -1,12 +1,19 @@
-# CDP Control Plane v0.1
+# CDP Control Plane v0.2
 
 Tiny FastAPI prototype for the first executable CDP object: DecisionEnvelope.
+
+Persistence is Postgres.
 
 ## Run
 
 ```bash
 docker compose up --build
 ```
+
+This starts:
+
+- postgres
+- cdp-control-plane
 
 In a second terminal:
 
@@ -47,7 +54,7 @@ curl -X POST http://localhost:8000/challenges \
 ```bash
 curl -X POST http://localhost:8000/adjudications \
   -H 'Content-Type: application/json' \
-  -d '{"record_id":"RECORD_UUID","actor_id":"g","adjudication":"Promote v0.1 as executable spine"}'
+  -d '{"record_id":"RECORD_UUID","actor_id":"g","adjudication":"Promote v0.2 as Postgres-backed spine"}'
 ```
 
 ## Read record
@@ -56,8 +63,8 @@ curl -X POST http://localhost:8000/adjudications \
 curl http://localhost:8000/records/RECORD_UUID
 ```
 
-## v0.1 limits
+## v0.2 limits
 
-No auth. No database. No UI. No policy engine.
+No auth. No UI. No policy engine. No migration framework.
 
-Records are stored as JSONL under `data/records.jsonl`.
+Records are stored in Postgres table `decision_envelopes`.
