@@ -7,6 +7,7 @@ from uuid import UUID
 
 from .models import DecisionEnvelope
 
+# Relative to the container WORKDIR /app.
 RECORDS_FILE = Path("data/records.jsonl")
 
 
