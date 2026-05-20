@@ -8,6 +8,24 @@ Tiny FastAPI prototype for the first executable CDP object: DecisionEnvelope.
 docker compose up --build
 ```
 
+In a second terminal:
+
+```bash
+./scripts/smoke_test_control_plane.sh
+```
+
+Expected final line:
+
+```text
+Smoke test passed
+```
+
+## Health check
+
+```bash
+curl http://localhost:8000/health
+```
+
 ## Create proposal
 
 ```bash
