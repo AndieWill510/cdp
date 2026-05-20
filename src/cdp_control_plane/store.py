@@ -23,6 +23,7 @@ def compute_record_hash(envelope: DecisionEnvelope) -> str:
 
 
 def get_connection() -> psycopg.Connection:
+    # v0.2: new connection per request. Connection pooling deferred to v0.3.
     return psycopg.connect(DATABASE_URL, row_factory=dict_row)
 
 
