@@ -13,6 +13,8 @@ RECORDS_FILE = Path("data/records.jsonl")
 def compute_record_hash(envelope: DecisionEnvelope) -> str:
     payload = envelope.model_dump(mode="json")
     payload.pop("record_hash", None)
+    payload["created_at"] = envelope.created_at.isoformat()
+    payload["updated_at"] = envelope.updated_at.isoformat()
     text = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return sha256(text.encode("utf-8")).hexdigest()
 
