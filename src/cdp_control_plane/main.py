@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import timezone
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException
@@ -38,6 +37,8 @@ def add_challenge(request: ChallengeRequest) -> DecisionEnvelope:
     envelope = get_record(request.record_id)
     if envelope is None:
         raise HTTPException(status_code=404, detail="record not found")
+    if envelope.status == EnvelopeStatus.adjudicated:
+        raise HTTPException(status_code=409, detail="cannot challenge adjudicated record")
     envelope.challenge = request.challenge
     envelope.status = EnvelopeStatus.challenged
     envelope.updated_at = utc_now()
