@@ -1,7 +1,28 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cdp
+      POSTGRES_USER: cdp
+      POSTGRES_PASSWORD: cdp
+    volumes:
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cdp"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   cdp-control-plane:
     build: .
     ports:
       - "8000:8000"
-    volumes:
-      - ./data:/app/data
+    environment:
+      DATABASE_URL: postgresql://cdp:cdp@postgres:5432/cdp
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
