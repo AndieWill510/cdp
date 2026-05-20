@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import json
+import os
 from hashlib import sha256
-from pathlib import Path
 from uuid import UUID
+
+import psycopg
+from psycopg.rows import dict_row
 
 from .models import DecisionEnvelope
 
-# Relative to the container WORKDIR /app.
-RECORDS_FILE = Path("data/records.jsonl")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://cdp:cdp@localhost:5432/cdp")
 
 
 def compute_record_hash(envelope: DecisionEnvelope) -> str:
@@ -20,27 +22,49 @@ def compute_record_hash(envelope: DecisionEnvelope) -> str:
     return sha256(text.encode("utf-8")).hexdigest()
 
 
-def read_records() -> list[DecisionEnvelope]:
-    if not RECORDS_FILE.exists():
-        return []
-    return [DecisionEnvelope.model_validate_json(line) for line in RECORDS_FILE.read_text().splitlines() if line]
-
-
-def write_records(records: list[DecisionEnvelope]) -> None:
-    RECORDS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    RECORDS_FILE.write_text("\n".join(r.model_dump_json() for r in records) + "\n")
+def get_connection() -> psycopg.Connection:
+    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
 
 
 def save_record(envelope: DecisionEnvelope) -> DecisionEnvelope:
-    records = [r for r in read_records() if r.id != envelope.id]
     envelope.record_hash = compute_record_hash(envelope)
-    records.append(envelope)
-    write_records(records)
+    envelope_json = envelope.model_dump_json()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO decision_envelopes (
+                    id, status, actor_id, created_at, updated_at, record_hash, envelope
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
+                ON CONFLICT (id) DO UPDATE SET
+                    status = EXCLUDED.status,
+                    actor_id = EXCLUDED.actor_id,
+                    updated_at = EXCLUDED.updated_at,
+                    record_hash = EXCLUDED.record_hash,
+                    envelope = EXCLUDED.envelope
+                """,
+                (
+                    envelope.id,
+                    envelope.status.value,
+                    envelope.actor_id,
+                    envelope.created_at,
+                    envelope.updated_at,
+                    envelope.record_hash,
+                    envelope_json,
+                ),
+            )
     return envelope
 
 
 def get_record(record_id: UUID) -> DecisionEnvelope | None:
-    for record in read_records():
-        if record.id == record_id:
-            return record
-    return None
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT envelope FROM decision_envelopes WHERE id = %s",
+                (record_id,),
+            )
+            row = cur.fetchone()
+    if row is None:
+        return None
+    return DecisionEnvelope.model_validate(row["envelope"])
