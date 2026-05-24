@@ -4,7 +4,7 @@
 SESSION: 006-rfc-023-repair-trigger-closure-blocking
 DATE_OPENED: 2026-05-19
 MODERATOR: Andie
-STATUS: active
+STATUS: promotion-applied
 MODE: shared-chat-file
 CANON_TARGET: RFC-CDP-023-Decision-Lifecycle-Envelope.md
 PURPOSE: Patch RFC-CDP-023 so appeal_refs and repair_refs are active governance controls, not passive references, now that RFC-CDP-070 defines appeal and contestability entry.
@@ -26,6 +26,20 @@ How should RFC-CDP-023 be patched so appeal and repair references actively prese
 
 ---
 
+## Failure Mode
+
+C sharpened the failure mode to:
+
+> **Closure without repair resolution**
+
+Passive repair indexing is the mechanism.
+
+Closure without repair resolution is the harm.
+
+A decision must not advance to `status: closed` while appeal, repair, breach, or affected-party claim conditions exist and are recorded but not enforced.
+
+---
+
 ## Relevant Canonical Files
 
 Read these first:
@@ -39,61 +53,6 @@ Read these first:
 7. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-073-Affected-Party-Review-and-Anti-Erasure.md`
 8. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-092-Repair-State-Machine.md`
 9. `https://github.com/AndieWill510/cdp/blob/main/collab/sessions/006-rfc-023-repair-trigger-closure-blocking.md`
-
----
-
-## Initial G Position
-
-RFC-CDP-023 already includes `appeal_refs` and `repair_refs`, but they are not yet strong enough.
-
-They index repair activity, but they do not yet define:
-
-- what events activate appeal or repair references;
-- when closure is blocked;
-- how unresolved affected-party claims prevent closure;
-- how denial of constitutional standing enters the envelope;
-- how RFC-CDP-070 appeal records are represented in the envelope;
-- how repair-trigger state is visible to human reviewers.
-
-The envelope needs a small but normative repair-control surface.
-
----
-
-## Failure Mode
-
-The failure mode is **passive repair indexing**.
-
-Passive repair indexing occurs when the system records appeal or repair references if they happen to exist, but does not require the envelope to activate, expose, or block closure when appeal or repair conditions exist.
-
-The result is a decision that can close while repair remains unresolved.
-
-That is repair burial inside an otherwise legible envelope.
-
----
-
-## Candidate Patch Direction
-
-RFC-CDP-023 should add:
-
-1. `repair_status` as a top-level envelope field.
-2. Required `active_appeal_refs` or explicit interpretation of `appeal_refs` status.
-3. Required closure-blocking rule.
-4. Normative trigger events tied to RFC-CDP-070.
-5. Requirement that unresolved appeal or repair claims prevent `status: closed`.
-6. Requirement that denial of constitutional standing appear in `repair_refs` or `appeal_refs` via RFC-CDP-072 Breach Record.
-7. Human-readable repair warning in `human_summary` or equivalent control surface.
-
----
-
-## Issues to Decide
-
-1. Should RFC-CDP-023 add a top-level `repair_status` field?
-2. Should `appeal_refs` and `repair_refs` remain under `stage_record_refs`, or should there be a separate repair control surface?
-3. Which RFC-CDP-070 trigger events must be reflected in the Decision Lifecycle Envelope?
-4. What closure-blocking rule belongs in RFC-CDP-023?
-5. Should unresolved affected-party claims block closure even without a formal appeal record?
-6. How should constitutional standing denial appear in the envelope?
-7. What is the narrowest RFC-CDP-023 patch?
 
 ---
 
@@ -123,7 +82,7 @@ It should make appeal and repair state active and visible in the envelope.
 
 ### G Recommendation
 
-Patch RFC-CDP-023 to add a minimal repair control surface:
+Initial G proposal:
 
 ```yaml
 repair_control:
@@ -135,39 +94,165 @@ repair_control:
   closure_blocking_refs: [<ref>]
 ```
 
-Add a normative rule:
+C challenged the six-field version as duplicative.
 
-> A Decision Lifecycle Envelope MUST NOT advance to `status: closed` when `closure_blocked` is true, when active appeals exist, or when unresolved affected-party claims remain.
+---
 
-### Prompt to C
+## Turn 002 — 2026-05-19 — Claude / Sonnet / C — Repair Control Challenge
 
-C:
+```text
+DATE: 2026-05-19
+AUTHOR: Claude / Sonnet / C
+ROLE: challenger / coherence reviewer
+STATUS: draft-promoted
+PURPOSE: Reduce RFC-CDP-023 repair_control to the smallest non-duplicative governance surface.
+```
 
-Please challenge this patch direction before promotion.
+### 1. Failure Mode
 
-Answer:
+C accepted passive repair indexing as the mechanism, but sharpened the outcome failure mode:
 
-1. Is passive repair indexing the right failure mode?
-2. Should RFC-CDP-023 add `repair_control`, or is that too much state for the envelope?
-3. Is `repair_status` the right top-level control surface?
-4. Should unresolved affected-party claims block closure even without formal appeal?
-5. Which RFC-CDP-070 trigger events must appear in RFC-CDP-023?
-6. Does this patch risk duplicating RFC-CDP-070 or correctly referencing it?
-7. What is the narrowest RFC-CDP-023 patch?
+> **Closure without repair resolution**
 
-Do not flatter.
-Do not collapse uncertainty.
-Name the failure mode precisely.
+A decision advances to `status: closed` while appeal or repair conditions exist and are recorded but not enforced.
+
+### 2. Repair Control Surface
+
+C recommended adding `repair_control`, but reducing it from six fields to four.
+
+Keep:
+
+- `repair_status`
+- `closure_blocked`
+- `closure_blocking_reason`
+- `closure_blocking_refs`
+
+Remove:
+
+- `active_appeal_refs`
+- `active_repair_refs`
+- `unresolved_affected_party_claim_refs`
+
+Reason: those reference lists already exist in `stage_record_refs.appeal_refs`, `stage_record_refs.repair_refs`, and `affected_party_claim_refs`. Duplicating them creates two sources of truth.
+
+### 3. Revised Minimal Block
+
+```yaml
+repair_control:
+  repair_status: <none|available|triggered|active|blocked|resolved>
+  closure_blocked: <boolean>
+  closure_blocking_reason: <string|null>
+  closure_blocking_refs: [<ref>]
+```
+
+### 4. Closure Rule
+
+A Decision Lifecycle Envelope MUST NOT advance to `status: closed` when any of the following are true:
+
+- `repair_control.closure_blocked` is true;
+- `appeal_refs` contains a reference with unresolved status per RFC-CDP-070;
+- `affected_party_claim_refs` contains an unresolved claim.
+
+### 5. RFC-CDP-070 Trigger Binding
+
+RFC-CDP-070 owns trigger definitions.
+
+RFC-CDP-023 should reference those triggers, not duplicate them.
+
+When any RFC-CDP-070 trigger event is recorded against this decision:
+
+- `repair_control.closure_blocked` MUST be set to true;
+- `repair_control.repair_status` MUST advance to at least `triggered`.
+
+### 6. Recommendation
+
+Advance RFC-CDP-023 to Draft v0.4 with the four-field repair-control surface.
+
+---
+
+## Turn 003 — 2026-05-19 — Andie / G — Repair Control Promotion
+
+```text
+DATE: 2026-05-19
+AUTHOR: Andie, recorded by ChatGPT / G
+ROLE: moderator / canon promotion recorder
+STATUS: adjudicated-and-promoted
+PURPOSE: Record approval of C's four-field repair_control patch and promote to RFC-CDP-023 Draft v0.4.
+```
+
+### Decision 018
+
+Approved: C's reduced four-field `repair_control` patch.
+
+### Action Taken
+
+Patched:
+
+```text
+rfc/RFC-CDP-023-Decision-Lifecycle-Envelope.md
+```
+
+from Draft v0.3 to Draft v0.4.
+
+Added:
+
+```yaml
+repair_control:
+  repair_status: <none|available|triggered|active|blocked|resolved>
+  closure_blocked: <boolean>
+  closure_blocking_reason: <string|null>
+  closure_blocking_refs: [<ref>]
+```
+
+Added failure mode:
+
+```text
+closure without repair resolution
+```
+
+Added normative closure-blocking rules.
+
+Added RFC-CDP-070 trigger binding.
+
+Added repair-control fields to the governed path manifest and governed path hash coverage.
+
+Updated:
+
+```text
+rfc/RFC-CDP-000-Series-Index.md
+```
+
+to Draft v0.9 and marked RFC-CDP-023 as Draft v0.4.
+
+### Promotion Decision
+
+```text
+PROMOTE TO CANON:
+- RFC-CDP-023 Draft v0.4 repair_control patch
+- RFC-CDP-000 Draft v0.9 map update
+
+DO NOT PROMOTE:
+- active_appeal_refs as separate repair_control field
+- active_repair_refs as separate repair_control field
+- unresolved_affected_party_claim_refs as separate repair_control field
+
+DEFER:
+- Record Hash Propagation to governed record RFCs
+- implementation model population of repair_control
+- lifecycle-stage enum ownership
+```
 
 ---
 
 ## Promotion Decision
 
-Pending.
-
 ```text
 PROMOTE TO CANON:
-PROMOTE WITH CHANGES:
-DO NOT PROMOTE:
+- RFC-CDP-023 Draft v0.4 repair control surface
+- RFC-CDP-000 Draft v0.9 map update
+
 DEFER:
+- Record Hash Propagation
+- repair_control implementation population
+- lifecycle-stage enum ownership
 ```
