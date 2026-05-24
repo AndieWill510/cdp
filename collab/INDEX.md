@@ -6,7 +6,7 @@ This index tracks active and completed collaboration sessions.
 
 | Session | Topic | Status | Moderator | Canon Target |
 |---|---|---|---|---|
-| [008](sessions/008-cdp-persistence-model.md) | CDP Persistence Model | active | Andie | RFC-CDP-025-CDP-Persistence-Model.md; implementation schema TBD |
+| [009](sessions/009-standing-persistence-enforcement-query.md) | Standing Persistence and Enforcement Query | active | Andie | RFC-CDP-025-CDP-Persistence-Model.md; RFC-CDP-033-Standing-and-Recusal-Model.md |
 
 ## Closed Sessions
 
@@ -19,6 +19,7 @@ This index tracks active and completed collaboration sessions.
 | [005](sessions/005-repair-plane-reanchor.md) | Repair Plane Reanchor | closed-promoted | Andie | RFC-CDP-070 Appeals and Contestability; RFC-CDP-033 automatic Breach Record; RFC-CDP-000 map update |
 | [006](sessions/006-rfc-023-repair-trigger-closure-blocking.md) | RFC-CDP-023 Repair Trigger and Closure-Blocking Patch | closed-promoted | Andie | RFC-CDP-023 repair_control v0.4; RFC-CDP-000 map update |
 | [007](sessions/007-anti-premature-certainty-implementation.md) | Anti-Premature-Certainty Principle and Implementation | closed-promoted | Andie | RFC-CDP-002 v0.2; RFC-CDP-022 APC gate result payload; RFC-CDP-024 reservation |
+| [008](sessions/008-cdp-persistence-model.md) | CDP Persistence Model | closed-promoted | Andie | RFC-CDP-025-CDP-Persistence-Model.md |
 
 ## Session Status Values
 
@@ -32,8 +33,10 @@ This index tracks active and completed collaboration sessions.
 
 ## Canon Promotion Queue
 
-1. RFC-CDP-025 CDP Persistence Model.
+1. Standing Persistence and Enforcement Query.
 2. Record Hash Propagation to governed record RFCs in the 040–048 band.
+3. RFC-CDP-024 Proposal Sufficiency Gate Draft.
+4. RFC-CDP-045 Legitimize Protocol APC wiring.
 
 ## Open Cross-Session Questions
 
@@ -53,3 +56,5 @@ This index tracks active and completed collaboration sessions.
 - Should Anti-Premature-Certainty become a gate payload, challenge subtype, proposal self-check, or all three?
 - Should CDP persistence use event sourcing as source of truth, current-state tables plus audit log, or a hybrid?
 - Should governed records use one polymorphic JSON-first table or typed tables per record family?
+- Should `cdp_standing_record` be an authoritative table or an enforcement projection linked to `cdp_governed_record`?
+- What standing indexes are mandatory to block invalid participation in time?
