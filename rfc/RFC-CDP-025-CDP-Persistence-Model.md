@@ -1,27 +1,27 @@
 # RFC-CDP-025 — CDP Persistence Model
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.1  
+Status: Draft v0.2  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 23, 2026  
-Depends On: RFC-CDP-021, RFC-CDP-022, RFC-CDP-023, RFC-CDP-024  
-Related: RFC-CDP-002, RFC-CDP-033, RFC-CDP-070, RFC-CDP-090, RFC-CDP-092
+Depends On: RFC-CDP-021, RFC-CDP-022, RFC-CDP-023, RFC-CDP-024, RFC-CDP-033  
+Related: RFC-CDP-002, RFC-CDP-070, RFC-CDP-090, RFC-CDP-092
 
 ## Abstract
 
 This RFC defines the minimum persistence model required to implement the Constitutional Decision Plane (CDP).
 
-It specifies the core database/storage substrate needed to persist, query, replay, validate, and enforce Decision Lifecycle Envelopes, governed records, governed references, payload schemas, controlled vocabularies, lookup/config values, and event history.
+It specifies the core database/storage substrate needed to persist, query, replay, validate, and enforce Decision Lifecycle Envelopes, governed records, governed references, payload schemas, standing enforcement projections, controlled vocabularies, lookup/config values, and event history.
 
 The purpose is not to prescribe a single database vendor or full enterprise data model.
 
-The purpose is to prevent CDP protocols from becoming unimplementable because their envelopes, records, gates, repairs, and hashes cannot be queried or joined.
+The purpose is to prevent CDP protocols from becoming unimplementable because their envelopes, records, gates, repairs, standing determinations, and hashes cannot be queried or joined in time to enforce governance.
 
 ---
 
 ## 1. Purpose
 
-CDP now defines several core governance objects and primitives:
+CDP defines several core governance objects and primitives:
 
 - Wire Message Envelope (`RFC-CDP-021`)
 - Protocol Payload Schema Registry (`RFC-CDP-022`)
@@ -41,7 +41,7 @@ This RFC defines the minimum queryable persistence substrate required to impleme
 
 The failure mode this RFC addresses is **protocol without queryable persistence**.
 
-Protocol without queryable persistence occurs when a governance system defines envelopes, records, gates, challenges, repair hooks, and hashes, but lacks a minimal storage model that can persist, query, join, replay, validate, and enforce them.
+Protocol without queryable persistence occurs when a governance system defines envelopes, records, gates, challenges, repair hooks, standing determinations, and hashes, but lacks a minimal storage model that can persist, query, join, replay, validate, and enforce them.
 
 This is not merely a storage problem.
 
@@ -51,7 +51,7 @@ Examples:
 
 - a closure-blocking rule cannot be enforced because `repair_refs` and `appeal_refs` are not joinable to their resolution status;
 - a governed path hash cannot be verified because `content_hash_at_registration` is not stored adjacent to the current record hash;
-- a standing determination cannot be audited because standing records are not queryable by decision and stage;
+- a standing determination cannot be enforced because standing records are not queryable by decision, stage, and actor;
 - an Anti-Premature-Certainty gate result cannot be replayed because it was stored only as an opaque blob;
 - a proposal sufficiency decision cannot be inspected because the sufficiency record and evaluator result cannot be joined.
 
@@ -59,35 +59,65 @@ The goal of this RFC is to prevent persistence schema drift from becoming the ne
 
 ---
 
-## 3. Design Principles
+## 3. Failure Mode: Standing as Unenforceable Record
 
-### 3.1 Queryable Current State
+A specific persistence failure mode is **standing as unenforceable record**.
+
+Standing as unenforceable record occurs when a standing determination exists as a governed record, but cannot be joined to a specific decision, stage, and actor in time to block invalid participation.
+
+This failure is both structural and temporal.
+
+Structural failure occurs when standing exists only as prose or opaque JSON and cannot be joined to decision, stage, actor, standing type, recusal state, validity window, or contestability window.
+
+Temporal failure occurs when standing can technically be retrieved, but only through slow full-table scans, JSON parsing, manual review, or institutional action. By the time standing is evaluated, the invalid actor may already have participated.
+
+A standing query that takes too long is not merely slow.
+
+It is a governance gap.
+
+CDP implementations MUST treat standing enforcement as mandatory, not opt-in.
+
+---
+
+## 4. Design Principles
+
+### 4.1 Queryable Current State
 
 CDP implementations SHOULD maintain current-state tables that make governance enforcement queries efficient and legible.
 
 Current-state tables are the authoritative queryable state for ordinary enforcement and review.
 
-### 3.2 Append-Only Event Trail
+### 4.2 Append-Only Event Trail
 
 CDP implementations MUST maintain an append-only event trail for audit, replay, and dispute resolution.
 
-The event log is not the primary source of current state in Draft v0.1.
+The event log is not the primary source of current state in Draft v0.2.
 
 It is an audit and replay layer.
 
-### 3.3 JSON-First Governed Records
+### 4.3 JSON-First Governed Records
 
 CDP implementations MAY use JSON-first governed records for MVP implementation.
 
-However, governance-critical fields used for enforcement MUST be promoted into queryable columns.
+However, governance-critical fields used for enforcement MUST be promoted into queryable columns or enforcement projections.
 
-### 3.4 Controlled Vocabulary Separation
+### 4.4 Enforcement Projection
+
+An enforcement projection is a queryable table derived from a governed record.
+
+The governed record remains the canonical artifact with hash, lineage, and replayability.
+
+The projection exposes the columns required to enforce governance in time.
+
+If a projection disagrees with its governed record, the governed record is authoritative and the projection MUST be rebuilt or marked invalid.
+
+### 4.5 Controlled Vocabulary Separation
 
 Governance-critical enumerations MUST NOT drift through ungoverned configuration tables.
 
 Open-ended lookup/config values and RFC-defined controlled vocabulary values are separate concerns.
 
-### 3.5 Vendor Neutrality
+### 4.6 Vendor Neutrality
 
 This RFC describes logical tables and required columns.
 
@@ -95,34 +125,35 @@ SQL examples are normative for table structure and required fields, but implemen
 
 ---
 
-## 4. Minimum Persistence Model
+## 5. Minimum Persistence Model
 
-Draft v0.1 defines five core tables plus two vocabulary/config tables.
+Draft v0.2 defines six core tables plus two vocabulary/config tables.
 
 Core tables:
 
 1. `cdp_decision_envelope`
 2. `cdp_governed_record`
-3. `cdp_envelope_ref`
-4. `cdp_payload_registry`
-5. `cdp_event_log`
+3. `cdp_standing_record`
+4. `cdp_envelope_ref`
+5. `cdp_payload_registry`
+6. `cdp_event_log`
 
 Vocabulary/config tables:
 
-6. `cdp_lookup`
-7. `cdp_controlled_vocabulary`
+7. `cdp_lookup`
+8. `cdp_controlled_vocabulary`
 
 ---
 
-## 5. Table: cdp_decision_envelope
+## 6. Table: cdp_decision_envelope
 
-### 5.1 Purpose
+### 6.1 Purpose
 
 `cdp_decision_envelope` stores one row per Decision Lifecycle Envelope.
 
 It preserves the full envelope while promoting governance-critical fields into queryable columns.
 
-### 5.2 Required Columns
+### 6.2 Required Columns
 
 ```sql
 cdp_decision_envelope:
@@ -145,7 +176,7 @@ cdp_decision_envelope:
   envelope_json
 ```
 
-### 5.3 Required Queryable Fields
+### 6.3 Required Queryable Fields
 
 The following MUST be queryable without parsing the full JSON payload:
 
@@ -161,7 +192,7 @@ The following MUST be queryable without parsing the full JSON payload:
 - `created_at`
 - `updated_at`
 
-### 5.4 Notes
+### 6.4 Notes
 
 `envelope_json` preserves the canonical envelope object defined in `RFC-CDP-023`.
 
@@ -173,9 +204,9 @@ If both are stored, implementations MUST define synchronization behavior.
 
 ---
 
-## 6. Table: cdp_governed_record
+## 7. Table: cdp_governed_record
 
-### 6.1 Purpose
+### 7.1 Purpose
 
 `cdp_governed_record` stores governed artifacts referenced by a Decision Lifecycle Envelope.
 
@@ -185,7 +216,7 @@ Examples include:
 - Anti-Premature-Certainty gate result;
 - proposal record;
 - challenge memo;
-- standing record for MVP storage;
+- standing record canonical artifact;
 - appeal record;
 - repair record;
 - test result;
@@ -194,7 +225,7 @@ Examples include:
 - execution record;
 - learning artifact.
 
-### 6.2 Required Columns
+### 7.2 Required Columns
 
 ```sql
 cdp_governed_record:
@@ -213,7 +244,7 @@ cdp_governed_record:
   record_json
 ```
 
-### 6.3 Required Queryable Fields
+### 7.3 Required Queryable Fields
 
 The following MUST be queryable without parsing `record_json`:
 
@@ -228,25 +259,277 @@ The following MUST be queryable without parsing `record_json`:
 - `created_at`
 - `updated_at`
 
-### 6.4 JSON-First MVP Rule
+### 7.4 JSON-First MVP Rule
 
-Draft v0.1 permits governed record bodies to be stored as JSON-first objects in `record_json`.
+Draft v0.2 permits governed record bodies to be stored as JSON-first objects in `record_json`.
 
 However, implementations SHOULD promote fields into typed tables or indexed columns when those fields become governance enforcement paths rather than reporting fields.
 
-Standing determinations are explicitly identified as a likely candidate for promotion in a future RFC revision.
+Standing determinations are promoted into `cdp_standing_record` in this RFC because standing is an enforcement path.
 
 ---
 
-## 7. Table: cdp_envelope_ref
+## 8. Table: cdp_standing_record
 
-### 7.1 Purpose
+### 8.1 Purpose
+
+`cdp_standing_record` provides the queryable enforcement surface for standing determinations.
+
+It answers:
+
+> Does this actor have valid standing at this stage of this decision, right now?
+
+`cdp_standing_record` is an enforcement projection over `cdp_governed_record`.
+
+It is not the canonical standing artifact.
+
+The canonical standing artifact lives in `cdp_governed_record` with hash, lineage, version, and replayability.
+
+### 8.2 Projection Authority Rule
+
+If `cdp_standing_record` and the corresponding `cdp_governed_record` disagree, `cdp_governed_record` is authoritative.
+
+The projection MUST be rebuilt or marked invalid.
+
+Implementations MUST NOT silently serve a stale standing projection as current.
+
+### 8.3 Required Columns
+
+```sql
+cdp_standing_record:
+  id
+  standing_id
+  governed_record_id
+  decision_id
+  envelope_id
+  stage
+  actor_id
+  actor_type
+  standing_type
+  standing_status
+  recusal_required
+  recusal_scope
+  valid_from
+  valid_until
+  contestable_until
+  projection_status
+  created_at
+  updated_at
+```
+
+### 8.4 Minimum Enforcement Columns
+
+The following columns are the minimum viable enforcement surface:
+
+```sql
+decision_id
+stage
+actor_id
+standing_status
+recusal_required
+valid_from
+valid_until
+contestable_until
+governed_record_id
+projection_status
+```
+
+### 8.5 Required Queryable Fields
+
+The following MUST be queryable without parsing JSON:
+
+- `standing_id`
+- `governed_record_id`
+- `decision_id`
+- `envelope_id`
+- `stage`
+- `actor_id`
+- `actor_type`
+- `standing_type`
+- `standing_status`
+- `recusal_required`
+- `recusal_scope`
+- `valid_from`
+- `valid_until`
+- `contestable_until`
+- `projection_status`
+
+### 8.6 Standing Type
+
+`standing_type` MUST reference a controlled vocabulary value.
+
+Allowed Draft v0.2 values:
+
+```text
+constitutional | delegated | emergency | repair | appeal
+```
+
+These correspond to the standing type taxonomy in `RFC-CDP-033`.
+
+### 8.7 Standing Status
+
+`standing_status` MUST reference a controlled vocabulary value.
+
+Recommended Draft v0.2 values:
+
+```text
+valid | contested | recused | blocked | expired | revoked
+```
+
+### 8.8 Recusal Columns
+
+`recusal_required` is the enforcement flag.
+
+`recusal_scope` preserves the coarse recusal scope:
+
+```text
+none | partial | full
+```
+
+Narrative recusal basis and detailed recusal records SHOULD remain in the governed record JSON.
+
+### 8.9 Projection Status
+
+`projection_status` MUST indicate whether the enforcement projection is usable.
+
+Allowed Draft v0.2 values:
+
+```text
+current | stale | rebuild_required | invalid
+```
+
+Lifecycle protocols MUST NOT rely on standing records whose `projection_status` is not `current` unless an emergency exception path is explicitly invoked and recorded.
+
+### 8.10 Required Enforcement Query
+
+A CDP implementation MUST be able to answer this query in indexed time or equivalent implementation-profile performance:
+
+```sql
+SELECT standing_status, recusal_required, recusal_scope, projection_status
+FROM cdp_standing_record
+WHERE decision_id = $1
+  AND stage = $2
+  AND actor_id = $3
+  AND valid_from <= NOW()
+  AND (valid_until IS NULL OR valid_until > NOW())
+  AND standing_status NOT IN ('revoked', 'expired')
+  AND projection_status = 'current';
+```
+
+A system that cannot answer this query in time to block invalid participation has not implemented standing enforcement.
+
+### 8.11 Mandatory Indexes
+
+Implementations MUST support the equivalent of the following enforcement indexes.
+
+Primary standing enforcement query:
+
+```sql
+CREATE INDEX idx_standing_enforcement
+ON cdp_standing_record (decision_id, stage, actor_id);
+```
+
+Contestability window:
+
+```sql
+CREATE INDEX idx_standing_contestable
+ON cdp_standing_record (contestable_until)
+WHERE standing_status = 'valid';
+```
+
+Emergency standing expiry:
+
+```sql
+CREATE INDEX idx_standing_expiry
+ON cdp_standing_record (valid_until)
+WHERE standing_type = 'emergency'
+  AND standing_status = 'valid';
+```
+
+A fourth actor-level audit index, such as `(actor_id, standing_status)`, MAY be defined in a later implementation profile.
+
+### 8.12 Constitutional Standing Constraint
+
+Constitutional standing MUST NOT be revoked.
+
+Implementations SHOULD enforce this at the database or storage constraint layer where possible.
+
+Recommended logical constraint:
+
+```sql
+CHECK (
+  standing_type != 'constitutional'
+  OR standing_status != 'revoked'
+)
+```
+
+Any attempt to revoke constitutional standing is a governance breach and MUST be rejected or recorded as an invalid attempt.
+
+### 8.13 Emergency Standing Constraint
+
+Emergency standing MUST be time-bounded.
+
+A standing record with:
+
+```text
+standing_type = emergency
+```
+
+MUST include a non-null `valid_until`.
+
+### 8.14 Fields That Belong in Governed JSON
+
+The following fields SHOULD remain in the governed standing artifact rather than the enforcement projection unless query pressure proves otherwise:
+
+- full `standing_basis` narrative;
+- `conflict_description` narrative;
+- `recusal_basis` narrative;
+- full `delegation_chain`;
+- contest narrative;
+- `revocation_reason` narrative;
+- granted-by lineage beyond the actor identifier;
+- audit notes;
+- version history;
+- full content hash and lineage references.
+
+The test is:
+
+- if a field is needed to block participation, it belongs in the enforcement table;
+- if a field is needed to audit or replay a standing determination, it belongs in the governed JSON.
+
+### 8.15 Projection Atomicity
+
+Updates to a canonical standing governed record MUST propagate to `cdp_standing_record` atomically or mark the projection as stale, invalid, or rebuild-required.
+
+The precise propagation mechanism is implementation-profile-specific.
+
+A trigger, transaction scope, application-level sync process, or projection rebuild mechanism MAY be used.
+
+This propagation mechanism remains an open implementation question for future profiles.
+
+### 8.16 Known Gap: Stage-Specific Recusal Override
+
+Some cases require stage-specific recusal even when an actor has valid general standing.
+
+Example:
+
+> An actor has standing to participate in Challenge but is recused from Adjudicate because they authored the proposal.
+
+Draft v0.2 captures stage-specific standing through the `stage` column and coarse recusal through `recusal_required` and `recusal_scope`.
+
+A dedicated `recusal_stage_override` field is deferred to a future revision if implementation pressure shows it is required.
+
+---
+
+## 9. Table: cdp_envelope_ref
+
+### 9.1 Purpose
 
 `cdp_envelope_ref` stores governed references from Decision Lifecycle Envelopes to governed records.
 
 It is the implementation spine of the Governed Path Manifest defined in `RFC-CDP-023`.
 
-### 7.2 Required Columns
+### 9.2 Required Columns
 
 ```sql
 cdp_envelope_ref:
@@ -265,7 +548,7 @@ cdp_envelope_ref:
   closure_blocking_flag
 ```
 
-### 7.3 Required Queryable Fields
+### 9.3 Required Queryable Fields
 
 The following MUST be queryable:
 
@@ -279,7 +562,7 @@ The following MUST be queryable:
 - `registered_at`
 - `closure_blocking_flag`
 
-### 7.4 Required Constraints
+### 9.4 Required Constraints
 
 `cdp_envelope_ref.envelope_id` MUST reference a row in `cdp_decision_envelope`.
 
@@ -287,7 +570,7 @@ The following MUST be queryable:
 
 External references MAY be supported, but their reference type and hash behavior MUST be explicit.
 
-### 7.5 Hash Verification
+### 9.5 Hash Verification
 
 `content_hash_at_registration` stores the hash of the referenced record at the moment it was registered into the governed path.
 
@@ -297,15 +580,15 @@ Implementations MUST NOT rely only on current record hash values when verifying 
 
 ---
 
-## 8. Table: cdp_payload_registry
+## 10. Table: cdp_payload_registry
 
-### 8.1 Purpose
+### 10.1 Purpose
 
 `cdp_payload_registry` implements the schema registry defined by `RFC-CDP-022`.
 
 It stores named payload families, ownership RFCs, status, and schema definitions.
 
-### 8.2 Required Columns
+### 10.2 Required Columns
 
 ```sql
 cdp_payload_registry:
@@ -319,7 +602,7 @@ cdp_payload_registry:
   updated_at
 ```
 
-### 8.3 Required Queryable Fields
+### 10.3 Required Queryable Fields
 
 The following MUST be queryable:
 
@@ -328,7 +611,7 @@ The following MUST be queryable:
 - `owning_rfc`
 - `schema_version`
 
-### 8.4 APC Gate Result
+### 10.4 APC Gate Result
 
 The payload type `anti_premature_certainty_gate_result` is reserved by `RFC-CDP-022`.
 
@@ -336,13 +619,13 @@ When implemented, it SHOULD be persisted as a governed record in `cdp_governed_r
 
 ---
 
-## 9. Table: cdp_event_log
+## 11. Table: cdp_event_log
 
-### 9.1 Purpose
+### 11.1 Purpose
 
 `cdp_event_log` stores append-only events for audit, replay, and dispute resolution.
 
-### 9.2 Required Columns
+### 11.2 Required Columns
 
 ```sql
 cdp_event_log:
@@ -357,7 +640,7 @@ cdp_event_log:
   event_json
 ```
 
-### 9.3 Required Queryable Fields
+### 11.3 Required Queryable Fields
 
 The following MUST be queryable:
 
@@ -369,7 +652,7 @@ The following MUST be queryable:
 - `actor_id`
 - `event_time`
 
-### 9.4 Insert-Only Rule
+### 11.4 Insert-Only Rule
 
 `cdp_event_log` MUST be append-only.
 
@@ -381,15 +664,15 @@ Implementations SHOULD enforce this rule at the database, storage, or infrastruc
 
 ---
 
-## 10. Table: cdp_lookup
+## 12. Table: cdp_lookup
 
-### 10.1 Purpose
+### 12.1 Purpose
 
 `cdp_lookup` stores generic implementation configuration and display values.
 
 It is not the authoritative source for RFC-defined governance-critical enumerations.
 
-### 10.2 Required Columns
+### 12.2 Required Columns
 
 ```sql
 cdp_lookup:
@@ -406,7 +689,7 @@ cdp_lookup:
   updated_at
 ```
 
-### 10.3 Intended Use
+### 12.3 Intended Use
 
 Examples:
 
@@ -416,7 +699,7 @@ Examples:
 - local UI labels;
 - non-normative configuration.
 
-### 10.4 Non-Use
+### 12.4 Non-Use
 
 `cdp_lookup` MUST NOT be the sole authoritative source for governance-critical enum values such as:
 
@@ -431,15 +714,15 @@ Those belong in `cdp_controlled_vocabulary`.
 
 ---
 
-## 11. Table: cdp_controlled_vocabulary
+## 13. Table: cdp_controlled_vocabulary
 
-### 11.1 Purpose
+### 13.1 Purpose
 
 `cdp_controlled_vocabulary` stores governance-critical enumerations defined by RFCs.
 
 These values must be queryable, source-attributed, and lockable.
 
-### 11.2 Required Columns
+### 13.2 Required Columns
 
 ```sql
 cdp_controlled_vocabulary:
@@ -456,7 +739,7 @@ cdp_controlled_vocabulary:
   updated_at
 ```
 
-### 11.3 Required Queryable Fields
+### 13.3 Required Queryable Fields
 
 The following MUST be queryable:
 
@@ -466,7 +749,7 @@ The following MUST be queryable:
 - `locked`
 - `disabled`
 
-### 11.4 Locking Rule
+### 13.4 Locking Rule
 
 Governance-critical values SHOULD be locked when defined by an RFC.
 
@@ -474,13 +757,16 @@ Locked values MUST NOT be modified by ordinary runtime configuration workflows.
 
 Changes to locked values SHOULD require RFC update, migration, or explicit implementation-profile override.
 
-### 11.5 Example Domains
+### 13.5 Example Domains
 
 Examples include:
 
 - `lifecycle_stage`
 - `decision_status`
 - `standing_status`
+- `standing_type`
+- `recusal_scope`
+- `projection_status`
 - `repair_status`
 - `record_type`
 - `payload_type`
@@ -490,9 +776,9 @@ Examples include:
 
 ---
 
-## 12. Proposal Sufficiency and APC Persistence
+## 14. Proposal Sufficiency and APC Persistence
 
-### 12.1 Proposal Sufficiency Record
+### 14.1 Proposal Sufficiency Record
 
 A Proposal Sufficiency Gate evaluation SHOULD persist at least two governed records.
 
@@ -514,7 +800,7 @@ Minimum indexed/queryable fields:
 - `record_status`
 - `content_hash`
 
-### 12.2 Anti-Premature-Certainty Gate Result
+### 14.2 Anti-Premature-Certainty Gate Result
 
 The second is the Anti-Premature-Certainty gate result.
 
@@ -544,7 +830,7 @@ Minimum indexed/queryable fields:
 
 If implementations need to query `passed` frequently, they SHOULD promote `passed` into a queryable column or typed table.
 
-### 12.3 Envelope References
+### 14.3 Envelope References
 
 Both proposal sufficiency records and APC gate results SHOULD be referenced in `cdp_envelope_ref`.
 
@@ -552,29 +838,7 @@ Both proposal sufficiency records and APC gate results SHOULD be referenced in `
 
 ---
 
-## 13. Standing Record Gap
-
-Standing determinations are first-class governance controls under `RFC-CDP-033`.
-
-Draft v0.1 permits standing records to be stored as governed records in `cdp_governed_record`.
-
-However, this is an acknowledged enforcement gap.
-
-The query:
-
-> Does this actor have valid standing at this stage of this decision?
-
-is not merely a reporting query.
-
-It is a governance enforcement query.
-
-For production-grade implementation, CDP may require a dedicated `cdp_standing_record` table or standing-specific indexed columns.
-
-This question is deferred to Session 009 and a future RFC-CDP-025 revision.
-
----
-
-## 14. Normative vs Illustrative SQL
+## 15. Normative vs Illustrative SQL
 
 In this RFC, the following are normative:
 
@@ -583,8 +847,11 @@ In this RFC, the following are normative:
 - required queryable fields;
 - primary identity columns;
 - foreign key from `cdp_envelope_ref` to `cdp_decision_envelope`;
+- standing projection relationship from `cdp_standing_record` to `cdp_governed_record`;
 - insert-only behavior for `cdp_event_log`;
-- separation between `cdp_lookup` and `cdp_controlled_vocabulary`.
+- separation between `cdp_lookup` and `cdp_controlled_vocabulary`;
+- mandatory standing enforcement indexes or implementation-profile equivalents;
+- constitutional standing non-revocation constraint or equivalent enforcement.
 
 The following are illustrative or implementation-profile-specific:
 
@@ -596,13 +863,14 @@ The following are illustrative or implementation-profile-specific:
 - retention policy;
 - database vendor;
 - storage engine;
-- query optimization strategies.
+- query optimization strategies;
+- projection propagation mechanism.
 
 Implementation profiles MAY provide concrete Postgres, SQLite, Redshift, DynamoDB, document-store, lakehouse, or object-storage mappings.
 
 ---
 
-## 15. Security and Governance Considerations
+## 16. Security and Governance Considerations
 
 CDP persistence stores governance-sensitive information, including:
 
@@ -626,41 +894,60 @@ Implementations SHOULD address:
 - data minimization;
 - culturally appropriate handling;
 - affected-party review;
-- repair and appeal obligations.
+- repair and appeal obligations;
+- stale projection detection;
+- database-level protection of constitutional standing.
 
 ---
 
-## 16. Status of This Draft
+## 17. Status of This Draft
 
-Promoted into Draft v0.1:
+Promoted into Draft v0.2:
 
-- protocol without queryable persistence as the failure mode;
+- standing as unenforceable record as a specific persistence failure mode;
+- `cdp_standing_record` as required enforcement projection;
+- projection-not-authoritative rule;
+- `projection_status` honesty field;
+- standing type and standing status controlled vocabulary hooks;
+- mandatory enforcement query;
+- three mandatory standing indexes;
+- constitutional standing check constraint;
+- emergency standing time-bound constraint;
+- standing projection atomicity requirement;
+- stage-specific recusal override as known gap.
+
+Previously promoted into Draft v0.1:
+
+- protocol without queryable persistence as the general failure mode;
 - five core tables;
 - two vocabulary/config tables;
 - JSON-first governed records for MVP;
 - event log as audit/replay, not source of truth;
 - insert-only event log requirement;
-- Proposal Sufficiency and APC persistence pattern;
-- standing record table as an open enforcement gap.
+- Proposal Sufficiency and APC persistence pattern.
 
 Deferred:
 
-- `cdp_standing_record` table design;
+- `recusal_stage_override` dedicated field;
+- actor-level audit index;
 - typed governed record tables under query pressure;
 - migration scripts;
 - database-specific DDL;
 - concrete indexing strategy;
+- projection propagation implementation mechanism;
 - implementation profile mappings.
 
 ---
 
-## 17. Summary
+## 18. Summary
 
 CDP requires queryable persistence.
 
 The envelope is the index.
 
 Governed records are the body of evidence.
+
+Standing records are governed artifacts and enforcement projections.
 
 Envelope references are the governed path manifest in storage form.
 
