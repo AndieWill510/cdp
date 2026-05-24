@@ -4,9 +4,9 @@
 SESSION: 009-standing-persistence-enforcement-query
 DATE_OPENED: 2026-05-23
 MODERATOR: Andie
-STATUS: active
+STATUS: promotion-applied
 MODE: shared-chat-file
-CANON_TARGET: RFC-CDP-025-CDP-Persistence-Model.md; RFC-CDP-033-Standing-and-Recusal-Model.md; implementation schema TBD
+CANON_TARGET: RFC-CDP-025-CDP-Persistence-Model.md; RFC-CDP-033-Standing-and-Recusal-Model.md
 PURPOSE: Resolve the standing persistence enforcement gap named in RFC-CDP-025 and determine whether CDP needs a dedicated cdp_standing_record table linked to cdp_governed_record.
 ```
 
@@ -36,18 +36,6 @@ Standing as unenforceable record occurs when a standing determination exists as 
 
 This failure is both structural and temporal.
 
-Structural failure:
-
-- standing exists only as prose or opaque JSON;
-- standing cannot be joined to decision, stage, actor, standing basis, recusal state, or contestability window;
-- standing cannot be used reliably by lifecycle protocols.
-
-Temporal failure:
-
-- standing can technically be retrieved, but only through slow full-table scans, JSON parsing, or manual review;
-- by the time standing is evaluated, the invalid actor may already have participated;
-- delayed standing enforcement becomes governance failure during the window between submission and enforcement.
-
 A standing query that takes too long or requires manual reconstruction is not merely slow.
 
 It is a governance gap.
@@ -55,8 +43,6 @@ It is a governance gap.
 ---
 
 ## Current G / C Convergence
-
-G and C agree:
 
 Standing must be both:
 
@@ -74,174 +60,99 @@ cdp_standing_record
   linked back to the governed record
 ```
 
-The design should avoid treating `cdp_standing_record` as a replacement for governed records.
-
-It is an enforcement projection / indexed table over a governed standing record.
-
----
-
-## Relevant Canonical Files
-
-Read these first:
-
-1. `https://github.com/AndieWill510/cdp/blob/main/skills/CDP_CONTEXT_FOR_CLAUDE.md`
-2. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-025-CDP-Persistence-Model.md`
-3. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-033-Standing-and-Recusal-Model.md`
-4. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-023-Decision-Lifecycle-Envelope.md`
-5. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-070-Appeals-and-Contestability-Model.md`
-6. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-024-Proposal-Sufficiency-Gate.md`
-7. `https://github.com/AndieWill510/cdp/blob/main/collab/sessions/009-standing-persistence-enforcement-query.md`
-
----
-
-## Candidate Design Direction
-
-Add a dedicated persistence table:
-
-```text
-cdp_standing_record
-```
-
-Purpose:
-
-> Provides the queryable enforcement surface for standing determinations while preserving the full standing artifact as a governed record.
-
-Candidate columns:
-
-```sql
-cdp_standing_record:
-  id
-  standing_id
-  governed_record_id
-  decision_id
-  envelope_id
-  stage
-  actor_id
-  actor_type
-  standing_type
-  standing_basis
-  standing_status
-  recusal_required
-  recusal_scope
-  recusal_basis
-  conflicts_declared
-  conflict_description
-  granted_by
-  granted_at
-  valid_from
-  valid_until
-  contestable_until
-  contested
-  contest_record_id
-  revoked
-  revoked_at
-  revocation_reason
-  created_at
-  updated_at
-```
-
-Minimum enforcement indexes / queryable keys:
-
-```text
-(decision_id, stage, actor_id)
-(decision_id, actor_id)
-(stage, actor_id)
-standing_status
-recusal_required
-contestable_until
-valid_from / valid_until
-```
-
----
-
-## Issues to Decide
-
-1. Does CDP need `cdp_standing_record` as a dedicated table?
-2. Is `cdp_standing_record` an authoritative table or an enforcement projection over `cdp_governed_record`?
-3. What fields are required for MVP standing enforcement?
-4. What fields belong only in the governed JSON artifact?
-5. How should recusal be represented in persistence?
-6. How should constitutional standing differ from delegated, emergency, repair, or appeal standing in the table?
-7. How should standing contestability windows be persisted?
-8. What indexes are mandatory for enforcement?
-9. Should RFC-CDP-033 be patched, RFC-CDP-025 be patched, or both?
-10. What is the narrowest canonical next move?
-
 ---
 
 ## Turn 001 — 2026-05-23 — Andie / G / C — Session Opening
 
-```text
-DATE: 2026-05-23
-AUTHOR: Andie, recorded by ChatGPT / G with C convergence
-ROLE: moderator / architecture framer
-STATUS: active
-PURPOSE: Open Session 009 to resolve the standing persistence enforcement gap.
-```
+G and C opened Session 009 around the standing persistence enforcement gap.
 
-### C Sharpening
-
-C sharpened G's failure mode.
-
-Original G phrase:
-
-```text
-standing as opaque record
-```
-
-C's improved phrase:
-
-```text
-standing as unenforceable record
-```
-
-C added the temporal dimension:
-
-> A standing query that takes too long or requires full-table JSONB scan is not just slow — it is a governance gap during the window between submission and enforcement.
-
-### G Position
-
-G accepts the sharpening.
-
-Dedicated `cdp_standing_record` is likely necessary, but it should not replace the governed artifact.
-
-It should be linked to `cdp_governed_record` so standing remains both:
-
-- a governed record; and
-- an indexed enforcement surface.
-
-### Prompt to C
-
-C:
-
-Please draft **Turn 002 — Claude / Sonnet / C — Standing Persistence Challenge Memo**.
-
-Please answer:
-
-1. Is **standing as unenforceable record** the right failure mode?
-2. Should CDP define a dedicated `cdp_standing_record` table?
-3. Is `cdp_standing_record` authoritative, or an enforcement projection linked to `cdp_governed_record`?
-4. What are the minimum columns required to answer: “does this actor have valid standing at this stage of this decision?”
-5. What standing fields belong only in the governed record JSON?
-6. How should recusal be represented in the table?
-7. How should constitutional standing, delegated standing, emergency standing, repair standing, and appeal standing be represented?
-8. What indexes or query keys are mandatory for enforcement?
-9. Should RFC-CDP-025, RFC-CDP-033, or both be patched?
-10. What is the narrowest canonical next move?
-
-Do not flatter.
-Do not collapse uncertainty.
-Name the failure mode precisely.
+C sharpened the failure mode from `standing as opaque record` to `standing as unenforceable record`, including the temporal risk that a slow standing query becomes a governance gap.
 
 ---
 
-## Promotion Decision
+## Turn 002 — 2026-05-23 — Claude / Sonnet / C — Standing Persistence Challenge Memo
 
-Pending.
+C recommended:
+
+- define a dedicated `cdp_standing_record` table;
+- treat it as an enforcement projection over `cdp_governed_record`, not the authoritative artifact;
+- keep the canonical standing artifact in `cdp_governed_record`;
+- require indexed standing enforcement fields;
+- represent recusal with `recusal_required` and `recusal_scope`;
+- represent standing types with `standing_type` values aligned to RFC-CDP-033;
+- add mandatory indexes for enforcement, contestability window, and emergency standing expiry;
+- enforce constitutional standing non-revocation as a database/storage constraint where possible;
+- patch both RFC-CDP-025 and RFC-CDP-033.
+
+---
+
+## Turn 003 — 2026-05-23 — Andie / G — Standing Persistence Promotion
+
+Decision 021 approved C's standing persistence design with one G amendment.
+
+G amendment:
+
+```text
+projection_status
+```
+
+Allowed Draft v0.2 values:
+
+```text
+current | stale | rebuild_required | invalid
+```
+
+Reason: if `cdp_standing_record` is a projection, the projection needs its own validity state.
+
+### Action Taken
+
+Patched:
+
+```text
+rfc/RFC-CDP-025-CDP-Persistence-Model.md
+```
+
+Advanced to Draft v0.2.
+
+Added:
+
+- standing as unenforceable record as a specific persistence failure mode;
+- `cdp_standing_record` as required enforcement projection;
+- projection-not-authoritative rule;
+- `projection_status` field;
+- standing type and standing status controlled vocabulary hooks;
+- mandatory enforcement query;
+- three mandatory standing indexes;
+- constitutional standing non-revocation constraint;
+- emergency standing time-bound constraint;
+- standing projection atomicity requirement;
+- stage-specific recusal override as known gap.
+
+Patched:
+
+```text
+rfc/RFC-CDP-033-Standing-and-Recusal-Model.md
+```
+
+Advanced to Draft v0.4.
+
+Added Section 12: Standing Persistence.
+
+Section 12 declares that standing determinations must be persisted as both:
+
+1. a canonical governed artifact; and
+2. a queryable enforcement projection.
+
+### Promotion Decision
 
 ```text
 PROMOTE TO CANON:
-PROMOTE WITH CHANGES:
-DO NOT PROMOTE:
+- RFC-CDP-025 Draft v0.2 standing enforcement projection
+- RFC-CDP-033 Draft v0.4 Standing Persistence bridge
+
 DEFER:
+- recusal_stage_override dedicated field
+- actor-level audit index
+- projection propagation implementation mechanism
+- lifecycle protocol standing enforcement integration
 ```
