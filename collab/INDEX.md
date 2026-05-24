@@ -6,7 +6,7 @@ This index tracks active and completed collaboration sessions.
 
 | Session | Topic | Status | Moderator | Canon Target |
 |---|---|---|---|---|
-| [010](sessions/010-proposal-sufficiency-gate.md) | Proposal Sufficiency Gate | active | Andie | RFC-CDP-024-Proposal-Sufficiency-Gate.md |
+| — | — | — | — | — |
 
 ## Closed Sessions
 
@@ -21,6 +21,8 @@ This index tracks active and completed collaboration sessions.
 | [007](sessions/007-anti-premature-certainty-implementation.md) | Anti-Premature-Certainty Principle and Implementation | closed-promoted | Andie | RFC-CDP-002 v0.2; RFC-CDP-022 APC gate result payload; RFC-CDP-024 reservation |
 | [008](sessions/008-cdp-persistence-model.md) | CDP Persistence Model | closed-promoted | Andie | RFC-CDP-025-CDP-Persistence-Model.md |
 | [009](sessions/009-standing-persistence-enforcement-query.md) | Standing Persistence and Enforcement Query | closed-promoted | Andie | RFC-CDP-025 v0.2; RFC-CDP-033 v0.4 |
+| [010](sessions/010-proposal-sufficiency-gate.md) | Proposal Sufficiency Gate | closed-promoted | Andie | RFC-CDP-024 v0.1 |
+| [011](sessions/011-rfc-022-apc-gate-result-payload.md) | RFC-CDP-022 APC Gate Result Payload | closed-promoted | Andie | RFC-CDP-022 v0.5 |
 
 ## Session Status Values
 
@@ -34,10 +36,12 @@ This index tracks active and completed collaboration sessions.
 
 ## Canon Promotion Queue
 
-1. RFC-CDP-024 Proposal Sufficiency Gate Draft.
-2. RFC-CDP-045 Legitimize Protocol APC wiring.
-3. Record Hash Propagation to governed record RFCs in the 040–048 band.
-4. Reference implementation / DDL profile for RFC-CDP-025.
+1. RFC-CDP-023 Decision Lifecycle Envelope patch for proposal sufficiency and formation challenge references.
+2. RFC-CDP-041 Propose Protocol Proposal Sufficiency wiring.
+3. RFC-CDP-042 Challenge Protocol formation challenge relationship.
+4. RFC-CDP-045 Legitimize Protocol APC wiring.
+5. Record Hash Propagation to governed record RFCs in the 040–048 band.
+6. Reference implementation / DDL profile for RFC-CDP-025.
 
 ## Open Cross-Session Questions
 
@@ -54,9 +58,9 @@ This index tracks active and completed collaboration sessions.
 - Which lifecycle RFCs should reference RFC-CDP-023 first?
 - Propagate `record_hash` requirements to governed record RFCs in the 040–048 band.
 - Adjudicate lifecycle-stage enum ownership before RFC-CDP-023 advances to Candidate.
-- Should Anti-Premature-Certainty become a gate payload, challenge subtype, proposal self-check, or all three?
-- Should CDP persistence use event sourcing as source of truth, current-state tables plus audit log, or a hybrid?
 - Should governed records use one polymorphic JSON-first table or typed tables per record family?
 - What standing indexes are mandatory to block invalid participation in time?
-- Should `formation_challenge` be a distinct upstream act or a Challenge subtype?
-- Should `anti_premature_certainty_gate_result` be required at proposal admission or only before Legitimize?
+- What standing rules apply to formation challenge challengers?
+- Should `proposal_sufficiency_record` become a payload type in RFC-CDP-022?
+- Should `formation_challenge_record` become a payload type in RFC-CDP-022?
+- Should `record_hash` be mandatory in `anti_premature_certainty_gate_result` after record-hash propagation?
