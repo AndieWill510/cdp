@@ -1,9 +1,9 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.9  
+Status: Draft v1.0  
 Series: Constitutional Decision Plane (CDP)  
-Date: May 19, 2026
+Date: May 23, 2026
 
 ## Abstract
 
@@ -103,6 +103,14 @@ RFC-CDP-033 was advanced to Draft v0.3 so denial of constitutional standing auto
 Session 006 patched RFC-CDP-023 so appeal and repair references become active governance controls, not passive reference lists.
 
 RFC-CDP-023 was advanced to Draft v0.4 with a four-field `repair_control` surface, closure-blocking rules, and repair-trigger state binding to RFC-CDP-070.
+
+### 0.8 Current Session 007 Adjudication
+
+Session 007 reviewed RFC-CDP-002 Anti-Premature-Certainty Principle as both a constitutional principle and an implementation primitive.
+
+RFC-CDP-002 was advanced to Draft v0.2 with the distinction between procedural bypass and certainty performance, plus APC exception authority and Learn-stage review requirements.
+
+RFC-CDP-022 was advanced to Draft v0.4 and reserves the `anti_premature_certainty_gate_result` payload type.
 
 ---
 
@@ -251,8 +259,9 @@ Depends On:
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
-| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v0.9 |
+| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v1.0 |
 | `001` | Vision, Scope, and Principles | `RFC-CDP-001-Vision-Scope-Principles.md` | Draft v0.6 |
+| `002` | Anti-Premature-Certainty Principle | `RFC-CDP-002-Anti-Premature-Certainty-Principle.md` | Draft v0.2 |
 
 ### 6.2 Reference Architecture
 
@@ -266,7 +275,7 @@ Depends On:
 |---:|---|---|---|
 | `020` | Decision Object Schema | `RFC-CDP-020-Decision-Object-Schema.md` | Draft |
 | `021` | Wire Message Envelope Schema | `RFC-CDP-021-Envelope-Schema.md` | Draft v0.4 |
-| `022` | Protocol Payload Schema Registry | `RFC-CDP-022-Protocol-Payload-Schema-Registry.md` | Draft |
+| `022` | Protocol Payload Schema Registry | `RFC-CDP-022-Protocol-Payload-Schema-Registry.md` | Draft v0.4 |
 | `023` | Decision Lifecycle Envelope | `RFC-CDP-023-Decision-Lifecycle-Envelope.md` | Draft v0.4 |
 
 ### 6.4 Trust, Identity, and Authority
