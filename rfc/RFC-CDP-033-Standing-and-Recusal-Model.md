@@ -1,10 +1,10 @@
 # RFC-CDP-033 — Standing and Recusal Model
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.3  
+Status: Draft v0.4  
 Series: Constitutional Decision Plane (CDP)  
-Date: May 19, 2026  
-Depends On: RFC-CDP-030, RFC-CDP-031, RFC-CDP-032, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074, RFC-CDP-075  
+Date: May 23, 2026  
+Depends On: RFC-CDP-025, RFC-CDP-030, RFC-CDP-031, RFC-CDP-032, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074, RFC-CDP-075  
 Related: RFC-CDP-040, RFC-CDP-041, RFC-CDP-045, RFC-CDP-050, RFC-CDP-052, RFC-CDP-060, RFC-CDP-062
 
 ## Abstract
@@ -435,7 +435,36 @@ An uncontested standing determination becomes stable for that decision. It remai
 
 ---
 
-## 12. Security and Governance Considerations
+## 12. Standing Persistence
+
+Standing determinations MUST be persisted in two related forms:
+
+1. as a canonical governed artifact; and
+2. as a queryable enforcement projection.
+
+The canonical governed artifact preserves the full standing record, including hash, lineage, basis, narrative context, contestability, recusal rationale, and replayability.
+
+The enforcement projection exposes the fields required to answer, in time:
+
+> Does this actor have valid standing at this stage of this decision?
+
+The canonical governed artifact SHOULD be stored in `cdp_governed_record`.
+
+The enforcement projection SHOULD be stored in `cdp_standing_record` as defined by `RFC-CDP-025-CDP-Persistence-Model.md`.
+
+`cdp_standing_record` MUST NOT be treated as the canonical standing artifact.
+
+If the enforcement projection and governed artifact disagree, the governed artifact is authoritative and the projection MUST be rebuilt or marked stale, rebuild-required, or invalid.
+
+Lifecycle protocols MUST NOT rely on a stale or invalid standing projection except under explicit emergency exception conditions that are recorded and later reviewed.
+
+Constitutional standing MUST NOT be revocable through the enforcement projection.
+
+Implementations SHOULD enforce constitutional standing non-revocation at the database or storage constraint layer where possible.
+
+---
+
+## 13. Security and Governance Considerations
 
 Standing records are governance-sensitive.
 
@@ -450,13 +479,15 @@ Implementations SHOULD consider:
 - retention policy;
 - appeal path;
 - conflict disclosure handling;
-- protection against retaliatory misuse.
+- stale projection detection;
+- protection against retaliatory misuse;
+- database-level protection of constitutional standing.
 
 ---
 
-## 13. Status of This Draft
+## 14. Status of This Draft
 
-This RFC was created from Session 002 of the CDP collaboration process and updated in Session 005.
+This RFC was created from Session 002 of the CDP collaboration process and updated in Sessions 005 and 009.
 
 Promoted into this draft:
 
@@ -467,7 +498,8 @@ Promoted into this draft:
 - a seed Standing Record schema;
 - the standing type taxonomy and constitutional root model;
 - constitutional standing protection as a Repair-plane-triggering governance breach;
-- automatic Breach Record generation when constitutional standing is denied.
+- automatic Breach Record generation when constitutional standing is denied;
+- Standing Persistence as a two-layer governed artifact plus enforcement projection model.
 
 Not yet resolved:
 
@@ -475,11 +507,12 @@ Not yet resolved:
 - how risk classes determine recusal depth;
 - how this model updates lifecycle protocol RFCs;
 - how Functional Standing relates to `RFC-CDP-062-HITL-AIITL-Role-Boundaries.md`;
-- whether `RFC-CDP-001-Vision-Scope-Principles.md` sufficiently supports constitutional standing as axiomatic.
+- whether `RFC-CDP-001-Vision-Scope-Principles.md` sufficiently supports constitutional standing as axiomatic;
+- how implementation profiles enforce projection atomicity.
 
 ---
 
-## 14. Summary
+## 15. Summary
 
 Standing determines who may participate.
 
@@ -489,6 +522,8 @@ Authority capture through participation is a structural governance failure.
 
 Legitimacy by infinite delegation is a constitutional-root failure.
 
+Standing as unenforceable record is a persistence failure.
+
 CDP must not merely ask whether a decision was reviewed.
 
-It must ask whether the right actors had standing, whether conflicted actors were recused, whether constitutional standing was protected, whether constitutional standing denial automatically enters the Repair plane, and whether the process remained genuinely contestable.
+It must ask whether the right actors had standing, whether conflicted actors were recused, whether constitutional standing was protected, whether constitutional standing denial automatically enters the Repair plane, whether the standing record was enforceable in time, and whether the process remained genuinely contestable.
