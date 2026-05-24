@@ -4,9 +4,9 @@
 SESSION: 007-anti-premature-certainty-implementation
 DATE_OPENED: 2026-05-23
 MODERATOR: Andie
-STATUS: active
+STATUS: promotion-applied
 MODE: shared-chat-file
-CANON_TARGET: RFC-CDP-002-Anti-Premature-Certainty-Principle.md; RFC-CDP-041; RFC-CDP-042; RFC-CDP-045; RFC-CDP-047; RFC-CDP-090; RFC-CDP-022 if schema promotion is needed
+CANON_TARGET: RFC-CDP-002-Anti-Premature-Certainty-Principle.md; RFC-CDP-022-Protocol-Payload-Schema-Registry.md
 PURPOSE: Review RFC-CDP-002 Anti-Premature-Certainty Principle and determine whether it should become a constitutional principle, a decision gate, a proposal-formulation primitive, a challenge type, or some combination of these.
 ```
 
@@ -50,6 +50,23 @@ It is Draft status.
 
 ---
 
+## Failure Mode
+
+The umbrella failure mode is **certainty capture**.
+
+C sharpened certainty capture into two enforceable failure modes:
+
+1. **Procedural bypass** — a decision advances to legitimated or execution-eligible without passing required sufficiency checks.
+2. **Certainty performance** — sufficiency checks are completed on paper, but evidence, alternatives, dissent, and uncertainty fields perform inquiry without representing genuine inquiry.
+
+The session accepted this distinction.
+
+Procedural bypass is primarily addressed by gate enforcement.
+
+Certainty performance requires adversarial review and, later, a named `premature_certainty_challenge` subtype.
+
+---
+
 ## Relevant Canonical Files
 
 Read these first:
@@ -68,60 +85,6 @@ Read these first:
 12. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-090-Governance-State-Machine.md`
 13. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-022-Protocol-Payload-Schema-Registry.md`
 14. `https://github.com/AndieWill510/cdp/blob/main/collab/sessions/007-anti-premature-certainty-implementation.md`
-
----
-
-## Initial G Position
-
-This RFC should not be treated as only a nice constitutional principle.
-
-It is probably one of CDP's core implementation primitives.
-
-My current hypothesis:
-
-```text
-Anti-Premature-Certainty is both:
-1. a constitutional principle in RFC-CDP-002; and
-2. a reusable gate payload / challenge primitive used by Propose, Challenge, Adjudicate, Legitimize, Record, and Learn.
-```
-
-It may become the primary way proposals are made well-formed:
-
-- A proposal should arrive with a preliminary anti-premature-certainty self-check.
-- A challenger should be able to file a `premature_certainty_challenge` when the proposal asserts more certainty than its record supports.
-- Legitimize should require the gate to pass or require an explicit exception / waiver record.
-- Record should preserve gate inputs, failures, waivers, and evaluator identity.
-- Learn should treat repeated premature-certainty failures as institutional learning signals.
-
----
-
-## Failure Mode
-
-The failure mode is **certainty capture**.
-
-Certainty capture occurs when an actor, institution, or model turns an under-tested claim into an apparently final decision by controlling how uncertainty, alternatives, dissent, and stakeholder impact are represented.
-
-Premature certainty is not only a bad conclusion.
-
-It is a capture mechanism.
-
-A proposal that arrives with its ambiguity already collapsed has shaped the decision space before challenge begins.
-
-This connects directly to Nemawashi / Framing and the proposer recusal problem.
-
----
-
-## Issues to Decide
-
-1. Is RFC-CDP-002 the right constitutional-band placement?
-2. Should Anti-Premature-Certainty remain a principle, or become a formal gate primitive?
-3. Should it be represented as a payload type in RFC-CDP-022?
-4. Should it create a new Challenge subtype: `premature_certainty_challenge`?
-5. Should every Proposal include an anti-premature-certainty self-check?
-6. Should Legitimize require a passing gate or explicit exception record?
-7. Are the seven gate criteria too strict for low-risk decisions?
-8. How should risk-tiering and waivers work?
-9. What implementation artifact should come first: schema, state transition, challenge subtype, or RFC update?
 
 ---
 
@@ -145,49 +108,211 @@ Andie also raised a stronger possibility:
 
 ### G Recommendation Before C Review
 
-Do not rewrite the RFC yet.
+Anti-Premature-Certainty should not be treated as only a constitutional principle.
 
-Ask C to challenge the RFC across four dimensions:
+It should likely become:
 
-1. **Canonical placement** — is `002` correct as a constitutional principle?
-2. **Implementation form** — principle, gate, challenge type, proposal requirement, or all of these?
-3. **Risk-tiering** — are the seven criteria too strict for routine decisions?
-4. **Protocol integration** — which RFCs must be updated if this becomes real?
+1. a constitutional principle in RFC-CDP-002;
+2. a reusable gate payload;
+3. a proposal self-check;
+4. a named challenge subtype;
+5. a Learn-stage signal.
 
-### Prompt to C
+---
 
-C:
+## Turn 002 — 2026-05-23 — Claude / Sonnet / C — Anti-Premature-Certainty Challenge Memo
 
-Please draft **Turn 002 — Claude / Sonnet / C — Anti-Premature-Certainty Challenge and Implementation Memo**.
+```text
+DATE: 2026-05-23
+AUTHOR: Claude / Sonnet (claude-sonnet-4-6)
+ROLE: challenger / coherence reviewer
+STATUS: draft-promoted
+PURPOSE: Challenge RFC-CDP-002 placement, gate design, and implementation path.
+```
 
-Read the files listed above.
+### 1. Failure Mode Distinction
 
-Please answer:
+C argued that G's **certainty capture** was useful but too broad.
 
-1. What failure mode does RFC-CDP-002 actually prevent? Is **certainty capture** the right name?
-2. Is RFC-CDP-002 correctly placed in the constitutional frame band?
-3. Is Anti-Premature-Certainty a principle, a gate, a challenge subtype, a proposal-formulation rule, or a cross-cutting primitive?
-4. Should every proposal include an Anti-Premature-Certainty self-check?
-5. Should Challenge define a `premature_certainty_challenge` type?
-6. Should Legitimize require the gate to pass or require an exception record?
-7. Are the seven sufficiency criteria too strict for low-risk decisions?
-8. What schema or payload should be added first?
-9. What RFCs must be updated for this to become implementable?
-10. What is the narrowest canonical next move?
+C distinguished:
 
-Do not flatter.
-Do not collapse uncertainty.
-Name the failure mode precisely.
+**Procedural bypass**
+
+A decision advances to legitimated or execution-eligible without passing required sufficiency checks.
+
+**Certainty performance**
+
+The sufficiency checks are completed on paper, but the evidence, alternatives, and dissent fields are filled with content that satisfies the schema without actually representing genuine inquiry.
+
+C's conclusion:
+
+- procedural bypass is prevented by a gate;
+- certainty performance requires adversarial review;
+- both names should appear in RFC-CDP-002.
+
+G accepted this distinction and preserved **certainty capture** as the umbrella term.
+
+### 2. Canonical Placement
+
+C recommended keeping RFC-CDP-002 in the `000–009` constitutional frame band.
+
+Rationale: this principle constrains every downstream protocol and is a precondition of legitimate decision-making.
+
+### 3. Implementation Form
+
+C recommended treating Anti-Premature-Certainty as all five, implemented in sequence:
+
+1. constitutional principle;
+2. Legitimize gate;
+3. proposal-formulation scaffold;
+4. named challenge subtype;
+5. Learn-stage signal.
+
+### 4. APC Self-Check
+
+C recommended every proposal include an APC self-check, but risk-tiered.
+
+Minimum required for all decisions:
+
+- evidence;
+- uncertainty summary;
+- reversibility path.
+
+Full seven criteria required for high-risk, irreversible, high-authority, or externally affecting decisions.
+
+Risk classification remains an open dependency.
+
+### 5. Challenge Type
+
+C recommended creating a future named challenge type:
+
+```text
+premature_certainty_challenge
+```
+
+This should reference the specific APC criterion being challenged and trigger gate re-evaluation.
+
+### 6. Exception Constraints
+
+C recommended two immediate additions:
+
+1. An APC exception MUST NOT be granted by the same actor who proposed the decision.
+2. Every APC exception MUST be reviewed during the Learn stage.
+
+### 7. Payload Registration
+
+C recommended reserving the APC gate result as a first-class payload type in RFC-CDP-022:
+
+```text
+anti_premature_certainty_gate_result
+```
+
+### 8. Narrowest Canonical Next Move
+
+C recommended two moves:
+
+1. Patch RFC-CDP-002 to Draft v0.2 with the failure-mode distinction and exception constraints.
+2. Reserve `anti_premature_certainty_gate_result` in RFC-CDP-022.
+
+---
+
+## Turn 003 — 2026-05-23 — Andie / G — APC v0.2 Promotion
+
+```text
+DATE: 2026-05-23
+AUTHOR: Andie, recorded by ChatGPT / G
+ROLE: moderator / canon promotion recorder
+STATUS: adjudicated-and-promoted
+PURPOSE: Record approval of C's two-move APC recommendation.
+```
+
+### Decision 019
+
+Approved.
+
+### G Position
+
+G accepted C's distinction.
+
+`certainty capture` remains the umbrella term.
+
+`procedural bypass` and `certainty performance` become distinct enforceable failure modes.
+
+### Action Taken
+
+Patched:
+
+```text
+rfc/RFC-CDP-002-Anti-Premature-Certainty-Principle.md
+```
+
+Advanced to Draft v0.2.
+
+Added:
+
+- certainty capture as umbrella failure mode;
+- procedural bypass as gate-preventable failure mode;
+- certainty performance as adversarial-review failure mode;
+- limitation that the reference implementation checks field presence, not field quality;
+- APC exception authority constraint;
+- mandatory Learn-stage review of APC exceptions;
+- risk-tiering dependency acknowledgment.
+
+Patched:
+
+```text
+rfc/RFC-CDP-022-Protocol-Payload-Schema-Registry.md
+```
+
+Advanced to Draft v0.4.
+
+Reserved payload type:
+
+```text
+anti_premature_certainty_gate_result
+```
+
+Updated:
+
+```text
+rfc/RFC-CDP-000-Series-Index.md
+```
+
+Advanced to Draft v1.0.
+
+### Promotion Decision
+
+```text
+PROMOTE TO CANON:
+- RFC-CDP-002 Draft v0.2
+- RFC-CDP-022 Draft v0.4 payload reservation
+- RFC-CDP-000 Draft v1.0 map update
+
+KEEP IN COLLAB:
+- risk-tiering mechanism
+- premature_certainty_challenge subtype
+- RFC-CDP-045 Legitimize gate requirement
+- RFC-CDP-041 Proposal self-check requirement
+- RFC-CDP-048 Learn event requirement
+
+DEFER:
+- downstream protocol updates until APC payload reservation is stable
+```
 
 ---
 
 ## Promotion Decision
 
-Pending.
-
 ```text
 PROMOTE TO CANON:
-PROMOTE WITH CHANGES:
-DO NOT PROMOTE:
+- RFC-CDP-002 Draft v0.2
+- RFC-CDP-022 Draft v0.4 APC gate result payload reservation
+- RFC-CDP-000 Draft v1.0 map update
+
 DEFER:
+- RFC-CDP-045 Legitimize gate requirement
+- RFC-CDP-041 Proposal self-check requirement
+- RFC-CDP-042 premature_certainty_challenge subtype
+- RFC-CDP-048 Learn event requirement
+- risk-tiering mechanism
 ```
