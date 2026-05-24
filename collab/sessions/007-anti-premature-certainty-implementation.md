@@ -6,7 +6,7 @@ DATE_OPENED: 2026-05-23
 MODERATOR: Andie
 STATUS: promotion-applied
 MODE: shared-chat-file
-CANON_TARGET: RFC-CDP-002-Anti-Premature-Certainty-Principle.md; RFC-CDP-022-Protocol-Payload-Schema-Registry.md
+CANON_TARGET: RFC-CDP-002-Anti-Premature-Certainty-Principle.md; RFC-CDP-022-Protocol-Payload-Schema-Registry.md; RFC-CDP-024-Proposal-Sufficiency-Gate.md reserved
 PURPOSE: Review RFC-CDP-002 Anti-Premature-Certainty Principle and determine whether it should become a constitutional principle, a decision gate, a proposal-formulation primitive, a challenge type, or some combination of these.
 ```
 
@@ -75,15 +75,15 @@ Read these first:
 2. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-002-Anti-Premature-Certainty-Principle.md`
 3. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-000-Series-Index.md`
 4. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-001-Vision-Scope-Principles.md`
-5. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-023-Decision-Lifecycle-Envelope.md`
-6. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-041-Propose-Protocol.md`
-7. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-042-Challenge-Protocol.md`
-8. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-043-Test-Protocol.md`
-9. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-044-Adjudicate-Protocol.md`
-10. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-045-Legitimize-Protocol.md`
-11. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-047-Record-Protocol.md`
-12. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-090-Governance-State-Machine.md`
-13. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-022-Protocol-Payload-Schema-Registry.md`
+5. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-022-Protocol-Payload-Schema-Registry.md`
+6. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-023-Decision-Lifecycle-Envelope.md`
+7. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-041-Propose-Protocol.md`
+8. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-042-Challenge-Protocol.md`
+9. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-043-Test-Protocol.md`
+10. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-044-Adjudicate-Protocol.md`
+11. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-045-Legitimize-Protocol.md`
+12. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-047-Record-Protocol.md`
+13. `https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-090-Governance-State-Machine.md`
 14. `https://github.com/AndieWill510/cdp/blob/main/collab/sessions/007-anti-premature-certainty-implementation.md`
 
 ---
@@ -280,24 +280,77 @@ rfc/RFC-CDP-000-Series-Index.md
 
 Advanced to Draft v1.0.
 
-### Promotion Decision
+---
+
+## Turn 004 — 2026-05-23 — C / G — Proposal Sufficiency Gate Reservation
 
 ```text
-PROMOTE TO CANON:
-- RFC-CDP-002 Draft v0.2
-- RFC-CDP-022 Draft v0.4 payload reservation
-- RFC-CDP-000 Draft v1.0 map update
-
-KEEP IN COLLAB:
-- risk-tiering mechanism
-- premature_certainty_challenge subtype
-- RFC-CDP-045 Legitimize gate requirement
-- RFC-CDP-041 Proposal self-check requirement
-- RFC-CDP-048 Learn event requirement
-
-DEFER:
-- downstream protocol updates until APC payload reservation is stable
+DATE: 2026-05-23
+AUTHOR: Claude / Sonnet / C, accepted by ChatGPT / G
+ROLE: primitive naming and reservation
+STATUS: reserved
+PURPOSE: Decide whether APC requires a new primitive beyond protocol-level updates.
 ```
+
+### C Position
+
+C agreed with G that a new primitive is needed.
+
+Reason:
+
+If APC lives only across RFC-CDP-041, RFC-CDP-042, and RFC-CDP-045, CDP gets three partial implementations of one concept with no canonical object defining proposal sufficiency.
+
+That is schema drift in a blazer.
+
+### G Position
+
+G accepted C's name:
+
+```text
+Proposal Sufficiency Gate
+```
+
+Reason:
+
+The name answers the governing question:
+
+> Has this proposal earned the right to be heard?
+
+### Reservation
+
+Reserved:
+
+```text
+RFC-CDP-024-Proposal-Sufficiency-Gate.md
+```
+
+Status:
+
+```text
+Reserved
+```
+
+Definition:
+
+> Proposal Sufficiency Gate defines the minimum formation requirements a proposal must satisfy before entering the CDP challenge lifecycle.
+
+### Scope for Session 008
+
+Session 008 should draft RFC-CDP-024.
+
+It should define:
+
+- Proposal sufficiency record schema;
+- APC gate result relationship;
+- Formation challenge as a distinct upstream act;
+- Self-check requirement with risk-tier hooks;
+- Promotion rule before Challenge lifecycle entry.
+
+It should not define:
+
+- risk classification mechanism;
+- full Challenge protocol;
+- full Legitimize gate requirements.
 
 ---
 
@@ -309,7 +362,11 @@ PROMOTE TO CANON:
 - RFC-CDP-022 Draft v0.4 APC gate result payload reservation
 - RFC-CDP-000 Draft v1.0 map update
 
+RESERVE:
+- RFC-CDP-024 Proposal Sufficiency Gate
+
 DEFER:
+- RFC-CDP-024 full draft to Session 008
 - RFC-CDP-045 Legitimize gate requirement
 - RFC-CDP-041 Proposal self-check requirement
 - RFC-CDP-042 premature_certainty_challenge subtype
