@@ -4,7 +4,9 @@ This index tracks active and completed collaboration sessions.
 
 ## Active Sessions
 
-None.
+| Session | Topic | Status | Moderator | Canon Target |
+|---|---|---|---|---|
+| [007](sessions/007-anti-premature-certainty-implementation.md) | Anti-Premature-Certainty Principle and Implementation | active | Andie | RFC-CDP-002; RFC-CDP-022; RFC-CDP-041; RFC-CDP-042; RFC-CDP-045; RFC-CDP-047; RFC-CDP-090 |
 
 ## Closed Sessions
 
@@ -15,6 +17,7 @@ None.
 | [003](sessions/003-decision-envelope.md) | Decision Envelope / Envelope split | closed-promoted | Andie | RFC-CDP-021 Wire Message Envelope; RFC-CDP-023 Decision Lifecycle Envelope; RFC-CDP-000 map update |
 | [004](sessions/004-governed-path-hash.md) | Governed Path Hash | closed-promoted | Andie | RFC-CDP-023 governed_path_hash v0.3; RFC-CDP-000 map update |
 | [005](sessions/005-repair-plane-reanchor.md) | Repair Plane Reanchor | closed-promoted | Andie | RFC-CDP-070 Appeals and Contestability; RFC-CDP-033 automatic Breach Record; RFC-CDP-000 map update |
+| [006](sessions/006-rfc-023-repair-trigger-closure-blocking.md) | RFC-CDP-023 Repair Trigger and Closure-Blocking Patch | closed-promoted | Andie | RFC-CDP-023 repair_control v0.4; RFC-CDP-000 map update |
 
 ## Session Status Values
 
@@ -28,8 +31,7 @@ None.
 
 ## Canon Promotion Queue
 
-1. RFC-CDP-023 Repair Trigger and Closure-Blocking Patch.
-2. Record Hash Propagation to governed record RFCs in the 040–048 band.
+1. Record Hash Propagation to governed record RFCs in the 040–048 band.
 
 ## Open Cross-Session Questions
 
@@ -46,4 +48,4 @@ None.
 - Which lifecycle RFCs should reference RFC-CDP-023 first?
 - Propagate `record_hash` requirements to governed record RFCs in the 040–048 band.
 - Adjudicate lifecycle-stage enum ownership before RFC-CDP-023 advances to Candidate.
-- Patch RFC-CDP-023 with repair-trigger and closure-blocking rules now that RFC-CDP-070 exists.
+- Should Anti-Premature-Certainty become a gate payload, challenge subtype, proposal self-check, or all three?
