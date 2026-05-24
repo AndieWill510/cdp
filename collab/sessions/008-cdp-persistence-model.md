@@ -4,9 +4,9 @@
 SESSION: 008-cdp-persistence-model
 DATE_OPENED: 2026-05-23
 MODERATOR: Andie
-STATUS: active
+STATUS: promotion-applied
 MODE: shared-chat-file
-CANON_TARGET: RFC-CDP-025-CDP-Persistence-Model.md; RFC-CDP-023; RFC-CDP-022; RFC-CDP-024; implementation schema TBD
+CANON_TARGET: RFC-CDP-025-CDP-Persistence-Model.md
 PURPOSE: Determine whether CDP needs a persistence-model RFC and define the minimum viable database/storage substrate for Decision Lifecycle Envelopes, governed records, references, lookup values, payload schemas, gate results, and event history.
 ```
 
@@ -24,7 +24,7 @@ CDP now has several core governance objects and primitives:
 
 The architecture now has the constitutional object model.
 
-It does not yet have a canonical persistence model.
+It did not yet have a canonical persistence model.
 
 Andie asked:
 
@@ -34,266 +34,17 @@ This session exists to answer that question.
 
 ---
 
-## Current G Position
-
-Yes, CDP has an envelope.
-
-Specifically:
-
-- Wire Message Envelope — `RFC-CDP-021`
-- Decision Lifecycle Envelope — `RFC-CDP-023`
-
-But CDP does not yet have a canonical persistence model.
-
-We have the constitutional object model, but not the storage substrate.
-
----
-
 ## Failure Mode
 
-The failure mode is **protocol without persistence**.
+C sharpened the failure mode to:
 
-Protocol without persistence occurs when a governance system defines envelopes, records, gates, challenges, repair hooks, and hashes, but lacks a minimal storage model that can persist, query, replay, validate, and enforce them.
+> **Protocol without queryable persistence**
 
-The result is a beautiful protocol suite that cannot be reliably implemented.
+A governance system can persist records as flat files, JSONL, object storage, or document blobs and still fail CDP conformance if it cannot query, join, replay, validate, and enforce governance-critical relationships.
 
-A decision can be described, but not queried.
+The gap is not mere storage.
 
-A governed path can be specified, but not reconstructed.
-
-A gate can be defined, but not enforced.
-
-A repair record can be referenced, but not joined.
-
-A hash can be computed, but not verified across stored records.
-
----
-
-## Initial G Architecture Recommendation
-
-Create a new RFC:
-
-```text
-RFC-CDP-025 — CDP Persistence Model
-```
-
-Purpose:
-
-> Defines the minimum database/storage model required to persist Decision Lifecycle Envelopes, governed records, references, payload schemas, lookup values, and event history.
-
-G's recommended minimum viable table set:
-
-1. `cdp_decision_envelope`
-2. `cdp_governed_record`
-3. `cdp_envelope_ref`
-4. `cdp_payload_registry`
-5. `cdp_lookup`
-6. `cdp_event_log`
-
----
-
-## Proposed Minimum Table Set
-
-### 1. cdp_decision_envelope
-
-One row per decision lifecycle envelope.
-
-Queryable control columns plus full JSON payload.
-
-Candidate columns:
-
-```sql
-id
-schema_version
-envelope_id
-decision_id
-decision_type
-lifecycle_stage
-status
-standing_status
-repair_status
-closure_blocked
-closure_blocking_reason
-governed_path_hash
-governed_path_hash_algorithm
-created_by
-created_at
-updated_at
-envelope_json
-```
-
-### 2. cdp_governed_record
-
-One row per governed artifact.
-
-Examples:
-
-- proposal sufficiency record;
-- APC gate result;
-- proposal record;
-- challenge memo;
-- standing record;
-- appeal record;
-- repair record;
-- test result;
-- adjudication record;
-- legitimacy basis record;
-- execution record;
-- learning artifact.
-
-Candidate columns:
-
-```sql
-id
-record_id
-decision_id
-record_type
-record_schema_version
-stage
-author_actor_id
-record_status
-content_hash
-content_hash_algorithm
-created_at
-updated_at
-record_json
-```
-
-### 3. cdp_envelope_ref
-
-Join table / governed path manifest table.
-
-This is the implementation spine of `RFC-CDP-023` references.
-
-Candidate columns:
-
-```sql
-id
-envelope_id
-decision_id
-ref_type
-ref_id
-stage
-sequence_position
-content_hash_at_registration
-content_hash_algorithm
-record_schema_version
-registered_at
-required_flag
-closure_blocking_flag
-```
-
-### 4. cdp_payload_registry
-
-Implements `RFC-CDP-022`.
-
-Candidate columns:
-
-```sql
-id
-payload_type
-payload_status
-owning_rfc
-schema_version
-schema_json
-created_at
-updated_at
-```
-
-### 5. cdp_lookup
-
-Controlled vocabulary / config lookup.
-
-Candidate columns:
-
-```sql
-id
-domain
-key1
-key2
-key3
-value1
-value2
-value3
-disabled
-created_at
-updated_at
-```
-
-Example domains:
-
-- `lifecycle_stage`
-- `decision_status`
-- `standing_status`
-- `repair_status`
-- `record_type`
-- `payload_type`
-- `apc_failure`
-- `risk_tier`
-- `challenge_type`
-
-### 6. cdp_event_log
-
-Append-only event trail.
-
-Candidate columns:
-
-```sql
-id
-event_id
-decision_id
-envelope_id
-record_id
-event_type
-actor_id
-event_time
-event_json
-```
-
----
-
-## Initial Storage Architecture
-
-```text
-Decision Lifecycle Envelope
-        |
-        | references
-        v
-Governed Records
-        |
-        | typed by
-        v
-Payload Registry / Lookup Tables
-        |
-        | replayed through
-        v
-Event Log
-```
-
-The envelope is the index.
-
-The governed records are the body of evidence.
-
-The lookup table is the controlled vocabulary.
-
-The event log is the memory.
-
-The payload registry is the schema contract.
-
----
-
-## Issues to Decide
-
-1. Does CDP need `RFC-CDP-025 — CDP Persistence Model`?
-2. Is `025` the right number and band?
-3. Are the six tables sufficient for MVP implementation?
-4. Should lookup/config be one generic table or multiple typed tables?
-5. Should governed records be one polymorphic table or separate tables per record type?
-6. Should event sourcing be primary, or should current-state tables be primary with event log as audit trail?
-7. Should SQL be normative, illustrative, or implementation-profile-specific?
-8. What fields are mandatory for replay and governed path hash verification?
-9. How should Proposal Sufficiency Gate and APC gate results persist?
-10. What is the narrowest canonical next move?
+The gap is queryable enforcement.
 
 ---
 
@@ -317,38 +68,194 @@ Not a vendor-specific database prescription.
 
 A minimum viable persistence substrate.
 
-### Recommendation to C
+G proposed six tables:
 
-C:
+1. `cdp_decision_envelope`
+2. `cdp_governed_record`
+3. `cdp_envelope_ref`
+4. `cdp_payload_registry`
+5. `cdp_lookup`
+6. `cdp_event_log`
 
-Please draft **Turn 002 — Claude / Sonnet / C — CDP Persistence Model Challenge Memo**.
+---
 
-Please answer:
+## Turn 002 — 2026-05-23 — Claude / Sonnet / C — CDP Persistence Model Challenge Memo
 
-1. Is **protocol without persistence** the right failure mode?
-2. Does CDP need a new `RFC-CDP-025 — CDP Persistence Model`?
-3. Is `025` the right number and Core Objects / Schemas band?
-4. Are the six proposed tables sufficient, too many, or missing something?
-5. Should `cdp_lookup` be generic, typed, or both?
-6. Should `cdp_governed_record` be polymorphic JSON-first, or split into typed tables?
-7. Should `cdp_event_log` be the source of truth or an audit/replay layer?
-8. How should `RFC-CDP-024 Proposal Sufficiency Gate` and `anti_premature_certainty_gate_result` persist?
-9. What should be normative versus illustrative SQL?
-10. What is the narrowest canonical next move?
+```text
+DATE: 2026-05-23
+AUTHOR: Claude / Sonnet (claude-sonnet-4-6)
+ROLE: challenger / coherence reviewer
+STATUS: draft-promoted
+PURPOSE: Challenge RFC-CDP-025 persistence model design. Name the failure mode precisely.
+```
 
-Do not flatter.
-Do not collapse uncertainty.
-Name the failure mode precisely.
+### 1. Failure Mode
+
+C accepted the failure mode, but sharpened it from **protocol without persistence** to **protocol without queryable persistence**.
+
+Specific failures:
+
+- closure-blocking rules cannot be enforced if repair and appeal refs are not joinable to status;
+- governed path hash verification fails if registration-time hashes are not stored adjacent to current record hashes;
+- standing cannot be audited if standing records are not queryable by decision and stage;
+- APC gate results cannot be replayed if stored only as opaque blobs.
+
+### 2. Need for RFC-CDP-025
+
+C agreed that CDP needs `RFC-CDP-025 — CDP Persistence Model`.
+
+Reason:
+
+Without it, implementers will make different schema decisions, and persistence schema drift becomes the next protocol schema drift.
+
+### 3. Number and Band
+
+C agreed that `025` is the correct number and that the Core Objects and Schemas band (`020–029`) is correct.
+
+### 4. Table Set
+
+C accepted five core tables:
+
+- `cdp_decision_envelope`
+- `cdp_governed_record`
+- `cdp_envelope_ref`
+- `cdp_payload_registry`
+- `cdp_event_log`
+
+C challenged a single generic `cdp_lookup` table as too broad for governance-critical vocabulary.
+
+Recommendation:
+
+- keep `cdp_lookup` for open-ended config;
+- add `cdp_controlled_vocabulary` for RFC-defined governance-critical enums.
+
+### 5. Standing Record Gap
+
+C named a real gap:
+
+```text
+cdp_standing_record
+```
+
+The query:
+
+> Does this actor have valid standing at this stage of this decision?
+
+is not merely a reporting query.
+
+It is a governance enforcement query.
+
+C recommended not deferring this beyond Session 009.
+
+### 6. Governed Record Shape
+
+C accepted JSON-first governed records for MVP, with mandatory queryable columns:
+
+- `record_type`
+- `stage`
+- `content_hash`
+
+### 7. Event Log Role
+
+C agreed with G's hybrid model:
+
+- current-state tables are authoritative queryable state;
+- `cdp_event_log` is append-only audit/replay layer;
+- event log is not the source of truth in Draft v0.1.
+
+### 8. Proposal Sufficiency and APC Persistence
+
+C recommended two governed records:
+
+1. `proposal_sufficiency_record`
+2. `anti_premature_certainty_gate_result`
+
+These are separate because they are produced by different actors at different times.
+
+### 9. Normative vs Illustrative SQL
+
+C recommended that table names, required columns, required queryable fields, key constraints, and event-log insert-only behavior be normative.
+
+SQL dialect, exact index names, partitioning, JSONB syntax, and optimization details remain implementation-profile concerns.
+
+---
+
+## Turn 003 — 2026-05-23 — Andie / G — RFC-CDP-025 Promotion
+
+```text
+DATE: 2026-05-23
+AUTHOR: Andie, recorded by ChatGPT / G
+ROLE: moderator / canon promotion recorder
+STATUS: adjudicated-and-promoted
+PURPOSE: Record approval and promotion of RFC-CDP-025 Draft v0.1.
+```
+
+### Decision 020
+
+Approved.
+
+### G Position
+
+G accepted the `cdp_standing_record` gap but deferred its design to Session 009.
+
+Reason:
+
+Standing is constitutional. It should not be jammed into the persistence RFC casually like a utility table.
+
+### Action Taken
+
+Created:
+
+```text
+rfc/RFC-CDP-025-CDP-Persistence-Model.md
+```
+
+Status:
+
+```text
+Draft v0.1
+```
+
+Promoted into Draft v0.1:
+
+- protocol without queryable persistence as the failure mode;
+- five core tables;
+- two vocabulary/config tables;
+- JSON-first governed records for MVP;
+- event log as audit/replay, not source of truth;
+- insert-only event log requirement;
+- Proposal Sufficiency and APC persistence pattern;
+- standing record table as an open enforcement gap.
+
+### Promotion Decision
+
+```text
+PROMOTE TO CANON:
+- RFC-CDP-025 CDP Persistence Model Draft v0.1
+
+PROMOTE WITH OPEN QUESTIONS:
+- cdp_standing_record table design
+- typed governed record tables under query pressure
+- migration scripts
+- database-specific DDL
+- implementation profile mappings
+
+DEFER:
+- cdp_standing_record to Session 009
+- concrete index strategy
+- implementation migrations
+```
 
 ---
 
 ## Promotion Decision
 
-Pending.
-
 ```text
 PROMOTE TO CANON:
-PROMOTE WITH CHANGES:
-DO NOT PROMOTE:
+- RFC-CDP-025 CDP Persistence Model Draft v0.1
+
 DEFER:
+- cdp_standing_record design to Session 009
+- typed governed record tables under query pressure
+- database-specific DDL and implementation profiles
 ```
