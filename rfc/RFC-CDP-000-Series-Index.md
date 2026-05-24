@@ -1,7 +1,7 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.8  
+Status: Draft v0.9  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 19, 2026
 
@@ -97,6 +97,12 @@ Session 005 re-anchored Repair after agenda drift toward technical integrity wor
 RFC-CDP-070 was created as the Appeals and Contestability Model to provide the Repair plane with an entry door.
 
 RFC-CDP-033 was advanced to Draft v0.3 so denial of constitutional standing automatically generates a Breach Record under RFC-CDP-072, without requiring action by the affected party.
+
+### 0.7 Current Session 006 Adjudication
+
+Session 006 patched RFC-CDP-023 so appeal and repair references become active governance controls, not passive reference lists.
+
+RFC-CDP-023 was advanced to Draft v0.4 with a four-field `repair_control` surface, closure-blocking rules, and repair-trigger state binding to RFC-CDP-070.
 
 ---
 
@@ -245,7 +251,7 @@ Depends On:
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
-| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v0.8 |
+| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v0.9 |
 | `001` | Vision, Scope, and Principles | `RFC-CDP-001-Vision-Scope-Principles.md` | Draft v0.6 |
 
 ### 6.2 Reference Architecture
@@ -261,7 +267,7 @@ Depends On:
 | `020` | Decision Object Schema | `RFC-CDP-020-Decision-Object-Schema.md` | Draft |
 | `021` | Wire Message Envelope Schema | `RFC-CDP-021-Envelope-Schema.md` | Draft v0.4 |
 | `022` | Protocol Payload Schema Registry | `RFC-CDP-022-Protocol-Payload-Schema-Registry.md` | Draft |
-| `023` | Decision Lifecycle Envelope | `RFC-CDP-023-Decision-Lifecycle-Envelope.md` | Draft v0.3 |
+| `023` | Decision Lifecycle Envelope | `RFC-CDP-023-Decision-Lifecycle-Envelope.md` | Draft v0.4 |
 
 ### 6.4 Trust, Identity, and Authority
 
