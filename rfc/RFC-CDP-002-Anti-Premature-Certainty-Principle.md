@@ -1,13 +1,13 @@
 # RFC-CDP-002 — Anti-Premature-Certainty Principle
 
-Author: Kevin “Andie” Williams / ChatGPT
-Status: Draft
-Series: Constitutional Decision Plane (CDP)
-Date: 2026-05-23
-Intended Band: `000–009` — Series / Constitutional Frame
-Current Location: `rfc/` canonical lane
-Updates: `RFC-CDP-001-Vision-Scope-Principles` once promoted
-Depends On: `RFC-CDP-041-Propose-Protocol`, `RFC-CDP-042-Challenge-Protocol`, `RFC-CDP-043-Test-Protocol`, `RFC-CDP-044-Adjudicate-Protocol`, `RFC-CDP-045-Legitimize-Protocol`, `RFC-CDP-047-Record-Protocol`
+Author: Kevin “Andie” Williams / ChatGPT  
+Status: Draft v0.2  
+Series: Constitutional Decision Plane (CDP)  
+Date: 2026-05-23  
+Intended Band: `000–009` — Series / Constitutional Frame  
+Current Location: `rfc/` canonical lane  
+Updates: `RFC-CDP-001-Vision-Scope-Principles`  
+Depends On: `RFC-CDP-041-Propose-Protocol`, `RFC-CDP-042-Challenge-Protocol`, `RFC-CDP-043-Test-Protocol`, `RFC-CDP-044-Adjudicate-Protocol`, `RFC-CDP-045-Legitimize-Protocol`, `RFC-CDP-047-Record-Protocol`, `RFC-CDP-048-Learn-Protocol`
 
 ---
 
@@ -84,7 +84,45 @@ A decision is prematurely certain if one or more of the following conditions is 
 
 ---
 
-## 5. Decision Gate
+## 5. Failure Modes
+
+The umbrella failure mode addressed by this RFC is **certainty capture**.
+
+Certainty capture occurs when an actor, institution, model, workflow, or governing body turns an under-tested claim into an apparently final decision by controlling how uncertainty, alternatives, dissent, stakeholder impact, reversibility, and decision thresholds are represented.
+
+Certainty capture manifests through at least two distinct mechanisms.
+
+### 5.1 Procedural Bypass
+
+Procedural bypass occurs when a decision advances to `legitimated`, `execution_eligible`, or an equivalent finalizing state without passing required sufficiency checks.
+
+The system has the checks, but they are skipped, rushed, waived without authority, or treated as optional.
+
+Procedural bypass is primarily prevented by gate enforcement.
+
+### 5.2 Certainty Performance
+
+Certainty performance occurs when sufficiency checks are completed on paper, but the fields are populated with content that satisfies the schema without representing genuine inquiry.
+
+Examples include:
+
+- evidence fields that cite irrelevant or circular sources;
+- alternatives recorded only to dismiss them without analysis;
+- dissent represented as cosmetic or already resolved;
+- uncertainty summaries that conceal rather than surface ambiguity;
+- stakeholder-impact fields that name affected parties without assessing harm;
+- reversibility paths that exist nominally but cannot be executed;
+- thresholds defined in ways that ratify a preselected conclusion.
+
+Certainty performance is not fully prevented by field-presence checks.
+
+It requires adversarial review, challenge, and record-level evaluation of field quality.
+
+A future `premature_certainty_challenge` subtype in `RFC-CDP-042-Challenge-Protocol.md` SHOULD address this failure mode directly.
+
+---
+
+## 6. Decision Gate
 
 A CDP implementation MUST evaluate the Anti-Premature-Certainty Gate before a decision can transition into `legitimated`, `execution_eligible`, or equivalent finalizing states.
 
@@ -102,9 +140,13 @@ anti_premature_certainty_gate:
 
 If `passed` is `false`, the decision MUST NOT be promoted unless an exception path is invoked.
 
+The gate primarily prevents procedural bypass.
+
+It does not, by itself, prove that the recorded fields represent genuine inquiry rather than certainty performance.
+
 ---
 
-## 6. Required Decision Record Fields
+## 7. Required Decision Record Fields
 
 A CDP decision record SHOULD include at least the following fields:
 
@@ -160,11 +202,13 @@ anti_premature_certainty_gate:
 
 ---
 
-## 7. Waivers and Exceptions
+## 8. Waivers and Exceptions
 
 Some operational contexts require action under incomplete certainty.
 
-CDP MAY allow an explicit exception path, but the exception MUST be recorded. An exception MUST NOT silently convert an under-supported decision into a legitimate decision.
+CDP MAY allow an explicit exception path, but the exception MUST be recorded.
+
+An exception MUST NOT silently convert an under-supported decision into a legitimate decision.
 
 An exception record MUST include:
 
@@ -183,9 +227,32 @@ required_follow_up:
 
 Exceptions SHOULD be temporary, scoped, reviewable, and reversible wherever possible.
 
+### 8.1 Exception Authority Constraint
+
+An Anti-Premature-Certainty exception MUST NOT be granted by the same actor who proposed the decision.
+
+Proposer recusal applies to APC exception authority.
+
+If emergency conditions require role compression, the exception MUST be time-bounded, explicitly recorded, and reviewed during the Learn stage.
+
+### 8.2 Exception Review Requirement
+
+Every Anti-Premature-Certainty exception MUST be reviewed during the Learn stage.
+
+This review MUST assess:
+
+- whether the exception was necessary;
+- whether the exception authority was valid;
+- whether accepted risks materialized;
+- whether required follow-up occurred;
+- whether the exception pattern indicates recurring procedural bypass;
+- whether the exception caused or concealed certainty performance.
+
+Exceptions that are never reviewed become normalized bypass paths.
+
 ---
 
-## 8. State-Machine Requirement
+## 9. State-Machine Requirement
 
 A CDP implementation MUST prevent direct transition from `proposed` to `legitimated` or `execution_eligible` unless the Anti-Premature-Certainty Gate passes or an exception record is present.
 
@@ -205,7 +272,7 @@ Emergency paths MAY bypass intermediate states only if the exception record is p
 
 ---
 
-## 9. Falsifiability
+## 10. Falsifiability
 
 This RFC is falsifiable because an implementation can be tested against observable records.
 
@@ -221,10 +288,18 @@ A conformant test suite can assert:
 8. A waiver must be recorded as a waiver, not as ordinary legitimacy.
 9. Execution must be blocked when the gate fails.
 10. The record must remain replayable after the decision is finalized.
+11. An APC exception must not be granted by the proposer.
+12. Every APC exception must be reviewed during Learn.
+
+These tests primarily detect procedural bypass.
+
+They do not fully detect certainty performance, because field presence is not the same as field quality.
+
+Certainty performance requires adversarial review and challenge.
 
 ---
 
-## 10. Reference Implementation Sketch
+## 11. Reference Implementation Sketch
 
 ```python
 def anti_premature_certainty_gate(decision: dict) -> dict:
@@ -272,9 +347,17 @@ def anti_premature_certainty_gate(decision: dict) -> dict:
     }
 ```
 
+This sketch detects field absence and unwaived failure.
+
+It does not detect field quality.
+
+It can detect procedural bypass.
+
+It cannot, by itself, detect certainty performance.
+
 ---
 
-## 11. Conformance Levels
+## 12. Conformance Levels
 
 ### Level 0 — Non-conformant
 
@@ -296,9 +379,13 @@ The system preserves all gate inputs, failures, waivers, thresholds, and reviewe
 
 The system learns from premature-certainty failures, updates templates, improves prompts, tunes review thresholds, and reports recurring institutional failure modes.
 
+Risk-tiered application of these conformance levels remains an open dependency.
+
+Until a risk classification mechanism is defined, implementations SHOULD avoid claiming that low-risk exemptions are fully specified by this RFC.
+
 ---
 
-## 12. Security and Governance Considerations
+## 13. Security and Governance Considerations
 
 Premature certainty can be exploited.
 
@@ -312,13 +399,15 @@ Examples include:
 - recurring waiver of stakeholder impact;
 - confidence inflation without test evidence;
 - emergency exceptions becoming normal workflow;
-- thresholds being defined after conclusions.
+- thresholds being defined after conclusions;
+- APC exceptions repeatedly granted by conflicted authorities;
+- field-complete but substantively hollow evidence or challenge records.
 
 These patterns SHOULD trigger review, audit, or governance escalation.
 
 ---
 
-## 13. Relationship to CDP Planes
+## 14. Relationship to CDP Planes
 
 ### Decision Plane
 
@@ -338,7 +427,7 @@ The principle preserves appeal, compensation, and repair pathways when decisions
 
 ---
 
-## 14. Design Note
+## 15. Design Note
 
 The phrase “premature certainty is violence in a blazer” is preserved here as design shorthand, not as normative protocol language.
 
@@ -350,17 +439,18 @@ A CDP system SHOULD make premature certainty visible, testable, blockable, revie
 
 ---
 
-## 15. Open Questions
+## 16. Open Questions
 
-1. Should this RFC remain in the constitutional frame band as `002`, or move to the covenant band as a schema-drift/context-preservation control?
-2. Should the gate be mandatory for all decisions, or only decisions above a risk, impact, autonomy, or authority threshold?
-3. Should “alternatives considered” be waived for routine low-risk operational decisions?
-4. Should the gate be represented as a standalone protocol payload type in the Protocol Payload Schema Registry?
-5. Should premature-certainty failures become first-class learning events in the Learn Protocol?
+1. Should the gate be mandatory for all decisions, or only decisions above a risk, impact, autonomy, or authority threshold?
+2. Should “alternatives considered” be waived for routine low-risk operational decisions?
+3. Should premature-certainty failures become first-class learning events in the Learn Protocol?
+4. Who classifies decision risk, and how is that classification itself protected from premature certainty?
+5. How should `premature_certainty_challenge` be represented in RFC-CDP-042?
+6. How should RFC-CDP-045 require APC gate results before Legitimize?
 
 ---
 
-## 16. Review Instructions for C
+## 17. Review Instructions for C
 
 Reviewer should read:
 
@@ -370,8 +460,30 @@ Reviewer should read:
 
 Reviewer should specifically assess:
 
-- whether `002` is the correct future canonical number;
-- whether this belongs in the `000–009` constitutional band or the `060–069` covenant band;
-- whether the gate criteria are too strict for low-risk decisions;
+- whether the procedural bypass / certainty performance distinction is sufficient;
 - whether waiver semantics are sufficiently auditable;
-- whether this should update the Legitimize Protocol, Record Protocol, or Governance State Machine.
+- whether the exception authority constraint is strong enough;
+- whether this should update the Legitimize Protocol, Record Protocol, Learn Protocol, or Governance State Machine next.
+
+---
+
+## 18. Status of This Draft
+
+Promoted into Draft v0.2:
+
+- certainty capture as umbrella failure mode;
+- procedural bypass as gate-preventable failure mode;
+- certainty performance as adversarial-review failure mode;
+- explicit limitation that the reference implementation checks field presence, not field quality;
+- APC exception authority constraint;
+- mandatory Learn-stage review of APC exceptions;
+- risk-tiering dependency acknowledgment.
+
+Deferred:
+
+- RFC-CDP-022 payload registration finalization;
+- RFC-CDP-045 Legitimize update;
+- RFC-CDP-041 Propose update;
+- RFC-CDP-042 `premature_certainty_challenge` subtype;
+- RFC-CDP-048 Learn event update;
+- decision risk classification mechanism.
