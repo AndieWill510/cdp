@@ -1,7 +1,7 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v1.1  
+Status: Draft v1.2  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 23, 2026
 
@@ -31,11 +31,12 @@ This document does **not** adjudicate every open architecture question.
 
 In particular, the following remain active design questions until separately adjudicated and promoted:
 
-- whether Standing becomes its own RFC or remains part of Authority / CBBs;
+- whether Common Building Blocks should be promoted before more protocol RFCs;
 - whether Legitimize needs major revision or renaming;
-- whether Decision Envelope precedes Common Building Blocks;
 - whether Human-Readable Surface requirements are standalone or per-RFC;
-- how the Nemawashi / Framing layer is governed.
+- how the Nemawashi / Framing layer is governed;
+- how lifecycle protocols consume Standing, Proposal Sufficiency, and APC gates;
+- how implementation profiles translate RFC-CDP-025 into concrete DDL.
 
 ### 0.1 New Collaborator Entry Points
 
@@ -113,6 +114,22 @@ RFC-CDP-002 was advanced to Draft v0.2 with the distinction between procedural b
 RFC-CDP-022 was advanced to Draft v0.4 and reserves the `anti_premature_certainty_gate_result` payload type.
 
 Session 007 also reserved RFC-CDP-024 as the Proposal Sufficiency Gate. RFC-CDP-024 will define the minimum formation requirements a proposal must satisfy before entering the CDP challenge lifecycle.
+
+### 0.9 Current Session 008 Adjudication
+
+Session 008 created RFC-CDP-025 as the CDP Persistence Model.
+
+RFC-CDP-025 was advanced to Draft v0.1 with `protocol without queryable persistence` as the failure mode, five core persistence tables, two vocabulary/config tables, JSON-first governed records for MVP, event log as audit/replay, and Proposal Sufficiency/APC persistence patterns.
+
+Session 008 also carried forward the standing persistence enforcement gap for Session 009.
+
+### 0.10 Current Session 009 Adjudication
+
+Session 009 resolved the standing persistence enforcement gap.
+
+RFC-CDP-025 was advanced to Draft v0.2 with `cdp_standing_record` as a required enforcement projection over `cdp_governed_record`, `projection_status`, mandatory standing enforcement query, standing indexes, constitutional standing non-revocation constraint, emergency standing time-bound constraint, and projection atomicity requirements.
+
+RFC-CDP-033 was advanced to Draft v0.4 with Section 12: Standing Persistence, linking the standing governance model to the persistence enforcement surface defined in RFC-CDP-025.
 
 ---
 
@@ -209,7 +226,7 @@ Rules:
 |---:|---|---|
 | `000–009` | Series / Constitutional Frame | index, vision, scope, principles, terminology, doctrine |
 | `010–019` | Reference Architecture | architecture, topology, layers, threat model, trust model |
-| `020–029` | Core Objects and Schemas | Decision object, wire envelopes, lifecycle envelopes, payload registry, artifact schemas, proposal sufficiency gates |
+| `020–029` | Core Objects and Schemas | Decision object, wire envelopes, lifecycle envelopes, payload registry, artifact schemas, proposal sufficiency gates, persistence model |
 | `030–039` | Trust, Identity, and Authority | Identify, Attest, authority, delegation, standing, recusal, revocation |
 | `040–049` | Lifecycle Protocols | Nemawashi, Propose, Challenge, Test, Adjudicate, Legitimize, Execute, Record, Learn |
 | `050–059` | Execution Safety, Rollback, and Remedy | queued execution, maturity gates, presence, emergency override, kill switch, rollback, compensation, remedy |
@@ -262,7 +279,7 @@ Depends On:
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
-| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v1.1 |
+| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v1.2 |
 | `001` | Vision, Scope, and Principles | `RFC-CDP-001-Vision-Scope-Principles.md` | Draft v0.6 |
 | `002` | Anti-Premature-Certainty Principle | `RFC-CDP-002-Anti-Premature-Certainty-Principle.md` | Draft v0.2 |
 
@@ -281,6 +298,7 @@ Depends On:
 | `022` | Protocol Payload Schema Registry | `RFC-CDP-022-Protocol-Payload-Schema-Registry.md` | Draft v0.4 |
 | `023` | Decision Lifecycle Envelope | `RFC-CDP-023-Decision-Lifecycle-Envelope.md` | Draft v0.4 |
 | `024` | Proposal Sufficiency Gate | `RFC-CDP-024-Proposal-Sufficiency-Gate.md` | Reserved |
+| `025` | CDP Persistence Model | `RFC-CDP-025-CDP-Persistence-Model.md` | Draft v0.2 |
 
 ### 6.4 Trust, Identity, and Authority
 
@@ -289,7 +307,7 @@ Depends On:
 | `030` | Identify Protocol | `RFC-CDP-030-Identify-Protocol.md` | Draft |
 | `031` | Attest Protocol | `RFC-CDP-031-Attest-Protocol.md` | Draft |
 | `032` | Authority and Delegation Model | `RFC-CDP-032-Authority-and-Delegation-Model.md` | Draft |
-| `033` | Standing and Recusal Model | `RFC-CDP-033-Standing-and-Recusal-Model.md` | Draft v0.3 |
+| `033` | Standing and Recusal Model | `RFC-CDP-033-Standing-and-Recusal-Model.md` | Draft v0.4 |
 
 ### 6.5 Lifecycle Protocols
 
@@ -373,7 +391,36 @@ An insufficient proposal has not yet met the minimum bar to enter the governed c
 
 ---
 
-## 8. Repair, Reparations, and Rematriation Spine
+## 8. CDP Persistence Spine
+
+RFC-CDP-025 defines the minimum queryable persistence substrate for CDP.
+
+Current Draft v0.2 includes:
+
+- `cdp_decision_envelope`
+- `cdp_governed_record`
+- `cdp_standing_record`
+- `cdp_envelope_ref`
+- `cdp_payload_registry`
+- `cdp_event_log`
+- `cdp_lookup`
+- `cdp_controlled_vocabulary`
+
+The persistence model uses current-state tables for queryability and an append-only event log for audit and replay.
+
+Standing persistence uses a two-layer model:
+
+```text
+cdp_governed_record
+  canonical standing artifact
+
+cdp_standing_record
+  queryable enforcement projection
+```
+
+---
+
+## 9. Repair, Reparations, and Rematriation Spine
 
 The current repair/remedy corpus includes:
 
@@ -393,7 +440,7 @@ This spine supports reparations and rematriation-capable governance by preservin
 
 ---
 
-## 9. Legacy Mapping
+## 10. Legacy Mapping
 
 The following table maps earlier filenames to canonical filenames.
 
@@ -426,7 +473,7 @@ The following table maps earlier filenames to canonical filenames.
 
 ---
 
-## 10. How to Add a New RFC
+## 11. How to Add a New RFC
 
 A new RFC proposal SHOULD:
 
@@ -444,7 +491,7 @@ A new RFC MUST NOT silently redefine an existing RFC’s authority, state transi
 
 ---
 
-## 11. Promotion Rules
+## 12. Promotion Rules
 
 A staging draft MAY be promoted to canonical when:
 
@@ -458,7 +505,7 @@ A staging draft MAY be promoted to canonical when:
 
 Promotion SHOULD preserve history where possible. If repository tooling cannot preserve history through a true move, the promotion record MUST be preserved in this index.
 
-### 11.1 Collaboration-to-Canon Path
+### 12.1 Collaboration-to-Canon Path
 
 Working material in `collab/` is not canonical by default.
 
@@ -478,7 +525,7 @@ A collaboration artifact may be promoted only when:
 
 ---
 
-## 12. Supersession and Deprecation
+## 13. Supersession and Deprecation
 
 When an RFC supersedes another RFC, the new RFC SHOULD declare:
 
@@ -496,7 +543,7 @@ Deprecated RFCs SHOULD remain discoverable unless removal is required for legal,
 
 ---
 
-## 13. Constitutional Invariant
+## 14. Constitutional Invariant
 
 The RFC series itself is governed material.
 
@@ -515,8 +562,8 @@ A constitutional system should remember its own renamings.
 
 ---
 
-## 14. Summary
+## 15. Summary
 
 This Series Index is the canonical map for the CDP RFC corpus.
 
-It defines the numbering bands, canonical files, folder policy, status taxonomy, legacy mapping, promotion rules, collaboration-to-canon path, and repair/remedy spine needed to keep the protocol suite legible, auditable, contestable, and repairable over time.
+It defines the numbering bands, canonical files, folder policy, status taxonomy, legacy mapping, promotion rules, collaboration-to-canon path, persistence spine, and repair/remedy spine needed to keep the protocol suite legible, auditable, contestable, enforceable, and repairable over time.
