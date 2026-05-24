@@ -1,7 +1,7 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v1.0  
+Status: Draft v1.1  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 23, 2026
 
@@ -112,6 +112,8 @@ RFC-CDP-002 was advanced to Draft v0.2 with the distinction between procedural b
 
 RFC-CDP-022 was advanced to Draft v0.4 and reserves the `anti_premature_certainty_gate_result` payload type.
 
+Session 007 also reserved RFC-CDP-024 as the Proposal Sufficiency Gate. RFC-CDP-024 will define the minimum formation requirements a proposal must satisfy before entering the CDP challenge lifecycle.
+
 ---
 
 ## 1. Purpose
@@ -197,6 +199,7 @@ Rules:
 10. `API` SHOULD be used for external interface surfaces.
 11. `Model` SHOULD be used for conceptual structures that are not wire protocols.
 12. `State-Machine` SHOULD be used for formal lifecycle or transition models.
+13. `Gate` SHOULD be used for control surfaces that determine whether a governed object may advance.
 
 ---
 
@@ -206,7 +209,7 @@ Rules:
 |---:|---|---|
 | `000–009` | Series / Constitutional Frame | index, vision, scope, principles, terminology, doctrine |
 | `010–019` | Reference Architecture | architecture, topology, layers, threat model, trust model |
-| `020–029` | Core Objects and Schemas | Decision object, wire envelopes, lifecycle envelopes, payload registry, artifact schemas |
+| `020–029` | Core Objects and Schemas | Decision object, wire envelopes, lifecycle envelopes, payload registry, artifact schemas, proposal sufficiency gates |
 | `030–039` | Trust, Identity, and Authority | Identify, Attest, authority, delegation, standing, recusal, revocation |
 | `040–049` | Lifecycle Protocols | Nemawashi, Propose, Challenge, Test, Adjudicate, Legitimize, Execute, Record, Learn |
 | `050–059` | Execution Safety, Rollback, and Remedy | queued execution, maturity gates, presence, emergency override, kill switch, rollback, compensation, remedy |
@@ -259,7 +262,7 @@ Depends On:
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
-| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v1.0 |
+| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v1.1 |
 | `001` | Vision, Scope, and Principles | `RFC-CDP-001-Vision-Scope-Principles.md` | Draft v0.6 |
 | `002` | Anti-Premature-Certainty Principle | `RFC-CDP-002-Anti-Premature-Certainty-Principle.md` | Draft v0.2 |
 
@@ -277,6 +280,7 @@ Depends On:
 | `021` | Wire Message Envelope Schema | `RFC-CDP-021-Envelope-Schema.md` | Draft v0.4 |
 | `022` | Protocol Payload Schema Registry | `RFC-CDP-022-Protocol-Payload-Schema-Registry.md` | Draft v0.4 |
 | `023` | Decision Lifecycle Envelope | `RFC-CDP-023-Decision-Lifecycle-Envelope.md` | Draft v0.4 |
+| `024` | Proposal Sufficiency Gate | `RFC-CDP-024-Proposal-Sufficiency-Gate.md` | Reserved |
 
 ### 6.4 Trust, Identity, and Authority
 
@@ -349,7 +353,27 @@ Depends On:
 
 ---
 
-## 7. Repair, Reparations, and Rematriation Spine
+## 7. Proposal Sufficiency Gate
+
+RFC-CDP-024 is reserved for the Proposal Sufficiency Gate.
+
+Definition:
+
+> Proposal Sufficiency Gate defines the minimum formation requirements a proposal must satisfy before entering the CDP challenge lifecycle.
+
+This gate is not a substitute for Challenge, Test, Adjudicate, or Legitimize.
+
+It answers a narrower upstream question:
+
+> Has this proposal earned the right to be heard?
+
+A sufficient proposal may still be challenged, tested, adjudicated against, rejected, appealed, or repaired.
+
+An insufficient proposal has not yet met the minimum bar to enter the governed challenge lifecycle.
+
+---
+
+## 8. Repair, Reparations, and Rematriation Spine
 
 The current repair/remedy corpus includes:
 
@@ -369,7 +393,7 @@ This spine supports reparations and rematriation-capable governance by preservin
 
 ---
 
-## 8. Legacy Mapping
+## 9. Legacy Mapping
 
 The following table maps earlier filenames to canonical filenames.
 
@@ -402,7 +426,7 @@ The following table maps earlier filenames to canonical filenames.
 
 ---
 
-## 9. How to Add a New RFC
+## 10. How to Add a New RFC
 
 A new RFC proposal SHOULD:
 
@@ -420,7 +444,7 @@ A new RFC MUST NOT silently redefine an existing RFC’s authority, state transi
 
 ---
 
-## 10. Promotion Rules
+## 11. Promotion Rules
 
 A staging draft MAY be promoted to canonical when:
 
@@ -434,7 +458,7 @@ A staging draft MAY be promoted to canonical when:
 
 Promotion SHOULD preserve history where possible. If repository tooling cannot preserve history through a true move, the promotion record MUST be preserved in this index.
 
-### 10.1 Collaboration-to-Canon Path
+### 11.1 Collaboration-to-Canon Path
 
 Working material in `collab/` is not canonical by default.
 
@@ -454,7 +478,7 @@ A collaboration artifact may be promoted only when:
 
 ---
 
-## 11. Supersession and Deprecation
+## 12. Supersession and Deprecation
 
 When an RFC supersedes another RFC, the new RFC SHOULD declare:
 
@@ -472,7 +496,7 @@ Deprecated RFCs SHOULD remain discoverable unless removal is required for legal,
 
 ---
 
-## 12. Constitutional Invariant
+## 13. Constitutional Invariant
 
 The RFC series itself is governed material.
 
@@ -491,7 +515,7 @@ A constitutional system should remember its own renamings.
 
 ---
 
-## 13. Summary
+## 14. Summary
 
 This Series Index is the canonical map for the CDP RFC corpus.
 
