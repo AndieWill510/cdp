@@ -23,6 +23,7 @@ This index tracks active and completed collaboration sessions.
 | [009](sessions/009-standing-persistence-enforcement-query.md) | Standing Persistence and Enforcement Query | closed-promoted | Andie | RFC-CDP-025 v0.2; RFC-CDP-033 v0.4 |
 | [010](sessions/010-proposal-sufficiency-gate.md) | Proposal Sufficiency Gate | closed-promoted | Andie | RFC-CDP-024 v0.1 |
 | [011](sessions/011-rfc-022-apc-gate-result-payload.md) | RFC-CDP-022 APC Gate Result Payload | closed-promoted | Andie | RFC-CDP-022 v0.5 |
+| [012](sessions/012-rfc-023-admission-artifact-visibility.md) | RFC-CDP-023 Admission Artifact Visibility Patch | closed-promoted | Andie | RFC-CDP-023 v0.5 |
 
 ## Session Status Values
 
@@ -36,12 +37,11 @@ This index tracks active and completed collaboration sessions.
 
 ## Canon Promotion Queue
 
-1. RFC-CDP-023 Decision Lifecycle Envelope patch for proposal sufficiency and formation challenge references.
-2. RFC-CDP-041 Propose Protocol Proposal Sufficiency wiring.
-3. RFC-CDP-042 Challenge Protocol formation challenge relationship.
-4. RFC-CDP-045 Legitimize Protocol APC wiring.
-5. Record Hash Propagation to governed record RFCs in the 040–048 band.
-6. Reference implementation / DDL profile for RFC-CDP-025.
+1. RFC-CDP-041 Propose Protocol Proposal Sufficiency wiring.
+2. RFC-CDP-042 Challenge Protocol formation challenge relationship.
+3. RFC-CDP-045 Legitimize Protocol APC wiring.
+4. Record Hash Propagation to governed record RFCs in the 040–048 band.
+5. Reference implementation / DDL profile for RFC-CDP-025.
 
 ## Open Cross-Session Questions
 
@@ -55,11 +55,9 @@ This index tracks active and completed collaboration sessions.
 - How should AI Functional Standing integrate with RFC-CDP-062 HITL-AIITL-Role-Boundaries?
 - Should lifecycle stage enums live in RFC-CDP-023, RFC-CDP-022, or a shared CBB/registry RFC?
 - Should embedded or sealed decision payloads be defined as an implementation profile in the 120–149 band?
-- Which lifecycle RFCs should reference RFC-CDP-023 first?
 - Propagate `record_hash` requirements to governed record RFCs in the 040–048 band.
 - Adjudicate lifecycle-stage enum ownership before RFC-CDP-023 advances to Candidate.
 - Should governed records use one polymorphic JSON-first table or typed tables per record family?
-- What standing indexes are mandatory to block invalid participation in time?
 - What standing rules apply to formation challenge challengers?
 - Should `proposal_sufficiency_record` become a payload type in RFC-CDP-022?
 - Should `formation_challenge_record` become a payload type in RFC-CDP-022?
