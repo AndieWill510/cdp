@@ -24,6 +24,7 @@ This index tracks active and completed collaboration sessions.
 | [010](sessions/010-proposal-sufficiency-gate.md) | Proposal Sufficiency Gate | closed-promoted | Andie | RFC-CDP-024 v0.1 |
 | [011](sessions/011-rfc-022-apc-gate-result-payload.md) | RFC-CDP-022 APC Gate Result Payload | closed-promoted | Andie | RFC-CDP-022 v0.5 |
 | [012](sessions/012-rfc-023-admission-artifact-visibility.md) | RFC-CDP-023 Admission Artifact Visibility Patch | closed-promoted | Andie | RFC-CDP-023 v0.5 |
+| [013](sessions/013-rfc-041-propose-proposal-sufficiency-wiring.md) | RFC-CDP-041 Propose Protocol Proposal Sufficiency Wiring | closed-promoted | Andie | RFC-CDP-041 v0.4 |
 
 ## Session Status Values
 
@@ -37,11 +38,10 @@ This index tracks active and completed collaboration sessions.
 
 ## Canon Promotion Queue
 
-1. RFC-CDP-041 Propose Protocol Proposal Sufficiency wiring.
-2. RFC-CDP-042 Challenge Protocol formation challenge relationship.
-3. RFC-CDP-045 Legitimize Protocol APC wiring.
-4. Record Hash Propagation to governed record RFCs in the 040–048 band.
-5. Reference implementation / DDL profile for RFC-CDP-025.
+1. RFC-CDP-042 Challenge Protocol formation challenge relationship.
+2. RFC-CDP-045 Legitimize Protocol APC wiring.
+3. Record Hash Propagation to governed record RFCs in the 040–048 band.
+4. Reference implementation / DDL profile for RFC-CDP-025.
 
 ## Open Cross-Session Questions
 
