@@ -1,10 +1,10 @@
 # RFC-CDP-045 — Legitimize Protocol
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.4  
+Status: Draft v0.5  
 Series: Constitutional Decision Plane (CDP)  
 Date: May 25, 2026  
-Updates: RFC-CDP-045 v0.3  
+Updates: RFC-CDP-045 v0.4  
 Depends On: RFC-CDP-021, RFC-CDP-022, RFC-CDP-023, RFC-CDP-024, RFC-CDP-025, RFC-CDP-033, RFC-CDP-041, RFC-CDP-042, RFC-CDP-044  
 Related: RFC-CDP-002, RFC-CDP-046, RFC-CDP-047, RFC-CDP-048, RFC-CDP-070, RFC-CDP-090
 
@@ -12,9 +12,11 @@ Related: RFC-CDP-002, RFC-CDP-046, RFC-CDP-047, RFC-CDP-048, RFC-CDP-070, RFC-CD
 
 Defines how an adjudicated CDP Decision becomes legitimate and institutionally enactable.
 
-Draft v0.4 wires Legitimize to Proposal Sufficiency and Anti-Premature-Certainty evidence.
+Draft v0.5 wires Legitimize to Proposal Sufficiency and Anti-Premature-Certainty evidence and adds the hierarchy legitimacy axiom.
 
 A decision MUST NOT be legitimized unless the governed path shows sufficient or validly excepted proposal admission, applicable APC gate satisfaction, valid standing and authority, challenge disposition, and no unresolved blocking conditions.
+
+Hierarchy may provide evidence of delegated authority in some institutional contexts. Hierarchy alone does not confer legitimacy.
 
 ---
 
@@ -69,13 +71,17 @@ It addresses unverified evidence through required references to challenge dispos
 
 ## 3. The Necessary-Not-Sufficient Axiom
 
-CDP distinguishes integrity, sufficiency, and legitimacy.
+CDP distinguishes integrity, sufficiency, legitimacy, correctness, and hierarchy.
 
 **Integrity** means the governed path record has not been silently mutated. It is evidenced by `governed_path_hash` verification under RFC-CDP-023.
 
 **Sufficiency** means the proposal earned admission into the governed lifecycle. It is evidenced by proposal sufficiency records under RFC-CDP-024 and applicable APC gate results under RFC-CDP-022.
 
 **Legitimacy** means the decision was made through a valid process by actors with valid standing and authority, with required challenge, sufficiency, repair, and dissent conditions addressed.
+
+**Correctness** means the decision is factually, technically, ethically, or operationally right in the relevant domain. Correctness is not conferred by legitimacy.
+
+**Hierarchy** means a role, rank, office, organizational position, or chain-of-command relationship that may confer delegated authority in some institutional contexts.
 
 These are distinct.
 
@@ -85,19 +91,28 @@ Sufficiency is necessary but not sufficient for legitimacy.
 
 Legitimacy is necessary but not sufficient for correctness.
 
+Hierarchy is neither necessary nor sufficient for legitimacy.
+
 A decision can have:
 
 - integrity without sufficiency;
 - sufficiency without legitimacy;
 - legitimacy without correctness;
+- hierarchy without legitimacy;
+- legitimacy without hierarchy;
 - a valid hash preserving an illegitimate process;
-- a sufficient proposal adjudicated by actors without valid standing.
+- a sufficient proposal adjudicated by actors without valid standing;
+- a hierarchical approval that bypassed affected-party standing, challenge, repair, or dissent.
 
 Therefore:
 
 > Sufficiency is necessary but not sufficient for legitimacy.
 
-This axiom is normative.
+And:
+
+> Hierarchy is neither necessary nor sufficient for legitimacy.
+
+These axioms are normative.
 
 ---
 
@@ -112,6 +127,10 @@ Where implemented, standing MUST be evaluated through `cdp_standing_record` unde
 A decision MUST NOT be legitimized by an actor with missing, stale, invalid, expired, blocked, contested, recused, or non-current standing unless an explicit emergency exception is invoked, recorded, and subject to post-hoc review.
 
 The proposer MUST NOT be the sole or decisive legitimizer of their own proposal.
+
+A hierarchical superior, executive sponsor, system owner, manager, or chain-of-command actor MUST NOT be treated as legitimate solely by virtue of hierarchy.
+
+Hierarchical authority MAY satisfy part of the authority basis only when the governed path also satisfies standing, sufficiency, challenge, repair, dissent, and legitimacy requirements.
 
 ---
 
@@ -226,6 +245,7 @@ legitimacy_record:
   challenge_disposition_refs: [<ref>]
   formation_challenge_disposition_refs: [<ref>]
   open_dissent_refs: [<ref>]
+  hierarchy_basis_ref: <ref|null>
   exception_record_ref: <ref|null>
   scope: <string>
   constraints: [<string>]
@@ -246,6 +266,12 @@ Required references:
 - `challenge_disposition_refs`
 - `formation_challenge_disposition_refs`
 - `open_dissent_refs`
+
+`hierarchy_basis_ref` may be null.
+
+When non-null, it identifies a hierarchy, office, chain-of-command, or role-basis claim that may contribute to the authority basis.
+
+It does not substitute for standing, sufficiency, challenge disposition, or legitimacy requirements.
 
 `open_dissent_refs` may be empty.
 
@@ -329,6 +355,7 @@ application/cdp.legitimize+json
   "challenge_disposition_refs": ["ref"],
   "formation_challenge_disposition_refs": ["ref"],
   "open_dissent_refs": ["ref"],
+  "hierarchy_basis_ref": "ref|null",
   "exception_record_ref": "ref|null",
   "effective_at": "timestamp|null",
   "expires_at": "timestamp|null",
@@ -346,6 +373,7 @@ Legitimacy MUST fail or escalate when:
 - adjudication is incomplete;
 - authority is insufficient;
 - jurisdiction is invalid;
+- hierarchy is asserted as a substitute for governed legitimacy;
 - required controls are absent;
 - standing is invalid, stale, blocked, or contested;
 - required sufficiency evidence is missing;
@@ -360,11 +388,12 @@ Legitimacy MUST fail or escalate when:
 
 ## 13. Security and Governance Considerations
 
-Legitimacy records may expose sensitive authority, standing, dissent, exception, adjudication, and affected-party information.
+Legitimacy records may expose sensitive authority, standing, dissent, exception, adjudication, hierarchy, and affected-party information.
 
 Implementations SHOULD address:
 
 - authority capture;
+- hierarchy capture;
 - proposer self-legitimization;
 - APC exception abuse;
 - stale standing projections;
@@ -373,7 +402,7 @@ Implementations SHOULD address:
 - affected-party standing protection;
 - repair and appeal hooks;
 - traceability of legitimacy basis;
-- separation between legitimacy and correctness.
+- separation between hierarchy, authority, legitimacy, and correctness.
 
 ---
 
@@ -394,6 +423,13 @@ Promoted into Draft v0.4:
 - integrity vs sufficiency vs legitimacy distinction;
 - envelope and persistence requirements.
 
+Promoted into Draft v0.5:
+
+- hierarchy as distinct from legitimacy;
+- hierarchy as neither necessary nor sufficient for legitimacy;
+- hierarchy basis reference as optional evidence, not substitute authority;
+- hierarchy capture as a governance risk.
+
 Deferred:
 
 - contested legitimization adjudication process;
@@ -412,10 +448,16 @@ Sufficient does not imply legitimate.
 
 Intact does not imply sufficient.
 
+Hierarchical does not imply legitimate.
+
+Non-hierarchical does not imply illegitimate.
+
 Integrity is necessary but not sufficient for sufficiency.
 
 Sufficiency is necessary but not sufficient for legitimacy.
 
 Legitimacy is necessary but not sufficient for correctness.
 
-Legitimacy is conferred by governed process, not assumed from plausibility, completeness, confidence, or clean formatting.
+Hierarchy is neither necessary nor sufficient for legitimacy.
+
+Legitimacy is conferred by governed process, not assumed from plausibility, completeness, confidence, rank, office, hierarchy, or clean formatting.
