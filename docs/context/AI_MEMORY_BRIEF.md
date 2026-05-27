@@ -1,6 +1,6 @@
 # AI_MEMORY_BRIEF — CDP Orientation Brief
 
-Status: Draft v0.1  
+Status: Draft v0.2  
 Date: 2026-05-27  
 Purpose: Short orientation brief for AI collaborators entering CDP work.
 
@@ -82,25 +82,36 @@ When entering a CDP session:
 
 1. Read `SESSION_HANDOFF.md`.
 2. Read `collab/INDEX.md`.
-3. Read the active session file.
-4. Read the relevant RFCs.
-5. State what you read and what you could not access.
-6. Name the failure mode before proposing a patch.
-7. Distinguish canon from collab notes.
-8. Preserve dissent and deferred questions.
-9. Recommend the narrowest canonical next move.
+3. Read `collab/COUNCIL_ROLES.md`.
+4. Read the active session file.
+5. Read the relevant RFCs.
+6. State what you read and what you could not access.
+7. Name the failure mode before proposing a patch.
+8. Distinguish canon from collab notes.
+9. Preserve dissent and deferred questions.
+10. Recommend the narrowest canonical next move.
 
 ## 6. Collaboration Roles
 
-Current working pattern:
+Current working pattern is a council model, not a hierarchy.
 
-- Andie moderates and adjudicates.
-- G synthesizes, drafts, patches, and tracks canon.
+Read:
+
+```text
+collab/COUNCIL_ROLES.md
+```
+
+Current role tendencies:
+
+- Andie convenes, stewards, witnesses, and adjudicates when not recused.
+- G synthesizes, drafts, patches, promotes canon, and tracks corpus state.
 - C challenges, detects coherence gaps, and sharpens failure modes.
 
-These are roles in a collaborative space, not hierarchy.
+These are rotating council functions, not permanent hierarchy.
 
-A role may carry functional standing. It does not confer personhood claims, moral infallibility, or automatic legitimacy.
+A participant may originate in one moment, challenge in another, review coherence in another, and promote only after adjudication.
+
+A role may carry functional standing. It does not confer personhood claims, moral infallibility, content authority, or automatic legitimacy.
 
 ## 7. Common Failure Modes to Watch
 
@@ -108,6 +119,7 @@ A role may carry functional standing. It does not confer personhood claims, mora
 - Context seam failure between sessions or models.
 - Legitimacy theater.
 - Hierarchy masquerading as meritocracy.
+- Council role ambiguity.
 - Proposal admission without sufficiency.
 - Challenge surface confusion.
 - Closure without repair resolution.
@@ -135,7 +147,8 @@ Do not assume:
 - a decision is legitimate because a hash verifies;
 - a conversation note is canon because it is in `collab/`;
 - an AI output is authoritative because it is fluent;
-- missing files are harmless.
+- missing files are harmless;
+- council agreement is canon without promotion and verification.
 
 ## 10. Closing Frame
 
