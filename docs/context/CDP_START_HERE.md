@@ -1,6 +1,6 @@
 # CDP_START_HERE — Single-File Context Bundle
 
-Status: Draft v0.4  
+Status: Draft v0.5  
 Date: 2026-05-27  
 Purpose: One-file orientation bundle for CDP collaborators when multi-file fetching is unreliable.
 
@@ -87,6 +87,13 @@ Read:
 
 ```text
 docs/context/CULTURE.md
+```
+
+Current status:
+
+```text
+CULTURE.md Draft v0.3 closed-promoted
+Commit: 617c01288c325a03291088dd4e06269f21a52f37
 ```
 
 The culture document names the ground CDP stands on: lineage, repair, challenge, legibility, beauty, uncertainty, anti-erasure, and council practice.
@@ -186,6 +193,7 @@ As of 2026-05-27:
 - Sessions 001–016 are closed-promoted.
 - No active session is recorded in `collab/INDEX.md`.
 - Recent promoted work includes:
+  - CULTURE.md Draft v0.3 — shared ground and working culture added to the context plane; Thomas Glen Williams warning restored in §4.3.
   - RFC-CDP-000 Draft v1.3 — Series Index repaired for Sessions 007–016 and status-version convention made explicit.
   - RFC-CDP-022 Draft v0.5 — APC gate result payload defined.
   - RFC-CDP-023 Draft v0.5 — proposal admission references added to Decision Lifecycle Envelope.
@@ -196,7 +204,6 @@ As of 2026-05-27:
   - RFC-CDP-042 Draft v0.4 — Formation Challenge distinguished from ordinary Challenge.
   - RFC-CDP-045 Draft v0.5 — Legitimize wired to APC and necessary-not-sufficient axioms, including hierarchy.
   - RFC-CDP-070 Draft v0.1 — Appeals and Contestability Model created.
-  - CULTURE.md Draft v0.1 — shared ground and working culture added to the context plane.
 
 Current likely queue:
 
@@ -205,16 +212,18 @@ Current likely queue:
 3. Decide whether `proposal_sufficiency_record` and `formation_challenge_record` become RFC-CDP-022 payload types.
 4. Continue lifecycle protocol updates only when upstream objects are stable.
 
-Latest verified commit:
+Latest verified commits:
 
 ```text
 563c4b9ec641e89edfaa2d7c00204885d12ef997
+617c01288c325a03291088dd4e06269f21a52f37
 ```
 
 Verification note:
 
 ```text
 Session 016 was verified by commit SHA because blob fetch returned stale cache.
+CULTURE.md v0.3 was verified by commit SHA.
 ```
 
 ---
