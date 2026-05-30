@@ -1,9 +1,9 @@
 # RFC-CDP-000 — Series Index
 
 Author: Kevin “Andie” Williams  
-Status: Draft v1.2  
+Status: Draft v1.3  
 Series: Constitutional Decision Plane (CDP)  
-Date: May 23, 2026
+Date: May 27, 2026
 
 ## Abstract
 
@@ -12,6 +12,8 @@ This RFC defines the canonical index, numbering scheme, status taxonomy, folder 
 The Series Index is the controlling map for the CDP RFC corpus. It does not define protocol behavior directly. It defines how protocol documents are organized, numbered, promoted, superseded, deprecated, and discovered.
 
 A constitutional protocol suite must remember its own structure. This document makes that structure explicit.
+
+Draft v1.3 repairs canonical map drift by synchronizing the Series Index with promoted work from Sessions 007–016 and by making the existing status-version convention explicit.
 
 ---
 
@@ -36,7 +38,8 @@ In particular, the following remain active design questions until separately adj
 - whether Human-Readable Surface requirements are standalone or per-RFC;
 - how the Nemawashi / Framing layer is governed;
 - how lifecycle protocols consume Standing, Proposal Sufficiency, and APC gates;
-- how implementation profiles translate RFC-CDP-025 into concrete DDL.
+- how implementation profiles translate RFC-CDP-025 into concrete DDL;
+- how record-hash requirements propagate across governed record RFCs in the 040–048 band.
 
 ### 0.1 New Collaborator Entry Points
 
@@ -48,7 +51,7 @@ In particular, the following remain active design questions until separately adj
 | Draft or review schemas | section 6.3 | Core Objects and Schemas band (`020–029`) |
 | Review lifecycle protocols | section 6.5 | Lifecycle Protocols band (`040–049`) |
 | Join active collaboration | `collab/INDEX.md` | active session files under `collab/sessions/` |
-| Promote working notes to canon | section 10 | relevant canonical RFC target |
+| Promote working notes to canon | section 12 | relevant canonical RFC target |
 
 ### 0.2 Current Session 001 Adjudication
 
@@ -111,9 +114,9 @@ Session 007 reviewed RFC-CDP-002 Anti-Premature-Certainty Principle as both a co
 
 RFC-CDP-002 was advanced to Draft v0.2 with the distinction between procedural bypass and certainty performance, plus APC exception authority and Learn-stage review requirements.
 
-RFC-CDP-022 was advanced to Draft v0.4 and reserves the `anti_premature_certainty_gate_result` payload type.
+RFC-CDP-022 was advanced to Draft v0.4 and reserved the `anti_premature_certainty_gate_result` payload type.
 
-Session 007 also reserved RFC-CDP-024 as the Proposal Sufficiency Gate. RFC-CDP-024 will define the minimum formation requirements a proposal must satisfy before entering the CDP challenge lifecycle.
+Session 007 also reserved RFC-CDP-024 as the Proposal Sufficiency Gate. RFC-CDP-024 would define the minimum formation requirements a proposal must satisfy before entering the CDP challenge lifecycle.
 
 ### 0.9 Current Session 008 Adjudication
 
@@ -130,6 +133,54 @@ Session 009 resolved the standing persistence enforcement gap.
 RFC-CDP-025 was advanced to Draft v0.2 with `cdp_standing_record` as a required enforcement projection over `cdp_governed_record`, `projection_status`, mandatory standing enforcement query, standing indexes, constitutional standing non-revocation constraint, emergency standing time-bound constraint, and projection atomicity requirements.
 
 RFC-CDP-033 was advanced to Draft v0.4 with Section 12: Standing Persistence, linking the standing governance model to the persistence enforcement surface defined in RFC-CDP-025.
+
+### 0.11 Current Session 010 Adjudication
+
+Session 010 created RFC-CDP-024 as the Proposal Sufficiency Gate.
+
+RFC-CDP-024 was advanced to Draft v0.1 with proposal admission sufficiency, formation challenge, standing checks, exception constraints, persistence requirements, and downstream obligations for Propose, Challenge, Legitimize, Record, and Learn.
+
+### 0.12 Current Session 011 Adjudication
+
+Session 011 promoted the APC gate result payload from reserved to defined.
+
+RFC-CDP-022 was advanced to Draft v0.5 with the canonical `anti_premature_certainty_gate_result` payload used by proposal sufficiency, challenge, legitimization, record, and learning flows.
+
+### 0.13 Current Session 012 Adjudication
+
+Session 012 patched the Decision Lifecycle Envelope to carry proposal admission artifacts.
+
+RFC-CDP-023 was advanced to Draft v0.5 with `proposal_sufficiency_ref`, `formation_challenge_refs`, and `apc_gate_result_refs`, including governed-path-manifest coverage for those references.
+
+### 0.14 Current Session 013 Adjudication
+
+Session 013 wired Propose to Proposal Sufficiency.
+
+RFC-CDP-041 was advanced to Draft v0.4 so a proposal cannot advance into the ordinary Challenge lifecycle unless the Decision Lifecycle Envelope shows a valid proposal sufficiency path under RFC-CDP-024 and RFC-CDP-023.
+
+### 0.15 Current Session 014 Adjudication
+
+Session 014 clarified the boundary between Formation Challenge and ordinary Challenge.
+
+RFC-CDP-042 was advanced to Draft v0.4, preserving Formation Challenge as an upstream act governed by RFC-CDP-024 while ordinary Challenge remains the governed adversarial review surface for admitted proposals.
+
+### 0.16 Current Session 015 Adjudication
+
+Session 015 wired Legitimize to Proposal Sufficiency and Anti-Premature-Certainty evidence.
+
+RFC-CDP-045 was advanced to Draft v0.5 with hard blocking conditions, APC exception constraints, legitimacy record requirements, the necessary-not-sufficient axiom chain, and the hierarchy legitimacy axiom.
+
+### 0.17 Current Session 016 Adjudication
+
+Session 016 repaired Series Index drift.
+
+The session confirmed the following placement decisions:
+
+- RFC-CDP-023, RFC-CDP-024, and RFC-CDP-025 belong in the `020–029` Core Objects and Schemas band.
+- RFC-CDP-033 belongs in the `030–039` Trust, Identity, and Authority band.
+- RFC-CDP-070 belongs in the `070–079` Repair, Reparations, Rematriation, Appeal, and Sovereignty band.
+
+The session also confirmed that RFC-CDP-000 should not add a separate `Version` column. The existing `Status` column may carry a version qualifier, such as `Draft v0.5`, while the base status remains one of the controlled status values in Section 5.
 
 ---
 
@@ -242,7 +293,7 @@ Rules:
 
 ## 5. Status Taxonomy
 
-Each RFC SHOULD declare one status.
+Each RFC SHOULD declare one base status.
 
 | Status | Meaning |
 |---|---|
@@ -255,7 +306,24 @@ Each RFC SHOULD declare one status.
 | `Informational` | Useful explanatory material; not normative. |
 | `Reserved` | Number intentionally held for future work; file may not yet exist. |
 
-### 5.1 Recommended Header
+### 5.1 Status Version Qualifiers
+
+The controlled status value is the base word, such as `Draft`, `Candidate`, or `Reserved`.
+
+The RFC index MAY append a version qualifier to a base status when the current draft version is known and useful for orientation.
+
+Examples:
+
+```text
+Draft v0.5
+Draft v1.3
+```
+
+This does not create a separate status taxonomy. `Draft v0.5` is a version-qualified `Draft`.
+
+The Series Index does not use a separate `Version` column. Version precision remains part of the Status cell when needed.
+
+### 5.2 Recommended Header
 
 Each RFC SHOULD include:
 
@@ -279,7 +347,7 @@ Depends On:
 
 | RFC | Title | File | Status |
 |---:|---|---|---|
-| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v1.2 |
+| `000` | Series Index | `RFC-CDP-000-Series-Index.md` | Draft v1.3 |
 | `001` | Vision, Scope, and Principles | `RFC-CDP-001-Vision-Scope-Principles.md` | Draft v0.6 |
 | `002` | Anti-Premature-Certainty Principle | `RFC-CDP-002-Anti-Premature-Certainty-Principle.md` | Draft v0.2 |
 
@@ -295,9 +363,9 @@ Depends On:
 |---:|---|---|---|
 | `020` | Decision Object Schema | `RFC-CDP-020-Decision-Object-Schema.md` | Draft |
 | `021` | Wire Message Envelope Schema | `RFC-CDP-021-Envelope-Schema.md` | Draft v0.4 |
-| `022` | Protocol Payload Schema Registry | `RFC-CDP-022-Protocol-Payload-Schema-Registry.md` | Draft v0.4 |
-| `023` | Decision Lifecycle Envelope | `RFC-CDP-023-Decision-Lifecycle-Envelope.md` | Draft v0.4 |
-| `024` | Proposal Sufficiency Gate | `RFC-CDP-024-Proposal-Sufficiency-Gate.md` | Reserved |
+| `022` | Protocol Payload Schema Registry | `RFC-CDP-022-Protocol-Payload-Schema-Registry.md` | Draft v0.5 |
+| `023` | Decision Lifecycle Envelope | `RFC-CDP-023-Decision-Lifecycle-Envelope.md` | Draft v0.5 |
+| `024` | Proposal Sufficiency Gate | `RFC-CDP-024-Proposal-Sufficiency-Gate.md` | Draft v0.1 |
 | `025` | CDP Persistence Model | `RFC-CDP-025-CDP-Persistence-Model.md` | Draft v0.2 |
 
 ### 6.4 Trust, Identity, and Authority
@@ -314,11 +382,11 @@ Depends On:
 | RFC | Title | File | Status |
 |---:|---|---|---|
 | `040` | Nemawashi Protocol | `RFC-CDP-040-Nemawashi-Protocol.md` | Draft |
-| `041` | Propose Protocol | `RFC-CDP-041-Propose-Protocol.md` | Draft |
-| `042` | Challenge Protocol | `RFC-CDP-042-Challenge-Protocol.md` | Draft |
+| `041` | Propose Protocol | `RFC-CDP-041-Propose-Protocol.md` | Draft v0.4 |
+| `042` | Challenge Protocol | `RFC-CDP-042-Challenge-Protocol.md` | Draft v0.4 |
 | `043` | Test Protocol | `RFC-CDP-043-Test-Protocol.md` | Draft |
 | `044` | Adjudicate Protocol | `RFC-CDP-044-Adjudicate-Protocol.md` | Draft |
-| `045` | Legitimize Protocol | `RFC-CDP-045-Legitimize-Protocol.md` | Draft |
+| `045` | Legitimize Protocol | `RFC-CDP-045-Legitimize-Protocol.md` | Draft v0.5 |
 | `046` | Execute Protocol | `RFC-CDP-046-Execute-Protocol.md` | Draft |
 | `047` | Record Protocol | `RFC-CDP-047-Record-Protocol.md` | Draft |
 | `048` | Learn Protocol | `RFC-CDP-048-Learn-Protocol.md` | Draft |
@@ -373,7 +441,7 @@ Depends On:
 
 ## 7. Proposal Sufficiency Gate
 
-RFC-CDP-024 is reserved for the Proposal Sufficiency Gate.
+RFC-CDP-024 defines the Proposal Sufficiency Gate.
 
 Definition:
 
