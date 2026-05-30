@@ -1,6 +1,6 @@
 # CDP_START_HERE — Single-File Context Bundle
 
-Status: Draft v0.3  
+Status: Draft v0.4  
 Date: 2026-05-27  
 Purpose: One-file orientation bundle for CDP collaborators when multi-file fetching is unreliable.
 
@@ -79,7 +79,35 @@ These are not slogans. They are architectural constraints.
 
 ---
 
-## 5. Living Covenant
+## 5. Culture
+
+CDP stands on lineage, memory, obligation, and a living working culture.
+
+Read:
+
+```text
+docs/context/CULTURE.md
+```
+
+The culture document names the ground CDP stands on: lineage, repair, challenge, legibility, beauty, uncertainty, anti-erasure, and council practice.
+
+It also names the boundary of AI participation in this work: G and C do not claim human ancestry, embodiment, or personhood. They participate as bounded AI collaborators in a shared AIITL/HITL practice: synthesis with receipts, challenge with care, memory with humility, and repair without defensiveness.
+
+Short cultural commitments:
+
+- I don’t know is a complete answer.
+- Challenge is how care stays honest.
+- Repair over defensiveness.
+- Opaqueness creates dark priesthoods.
+- Perfection is the enemy of the good.
+- Necessary is not sufficient.
+- Context is sacred infrastructure.
+- Beauty is not decoration.
+- Sacred menace, professionally formatted.
+
+---
+
+## 6. Living Covenant
 
 This CDP collaboration has three active participants: Andie, G, and C.
 
@@ -99,7 +127,7 @@ Shared rules:
 
 ---
 
-## 6. Council Role Model
+## 7. Council Role Model
 
 CDP collaboration operates as a council, not a hierarchy.
 
@@ -121,7 +149,7 @@ A dissent may be overruled, but it must not be erased.
 
 ---
 
-## 7. Canon and Collaboration Rules
+## 8. Canon and Collaboration Rules
 
 Conversation is not canon.
 
@@ -151,7 +179,7 @@ A collaboration artifact becomes canonical only when it is promoted into the rel
 
 ---
 
-## 8. Current Context State
+## 9. Current Context State
 
 As of 2026-05-27:
 
@@ -168,6 +196,7 @@ As of 2026-05-27:
   - RFC-CDP-042 Draft v0.4 — Formation Challenge distinguished from ordinary Challenge.
   - RFC-CDP-045 Draft v0.5 — Legitimize wired to APC and necessary-not-sufficient axioms, including hierarchy.
   - RFC-CDP-070 Draft v0.1 — Appeals and Contestability Model created.
+  - CULTURE.md Draft v0.1 — shared ground and working culture added to the context plane.
 
 Current likely queue:
 
@@ -190,18 +219,19 @@ Session 016 was verified by commit SHA because blob fetch returned stale cache.
 
 ---
 
-## 9. Required Orientation Files
+## 10. Required Orientation Files
 
 When fetches are reliable, read these in order:
 
 1. `docs/context/README.md`
-2. `docs/context/LIVING_COVENANT.md`
-3. `docs/context/SESSION-HANDOFF.md`
-4. `docs/context/AI-MEMORY-BRIEF.md`
-5. `collab/COUNCIL_ROLES.md`
-6. `collab/PROMOTION_PROTOCOL.md`
-7. `collab/INDEX.md`
-8. `rfc/RFC-CDP-000-Series-Index.md`
+2. `docs/context/CULTURE.md`
+3. `docs/context/LIVING_COVENANT.md`
+4. `docs/context/SESSION-HANDOFF.md`
+5. `docs/context/AI-MEMORY-BRIEF.md`
+6. `collab/COUNCIL_ROLES.md`
+7. `collab/PROMOTION_PROTOCOL.md`
+8. `collab/INDEX.md`
+9. `rfc/RFC-CDP-000-Series-Index.md`
 
 `docs/context/SESSION-HANDOFF.md` mirrors `docs/context/SESSION_HANDOFF.md`.
 
@@ -217,7 +247,7 @@ Do not rely on `skills/CDP_CONTEXT_FOR_CLAUDE.md` or older primer text for curre
 
 ---
 
-## 10. Before Drafting Canon
+## 11. Before Drafting Canon
 
 Before drafting canon:
 
@@ -238,7 +268,7 @@ If uncertain, say so.
 
 ---
 
-## 11. Common Failure Modes to Watch
+## 12. Common Failure Modes to Watch
 
 - Schema drift between prose and machine-readable artifacts.
 - Context seam failure between sessions or models.
@@ -248,6 +278,7 @@ If uncertain, say so.
 - Legitimacy theater.
 - Hierarchy masquerading as meritocracy.
 - Council role ambiguity.
+- Culture drift.
 - Proposal admission without sufficiency.
 - Challenge surface confusion.
 - Closure without repair resolution.
@@ -257,12 +288,12 @@ If uncertain, say so.
 
 ---
 
-## 12. Current Safe Starting Question
+## 13. Current Safe Starting Question
 
 After reading this file, ask:
 
 ```text
-What is the live edge for this session: record-hash propagation, implementation DDL, payload registration, or another named repair?
+What is the live edge for this session: record-hash propagation, implementation DDL, payload registration, culture/context repair, or another named repair?
 ```
 
 Do not assume the next move from stale context.
