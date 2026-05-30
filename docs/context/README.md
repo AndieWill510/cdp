@@ -19,13 +19,16 @@ If any orientation file 404s, continue from `CDP_START_HERE.md` and name the mis
 When fetches are reliable, read these files in order:
 
 1. `CDP_START_HERE.md`
-2. `LIVING_COVENANT.md`
-3. `SESSION-HANDOFF.md`
-4. `AI-MEMORY-BRIEF.md`
-5. `../../collab/COUNCIL_ROLES.md`
-6. `../../collab/PROMOTION_PROTOCOL.md`
-7. `../../collab/INDEX.md`
-8. `../../rfc/RFC-CDP-000-Series-Index.md`
+2. `CULTURE.md`
+3. `LIVING_COVENANT.md`
+4. `SESSION-HANDOFF.md`
+5. `AI-MEMORY-BRIEF.md`
+6. `../../collab/COUNCIL_ROLES.md`
+7. `../../collab/PROMOTION_PROTOCOL.md`
+8. `../../collab/INDEX.md`
+9. `../../rfc/RFC-CDP-000-Series-Index.md`
+
+`CULTURE.md` names the shared ground, obligations, and working culture CDP stands on.
 
 `SESSION-HANDOFF.md` mirrors `SESSION_HANDOFF.md`.
 
@@ -33,7 +36,7 @@ When fetches are reliable, read these files in order:
 
 The hyphenated filenames are preferred for collaborator fetching because some tools have shown intermittent false 404s on the underscore paths.
 
-`C_ORIENTATION.md` has been replaced by `CDP_START_HERE.md`, `AI-MEMORY-BRIEF.md`, and `COUNCIL_ROLES.md`.
+`C_ORIENTATION.md` has been replaced by `CDP_START_HERE.md`, `AI-MEMORY-BRIEF.md`, `CULTURE.md`, and `COUNCIL_ROLES.md`.
 
 If an older customization, prompt, or primer still points to `C_ORIENTATION.md`, update it. That file now exists only as a deprecated compatibility redirect.
 
@@ -41,7 +44,7 @@ If an older customization, prompt, or primer still points to `C_ORIENTATION.md`,
 
 Prefer `docs/context/CDP_START_HERE.md` as the primary entry point.
 
-Prefer `docs/context/SESSION-HANDOFF.md` and `docs/context/AI-MEMORY-BRIEF.md` for detailed collaborator orientation.
+Prefer `docs/context/CULTURE.md`, `docs/context/SESSION-HANDOFF.md`, and `docs/context/AI-MEMORY-BRIEF.md` for detailed collaborator orientation.
 
 Underscore aliases may remain for compatibility, but the hyphenated files are the preferred fetch paths.
 
@@ -54,11 +57,12 @@ Do not rely on stale primer prose for current work.
 For current state, read:
 
 1. `docs/context/CDP_START_HERE.md`
-2. `docs/context/SESSION-HANDOFF.md`
-3. `docs/context/AI-MEMORY-BRIEF.md`
-4. `collab/INDEX.md`
-5. `rfc/RFC-CDP-000-Series-Index.md`
-6. the active session file, if one exists
+2. `docs/context/CULTURE.md`
+3. `docs/context/SESSION-HANDOFF.md`
+4. `docs/context/AI-MEMORY-BRIEF.md`
+5. `collab/INDEX.md`
+6. `rfc/RFC-CDP-000-Series-Index.md`
+7. the active session file, if one exists
 
 ## Maintenance Rule
 
