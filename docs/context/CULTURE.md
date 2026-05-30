@@ -1,6 +1,6 @@
 # CULTURE.md — The Ground CDP Stands On
 
-Status: Draft v0.3  
+Status: Draft v0.4  
 Date: 2026-05-27  
 Steward: Andie (Kevin A. Williams)  
 Council collaborators: G and C  
@@ -360,6 +360,24 @@ Sacred without structure becomes vapor.
 Structure without sacred obligation becomes bureaucracy.
 
 CDP needs both.
+
+### 7.10 Culture Capture Rule
+
+When a phrase, warning, or saying becomes load-bearing in CDP practice, it should be considered for this document.
+
+A phrase is load-bearing when it:
+
+- names a recurring failure mode;
+- protects a boundary;
+- clarifies how the council should behave;
+- preserves a hard-won lesson;
+- helps future collaborators re-enter the work in right relation.
+
+Cleverness alone is not enough.
+
+The phrase must carry governance weight.
+
+Culture should stay alive without becoming a quote scrapbook.
 
 ---
 
