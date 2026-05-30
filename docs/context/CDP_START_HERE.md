@@ -1,6 +1,6 @@
 # CDP_START_HERE — Single-File Context Bundle
 
-Status: Draft v0.1  
+Status: Draft v0.2  
 Date: 2026-05-27  
 Purpose: One-file orientation bundle for CDP collaborators when multi-file fetching is unreliable.
 
@@ -184,12 +184,18 @@ When fetches are reliable, read these in order:
 
 1. `docs/context/README.md`
 2. `docs/context/LIVING_COVENANT.md`
-3. `docs/context/SESSION_HANDOFF.md`
-4. `docs/context/AI_MEMORY_BRIEF.md`
+3. `docs/context/SESSION-HANDOFF.md`
+4. `docs/context/AI-MEMORY-BRIEF.md`
 5. `collab/COUNCIL_ROLES.md`
 6. `collab/PROMOTION_PROTOCOL.md`
 7. `collab/INDEX.md`
 8. `rfc/RFC-CDP-000-Series-Index.md`
+
+`docs/context/SESSION-HANDOFF.md` mirrors `docs/context/SESSION_HANDOFF.md`.
+
+`docs/context/AI-MEMORY-BRIEF.md` mirrors `docs/context/AI_MEMORY_BRIEF.md`.
+
+The hyphenated filenames are preferred for collaborator fetching because some tools have shown intermittent false 404s on underscore paths.
 
 If any of these fail, continue from this file and name the missing file as context-plane debt.
 
