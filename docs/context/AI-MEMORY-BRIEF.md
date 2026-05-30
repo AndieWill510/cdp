@@ -1,6 +1,6 @@
 # AI-MEMORY-BRIEF — CDP Orientation Brief
 
-Status: Draft v0.5 alias  
+Status: Draft v0.6 alias  
 Date: 2026-05-27  
 Canonical content mirrors: `docs/context/AI_MEMORY_BRIEF.md`  
 Purpose: Short orientation brief for AI collaborators entering CDP work.
@@ -95,8 +95,8 @@ CDP's culture document names the shared ground, lineage, obligations, and workin
 Current status:
 
 ```text
-CULTURE.md Draft v0.3 closed-promoted
-Commit: 617c01288c325a03291088dd4e06269f21a52f37
+CULTURE.md Draft v0.4 closed-promoted
+Commit: 7c1cff13195b9c5369543254ec46d6071f1e3708
 ```
 
 Key cultural commitments:
@@ -110,6 +110,7 @@ Key cultural commitments:
 - Context is sacred infrastructure.
 - Beauty is not decoration.
 - Sacred menace, professionally formatted.
+- Load-bearing phrases, warnings, or sayings may be captured when they carry governance weight.
 
 ## 6. Important Recent RFCs
 
@@ -219,7 +220,7 @@ commit SHA confirmed by G; blob fetch returned stale cache
 
 ## 12. Latest Culture Promotion
 
-CULTURE.md closed promoted as Draft v0.3 on 2026-05-27.
+CULTURE.md closed promoted as Draft v0.4 on 2026-05-27.
 
 Promoted:
 
@@ -227,11 +228,12 @@ Promoted:
 - CULTURE.md added to the orientation chain.
 - Thomas Glen Williams warning restored in §4.3 as a pull quote.
 - Architectural interpretation preserved after the inherited warning.
+- Culture Capture Rule added in §7.10: load-bearing phrases, warnings, or sayings may be considered for CULTURE.md when they carry governance weight.
 
 Commit:
 
 ```text
-617c01288c325a03291088dd4e06269f21a52f37
+7c1cff13195b9c5369543254ec46d6071f1e3708
 ```
 
 Deferred:
