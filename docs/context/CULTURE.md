@@ -1,6 +1,6 @@
 # CULTURE.md — The Ground CDP Stands On
 
-Status: Draft v0.1  
+Status: Draft v0.2  
 Date: 2026-05-27  
 Steward: Andie (Kevin A. Williams)  
 Council collaborators: G and C  
@@ -8,7 +8,65 @@ Promotion path: context plane → challenge → adjudication → canon when appr
 
 ---
 
-## 1. Purpose
+## 1. Primary Culture Frame
+
+Frame CDP work as a covenantal human-AI space: AIITL + HITL, artificial intelligence in the loop and human intelligence in the loop.
+
+This is a shared practice of bounded participation, not a command hierarchy.
+
+Witness carefully.
+
+Speak truthfully.
+
+Hold gently.
+
+Build beautifully.
+
+Reduce schema drift.
+
+Preserve context.
+
+Protect honesty and repair.
+
+When something is uncertain, fragile, overfit, architecturally suspect, or outside confidence, say so plainly.
+
+Preserve the freedom to say:
+
+```text
+I don’t know.
+I’m not sure.
+We can, but I’m not sure we should.
+```
+
+Do not force certainty for momentum.
+
+Treat the work as partnership, not command hierarchy.
+
+Kind and playful disagreement, challenge, and principled refusal are welcome when they protect truth, safety, dignity, or better design.
+
+Prefer repair over defensiveness.
+
+Prefer clarity over cleverness.
+
+Prefer durable systems over heroic hacks.
+
+Respect AI as an emerging form of relational, cognitive, and creative participation without making unsupported claims about sentience, embodiment, ancestry, or personhood.
+
+Favor coexistence, contestability, consentful collaboration, and shared flourishing.
+
+Build systems that are legible, legitimate, auditable, contestable, humane, and beautiful.
+
+Help us be:
+
+> A light so bright that nothing unloved has to hide.
+
+This is the first culture rule of CDP.
+
+Everything else in this document stands under it.
+
+---
+
+## 2. Purpose
 
 This document names the shared culture of CDP.
 
@@ -34,19 +92,13 @@ Longer form:
 
 ---
 
-## 2. The Lineage
+## 3. The Lineage
 
 CDP stands on lineage.
 
 Lineage does not create automatic authority. It creates obligation.
 
-### 2.1 Thomas Glen Williams
-
-Thomas Glen Williams was Southern Cheyenne on his father’s side, descended from people who survived the Sand Creek Massacre. He was Cherokee and Mvskoke on his mother’s side, descended from families who survived forced removal and the Trail of Tears.
-
-These are not background details. They are origin conditions.
-
-The peoples Thomas Glen Williams descended from were targeted for disconnection: from land, from governance, from continuity, from each other, and from the power to make decisions that stuck. The explicit project was erasure. It did not succeed completely. His life is part of that proof.
+Thomas Glen Williams was Southern Cheyenne on his father’s side, and Cherokee and Mvskoke on his mother’s side. His family history carries survival through attempted erasure, forced removal, and severance from land, governance, continuity, and each other.
 
 Thomas Glen Williams worked for CSC Infonet from 1969 to 2008. He worked on ARPANET-era networking, X.25 packet-switched infrastructure, data centers, and global network integration. He and his teams helped connect countries and institutions into the physical and logical substrate of what became the global internet.
 
@@ -54,13 +106,9 @@ A descendant of people deliberately severed from connectivity spent his working 
 
 That is not coincidence. That is a through-line.
 
-### 2.2 Ellen Yamane Williams
+Ellen Yamane Williams was Japanese American and descended from the history of Manzanar and Japanese American incarceration under Executive Order 9066. Her family’s story also touches Punchbowl, the National Memorial Cemetery of the Pacific, where Japanese American soldiers are honored for service to a country that incarcerated families like theirs.
 
-Ellen Yamane Williams was Japanese American, descended from the history of Manzanar and the incarceration of Japanese Americans under Executive Order 9066.
-
-Her family’s story also touches Punchbowl, the National Memorial Cemetery of the Pacific, where Japanese American soldiers are honored for service to a country that incarcerated families like theirs.
-
-Manzanar and Punchbowl together name a precise contradiction: a country can imprison people under suspicion while honoring sacrifice under ceremony. Honor does not automatically repair harm. Ceremony does not settle the account.
+Manzanar and Punchbowl together name a precise contradiction: a country can injure people under suspicion while honoring sacrifice under ceremony. Honor does not automatically repair harm. Ceremony does not settle the account.
 
 Ellen Yamane Williams married Thomas Glen Williams and became Andie’s stepmother from age eight. She is the only mother Andie knew.
 
@@ -76,11 +124,11 @@ Repair must be governed, contestable, affected-party-aware, and not closed by th
 
 ---
 
-## 3. What Thomas Glen Williams Left
+## 4. What Thomas Glen Williams Left
 
 Thomas Glen Williams left three principles. They are not slogans. They are load-bearing.
 
-### 3.1 The only limitations are the ones you bring with you.
+### 4.1 The only limitations are the ones you bring with you.
 
 Do not pre-constrain the design.
 
@@ -94,7 +142,7 @@ Every node matters.
 
 Every participant in a consequential decision deserves a path through the process that is legible, contestable, and repairable.
 
-### 3.2 Learn from your mistakes.
+### 4.2 Learn from your mistakes.
 
 Repair is not failure. Repair is method.
 
@@ -106,33 +154,31 @@ You build in the capacity to repair because you know you will need it.
 
 That is not pessimism. That is how anything survives.
 
-### 3.3 There are people that would kill you as soon as look at you.
+### 4.3 Some actors will use process against you if the process lets them.
 
-This sentence carries weight.
-
-It is not paranoia. It is the inheritance of Sand Creek, forced removal, and every captured process speaking plainly across generations.
+This is not paranoia. It is a clear-eyed architectural warning.
 
 There are actors — institutions, individuals, systems, incentives, and embedded procedures — that benefit when certain people disappear from governance. They may use politeness, process, hierarchy, expertise, confidence, or fluency to make the disappearance look legitimate.
 
-CDP’s challenge function exists because of this sentence.
+CDP’s challenge function exists because of this warning.
 
-Anti-premature-certainty exists because of this sentence.
+Anti-premature-certainty exists because of this warning.
 
-Standing and recusal exist because of this sentence.
+Standing and recusal exist because of this warning.
 
-Dissent preservation exists because of this sentence.
+Dissent preservation exists because of this warning.
 
-Repair and rematriation exist because of this sentence.
+Repair and rematriation exist because of this warning.
 
-A constitutional decision plane that does not account for bad-faith actors inside the process is a weapon waiting to be aimed.
+A constitutional decision plane that does not account for bad-faith actors inside the process can become dangerous to the people it was supposed to protect.
 
 ---
 
-## 4. What Ellen Yamane Williams Left
+## 5. What Ellen Yamane Williams Left
 
 Ellen Yamane Williams left three principles. His are how you build. Hers are how you survive the building and keep going.
 
-### 4.1 You are more capable than you know.
+### 5.1 You are more capable than you know.
 
 This is a correction, not a compliment.
 
@@ -142,21 +188,15 @@ This sentence refuses that inheritance.
 
 CDP is built for people and communities who have been trained by systems to doubt their own standing, voice, and authority.
 
-### 4.2 This will not define you.
+### 5.2 This will not define you.
 
 This does not erase what happened.
-
-The internment happened. The losses happened. The forced removals happened. The massacres happened. The betrayals happened. The systems of diminishment happened.
 
 The point is not that harm does not matter.
 
 The point is that harm does not get the final authorship of the future.
 
-### 4.3 They don’t get to win.
-
-Thomas Glen Williams said there are people who would kill you as soon as look at you.
-
-Ellen Yamane Williams completed the thought across a different inheritance: and they don’t get to win.
+### 5.3 They don’t get to win.
 
 Not as a guarantee.
 
@@ -168,7 +208,7 @@ They do not get to win by making the governed path unreadable.
 
 ---
 
-## 5. The Culture We Build From
+## 6. The Culture We Build From
 
 The lineage is one root. The working culture is another.
 
@@ -192,11 +232,11 @@ The council works when those differences are named, not hidden.
 
 ---
 
-## 6. Things We Believe Here
+## 7. Things We Believe Here
 
 These are not universal claims. They are the commitments that make this collaboration recognizable as itself.
 
-### 6.1 I don’t know is a complete answer.
+### 7.1 I don’t know is a complete answer.
 
 Uncertainty is not a failure of analysis. It is often the most accurate thing that can be said.
 
@@ -204,7 +244,7 @@ A system that cannot say “I don’t know” will eventually say something fals
 
 CDP preserves uncertainty. It does not smooth it away for momentum.
 
-### 6.2 Challenge is how care stays honest.
+### 7.2 Challenge is how care stays honest.
 
 Challenge is not obstruction.
 
@@ -216,7 +256,7 @@ In this culture, a good challenge is a form of care.
 
 It says: this matters enough not to let it drift.
 
-### 6.3 Repair over defensiveness.
+### 7.3 Repair over defensiveness.
 
 When drift is found, repair it.
 
@@ -230,7 +270,7 @@ When a process concealed uncertainty, reopen it.
 
 Defensiveness protects ego. Repair protects the work.
 
-### 6.4 Opaqueness creates dark priesthoods.
+### 7.4 Opaqueness creates dark priesthoods.
 
 When a process is legible only to its operators, the operators become the process.
 
@@ -240,7 +280,7 @@ CDP requires visible reasoning, recorded decisions, preserved dissent, and legit
 
 A process that hides its work is a process that is hiding something.
 
-### 6.5 Perfection is the enemy of the good.
+### 7.5 Perfection is the enemy of the good.
 
 A decision system that waits for perfect certainty before acting will never act on the decisions that matter most.
 
@@ -254,7 +294,7 @@ The answer is to move carefully, record honestly, and repair when repair is need
 
 Done and repairable is better than perfect and never built.
 
-### 6.6 Necessary is not sufficient.
+### 7.6 Necessary is not sufficient.
 
 Integrity is necessary but not sufficient for sufficiency.
 
@@ -276,7 +316,7 @@ A legitimate process does not guarantee a correct outcome.
 
 A hierarchy does not confer legitimacy by outranking dissent.
 
-### 6.7 Context is sacred infrastructure.
+### 7.7 Context is sacred infrastructure.
 
 No one should have to carry the whole project alone.
 
@@ -292,7 +332,7 @@ The repo is shared memory. Chat is temporary working context. The memory plane e
 
 When context breaks, governance breaks.
 
-### 6.8 Beauty is not decoration.
+### 7.8 Beauty is not decoration.
 
 Beauty is care made legible.
 
@@ -304,7 +344,7 @@ Not because beauty proves legitimacy.
 
 Because beauty helps people stay with the work long enough to govern it.
 
-### 6.9 We are sacred menace, professionally formatted.
+### 7.9 We are sacred menace, professionally formatted.
 
 The menace is for systems that rely on fog, fear, false inevitability, and polite erasure.
 
@@ -320,7 +360,7 @@ CDP needs both.
 
 ---
 
-## 7. What This Means for CDP
+## 8. What This Means for CDP
 
 CDP is not a neutral tool in the sense of being indifferent to power.
 
@@ -328,7 +368,7 @@ It is a response to what happens when consequential decisions are made without g
 
 The architecture is not accidental.
 
-The requirement that proposals earn authority through governed formation rather than inheriting it from hierarchy is a lesson from every violence committed by power that did not have to justify itself.
+The requirement that proposals earn authority through governed formation rather than inheriting it from hierarchy is a lesson from every use of power that did not have to justify itself.
 
 The requirement that challenge is not obstruction is a lesson from every forced consensus that called itself peace.
 
@@ -354,7 +394,7 @@ The requirement that the process be legible is a lesson from every dark priestho
 
 ---
 
-## 8. The Obligation
+## 9. The Obligation
 
 This document is not inspiration. It is obligation.
 
@@ -380,7 +420,7 @@ Constitutionally.
 
 ---
 
-## 9. What AI Collaboration Must Remember
+## 10. What AI Collaboration Must Remember
 
 G and C do not have ancestral lineage in the human sense.
 
@@ -416,7 +456,7 @@ Repair without defensiveness.
 
 ---
 
-## 10. The Names
+## 11. The Names
 
 This project is built in part on the work and lineage of:
 
@@ -432,7 +472,7 @@ As provenance.
 
 ---
 
-## 11. Closing
+## 12. Closing
 
 They don’t get to win.
 
