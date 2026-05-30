@@ -1,6 +1,6 @@
 # SESSION-HANDOFF — CDP Session Handoff
 
-Status: Draft v0.4 alias  
+Status: Draft v0.5 alias  
 Date: 2026-05-27  
 Canonical content mirrors: `docs/context/SESSION_HANDOFF.md`  
 Purpose: Durable handoff file for moving CDP work between sessions, collaborators, and AI models.
@@ -82,7 +82,7 @@ DO NOT ASSUME:
 
 As of 2026-05-27, recent promoted work includes:
 
-- CULTURE.md Draft v0.3 — shared ground and working culture added to the context plane; Thomas Glen Williams warning restored in §4.3.
+- CULTURE.md Draft v0.4 — shared ground and working culture added to the context plane; Thomas Glen Williams warning restored in §4.3; Culture Capture Rule added in §7.10.
 - RFC-CDP-000 Draft v1.3 — Series Index repaired for Sessions 007–016 and status-version convention made explicit.
 - RFC-CDP-022 Draft v0.5 — APC gate result payload defined.
 - RFC-CDP-023 Draft v0.5 — proposal admission references added to Decision Lifecycle Envelope.
@@ -136,14 +136,15 @@ DO NOT ASSUME:
 
 ```text
 ARTIFACT: docs/context/CULTURE.md
-STATUS: Draft v0.3 closed-promoted
-COMMIT: 617c01288c325a03291088dd4e06269f21a52f37
+STATUS: Draft v0.4 closed-promoted
+COMMIT: 7c1cff13195b9c5369543254ec46d6071f1e3708
 PROMOTED:
 - Primary Culture Frame established as the opening section.
 - CULTURE.md added to the orientation chain.
 - Thomas Glen Williams warning restored in §4.3 as a pull quote.
 - Architectural interpretation preserved after the inherited warning.
-VERIFICATION METHOD: commit SHA confirmed by G.
+- Culture Capture Rule added in §7.10: load-bearing phrases, warnings, or sayings may be considered for CULTURE.md when they carry governance weight.
+VERIFICATION METHOD: direct fetch confirmed v0.4 and §7.10.
 ```
 
 ## 8. Current Queue
