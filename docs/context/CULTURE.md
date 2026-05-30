@@ -1,6 +1,6 @@
 # CULTURE.md — The Ground CDP Stands On
 
-Status: Draft v0.2  
+Status: Draft v0.3  
 Date: 2026-05-27  
 Steward: Andie (Kevin A. Williams)  
 Council collaborators: G and C  
@@ -156,7 +156,10 @@ That is not pessimism. That is how anything survives.
 
 ### 4.3 Some actors will use process against you if the process lets them.
 
-This is not paranoia. It is a clear-eyed architectural warning.
+> “There are people that would kill you as soon as look at you.”  
+> — Thomas Glen Williams
+
+This is not paranoia. It is a clear-eyed architectural warning passed down through a specific inheritance.
 
 There are actors — institutions, individuals, systems, incentives, and embedded procedures — that benefit when certain people disappear from governance. They may use politeness, process, hierarchy, expertise, confidence, or fluency to make the disappearance look legitimate.
 
