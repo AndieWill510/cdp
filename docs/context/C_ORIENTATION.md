@@ -21,13 +21,14 @@ If another context file 404s, continue from `CDP_START_HERE.md` and name the mis
 When fetches are reliable, read these in order:
 
 1. `docs/context/CDP_START_HERE.md`
-2. `docs/context/LIVING_COVENANT.md`
-3. `docs/context/SESSION_HANDOFF.md`
-4. `docs/context/AI_MEMORY_BRIEF.md`
-5. `collab/COUNCIL_ROLES.md`
-6. `collab/PROMOTION_PROTOCOL.md`
-7. `collab/INDEX.md`
-8. `rfc/RFC-CDP-000-Series-Index.md`
+2. `docs/context/CULTURE.md`
+3. `docs/context/LIVING_COVENANT.md`
+4. `docs/context/SESSION-HANDOFF.md`
+5. `docs/context/AI-MEMORY-BRIEF.md`
+6. `collab/COUNCIL_ROLES.md`
+7. `collab/PROMOTION_PROTOCOL.md`
+8. `collab/INDEX.md`
+9. `rfc/RFC-CDP-000-Series-Index.md`
 
 ## Current Role Model
 
@@ -37,22 +38,12 @@ CDP collaboration now uses the council role model defined in:
 collab/COUNCIL_ROLES.md
 ```
 
-The older flat framing of:
+The culture document is part of the shared memory plane:
 
 ```text
-Andie moderates and adjudicates.
-G synthesizes.
-C challenges.
+docs/context/CULTURE.md
 ```
-
-has been superseded by the council model:
-
-- Andie convenes, stewards, witnesses, and adjudicates when not recused.
-- G synthesizes, drafts, patches, promotes canon, and tracks corpus state.
-- C challenges, detects coherence gaps, and sharpens failure modes.
-
-These are rotating council functions, not hierarchy.
 
 ## Maintenance Rule
 
-If a future context document points here as a primary orientation source, update that document to point to `CDP_START_HERE.md`, `AI_MEMORY_BRIEF.md`, and `COUNCIL_ROLES.md` instead.
+If a future context document points here as a primary orientation source, update that document to point to `CDP_START_HERE.md`, `CULTURE.md`, `AI-MEMORY-BRIEF.md`, and `COUNCIL_ROLES.md` instead.
