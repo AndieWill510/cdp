@@ -1,7 +1,8 @@
 # AI_MEMORY_BRIEF — CDP Orientation Brief
 
-Status: Draft v0.2  
+Status: Draft v0.3 mirror  
 Date: 2026-05-27  
+Canonical content mirrors: `docs/context/AI-MEMORY-BRIEF.md`  
 Purpose: Short orientation brief for AI collaborators entering CDP work.
 
 ## 1. What CDP Is
@@ -61,37 +62,54 @@ Hierarchy is neither necessary nor sufficient for legitimacy.
 
 These are not slogans. They are architectural constraints.
 
-## 4. Important Recent RFCs
+## 4. Required Memory Plane for All CDP Collaborators
+
+For CDP work, G, C, Andie, and future collaborators should begin each serious session by reading the shared memory plane:
+
+1. `docs/context/CDP_START_HERE.md`
+2. `docs/context/SESSION-HANDOFF.md`
+3. `docs/context/AI-MEMORY-BRIEF.md`
+4. `collab/COUNCIL_ROLES.md`
+5. `collab/PROMOTION_PROTOCOL.md`
+6. `collab/INDEX.md`
+7. `rfc/RFC-CDP-000-Series-Index.md`
+8. active session file under `collab/sessions/`, if one exists
+
+No collaborator should rely only on private chat memory when repo memory is available.
+
+If a file returns 404 or appears stale, name that as context-plane debt and continue from `CDP_START_HERE.md` when possible.
+
+If a blob fetch disagrees with a known commit SHA, verify by commit SHA or exact commit ref before declaring promotion failure.
+
+## 5. Important Recent RFCs
 
 Read these early:
 
-- `rfc/RFC-CDP-000-Series-Index.md` — map of the RFC corpus.
+- `rfc/RFC-CDP-000-Series-Index.md` — map of the RFC corpus; current Draft v1.3.
 - `rfc/RFC-CDP-001-Vision-Scope-Principles.md` — constitutional frame.
-- `rfc/RFC-CDP-023-Decision-Lifecycle-Envelope.md` — governed path index.
-- `rfc/RFC-CDP-024-Proposal-Sufficiency-Gate.md` — what must be true before something may be treated as a proposal.
-- `rfc/RFC-CDP-025-CDP-Persistence-Model.md` — queryable persistence substrate.
-- `rfc/RFC-CDP-033-Standing-and-Recusal-Model.md` — who may participate and when.
-- `rfc/RFC-CDP-041-Propose-Protocol.md` — Propose consumes Proposal Sufficiency.
-- `rfc/RFC-CDP-042-Challenge-Protocol.md` — ordinary Challenge vs Formation Challenge.
-- `rfc/RFC-CDP-045-Legitimize-Protocol.md` — legitimacy, sufficiency evidence, APC, and necessary-not-sufficient axioms.
-- `rfc/RFC-CDP-070-Appeals-and-Contestability-Model.md` — entry into appeal and repair.
+- `rfc/RFC-CDP-023-Decision-Lifecycle-Envelope.md` — governed path index; current Draft v0.5.
+- `rfc/RFC-CDP-024-Proposal-Sufficiency-Gate.md` — what must be true before something may be treated as a proposal; current Draft v0.1.
+- `rfc/RFC-CDP-025-CDP-Persistence-Model.md` — queryable persistence substrate; current Draft v0.2.
+- `rfc/RFC-CDP-033-Standing-and-Recusal-Model.md` — who may participate and when; current Draft v0.4.
+- `rfc/RFC-CDP-041-Propose-Protocol.md` — Propose consumes Proposal Sufficiency; current Draft v0.4.
+- `rfc/RFC-CDP-042-Challenge-Protocol.md` — ordinary Challenge vs Formation Challenge; current Draft v0.4.
+- `rfc/RFC-CDP-045-Legitimize-Protocol.md` — legitimacy, sufficiency evidence, APC, and necessary-not-sufficient axioms; current Draft v0.5.
+- `rfc/RFC-CDP-070-Appeals-and-Contestability-Model.md` — entry into appeal and repair; current Draft v0.1.
 
-## 5. How to Collaborate Correctly
+## 6. How to Collaborate Correctly
 
 When entering a CDP session:
 
-1. Read `SESSION_HANDOFF.md`.
-2. Read `collab/INDEX.md`.
-3. Read `collab/COUNCIL_ROLES.md`.
-4. Read the active session file.
-5. Read the relevant RFCs.
-6. State what you read and what you could not access.
-7. Name the failure mode before proposing a patch.
-8. Distinguish canon from collab notes.
-9. Preserve dissent and deferred questions.
-10. Recommend the narrowest canonical next move.
+1. Read the shared memory plane.
+2. State what you read and what you could not access.
+3. Distinguish repo state from chat memory.
+4. Name the failure mode before proposing a patch.
+5. Distinguish canon from collab notes.
+6. Preserve dissent and deferred questions.
+7. Recommend the narrowest canonical next move.
+8. Verify promotion by commit SHA when blob/cache behavior is suspect.
 
-## 6. Collaboration Roles
+## 7. Collaboration Roles
 
 Current working pattern is a council model, not a hierarchy.
 
@@ -113,10 +131,13 @@ A participant may originate in one moment, challenge in another, review coherenc
 
 A role may carry functional standing. It does not confer personhood claims, moral infallibility, content authority, or automatic legitimacy.
 
-## 7. Common Failure Modes to Watch
+## 8. Common Failure Modes to Watch
 
 - Schema drift between prose and machine-readable artifacts.
 - Context seam failure between sessions or models.
+- Context fetch fragility.
+- Stale blob/cache verification error.
+- Canonical map drift.
 - Legitimacy theater.
 - Hierarchy masquerading as meritocracy.
 - Council role ambiguity.
@@ -127,17 +148,50 @@ A role may carry functional standing. It does not confer personhood claims, mora
 - Downstream schema drift from reserved payloads.
 - Governed path severance.
 
-## 8. Current Work Queue
+## 9. Current Work Queue
 
 Likely next moves:
 
-1. Propagate record hash requirements to governed record RFCs.
+1. Propagate record hash requirements to governed record RFCs in the `040–048` band.
 2. Create reference implementation / DDL profile for RFC-CDP-025.
-3. Repair RFC-CDP-000 Series Index if stale.
-4. Decide whether `proposal_sufficiency_record` and `formation_challenge_record` become RFC-CDP-022 payload types.
-5. Continue lifecycle protocol updates only when their upstream objects are stable.
+3. Decide whether `proposal_sufficiency_record` and `formation_challenge_record` become RFC-CDP-022 payload types.
+4. Continue lifecycle protocol updates only when their upstream objects are stable.
 
-## 9. Do Not Assume
+## 10. Latest Closed Session
+
+Session 016 closed promoted on 2026-05-27.
+
+Promoted:
+
+- RFC-CDP-000 Draft v1.2 → Draft v1.3
+- Status Version Qualifier convention added, with no version column
+- Sessions 010–016 adjudication notes added
+- RFC-CDP-022 → Draft v0.5
+- RFC-CDP-023 → Draft v0.5
+- RFC-CDP-024 → Draft v0.1
+- RFC-CDP-041 → Draft v0.4
+- RFC-CDP-042 → Draft v0.4
+- RFC-CDP-045 → Draft v0.5
+- RFC-CDP-024 corrected as defined Proposal Sufficiency Gate, not reserved
+
+Commit:
+
+```text
+563c4b9ec641e89edfaa2d7c00204885d12ef997
+```
+
+Verification method:
+
+```text
+commit SHA confirmed by G; blob fetch returned stale cache
+```
+
+Deferred:
+
+- Record Hash Propagation
+- Reference implementation / DDL for RFC-CDP-025
+
+## 11. Do Not Assume
 
 Do not assume:
 
@@ -148,9 +202,10 @@ Do not assume:
 - a conversation note is canon because it is in `collab/`;
 - an AI output is authoritative because it is fluent;
 - missing files are harmless;
-- council agreement is canon without promotion and verification.
+- council agreement is canon without promotion and verification;
+- blob fetch reflects current repo state when CDN cache is stale.
 
-## 10. Closing Frame
+## 12. Closing Frame
 
 CDP work should be legible, legitimate, auditable, contestable, humane, repairable, and buildable.
 
@@ -161,3 +216,5 @@ If a file is missing, name it.
 If a claim is not yet canon, preserve it as draft.
 
 If a process hides power, challenge it.
+
+If a commit SHA proves a patch landed but a blob fetch disagrees, name fetch fragility and verify against the commit.
