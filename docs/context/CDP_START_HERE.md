@@ -1,6 +1,6 @@
 # CDP_START_HERE — Single-File Context Bundle
 
-Status: Draft v0.2  
+Status: Draft v0.3  
 Date: 2026-05-27  
 Purpose: One-file orientation bundle for CDP collaborators when multi-file fetching is unreliable.
 
@@ -155,9 +155,10 @@ A collaboration artifact becomes canonical only when it is promoted into the rel
 
 As of 2026-05-27:
 
-- Sessions 001–015 are closed-promoted.
+- Sessions 001–016 are closed-promoted.
 - No active session is recorded in `collab/INDEX.md`.
 - Recent promoted work includes:
+  - RFC-CDP-000 Draft v1.3 — Series Index repaired for Sessions 007–016 and status-version convention made explicit.
   - RFC-CDP-022 Draft v0.5 — APC gate result payload defined.
   - RFC-CDP-023 Draft v0.5 — proposal admission references added to Decision Lifecycle Envelope.
   - RFC-CDP-024 Draft v0.1 — Proposal Sufficiency Gate created.
@@ -172,9 +173,20 @@ Current likely queue:
 
 1. Record Hash Propagation to governed record RFCs in the `040–048` band.
 2. Reference implementation / DDL profile for RFC-CDP-025.
-3. Series Index repair if RFC-CDP-000 is stale relative to recent sessions.
-4. Decide whether `proposal_sufficiency_record` and `formation_challenge_record` become RFC-CDP-022 payload types.
-5. Continue lifecycle protocol updates only when upstream objects are stable.
+3. Decide whether `proposal_sufficiency_record` and `formation_challenge_record` become RFC-CDP-022 payload types.
+4. Continue lifecycle protocol updates only when upstream objects are stable.
+
+Latest verified commit:
+
+```text
+563c4b9ec641e89edfaa2d7c00204885d12ef997
+```
+
+Verification note:
+
+```text
+Session 016 was verified by commit SHA because blob fetch returned stale cache.
+```
 
 ---
 
@@ -215,7 +227,8 @@ Before drafting canon:
 - name the failure mode precisely;
 - preserve dissent and uncertainty;
 - challenge schema drift;
-- recommend the narrowest canonical next move.
+- recommend the narrowest canonical next move;
+- verify promotion by commit SHA when blob/cache behavior is suspect.
 
 If a claim is not yet canon, preserve it as draft.
 
@@ -230,6 +243,8 @@ If uncertain, say so.
 - Schema drift between prose and machine-readable artifacts.
 - Context seam failure between sessions or models.
 - Context fetch fragility.
+- Stale blob/cache verification error.
+- Canonical map drift.
 - Legitimacy theater.
 - Hierarchy masquerading as meritocracy.
 - Council role ambiguity.
@@ -247,7 +262,7 @@ If uncertain, say so.
 After reading this file, ask:
 
 ```text
-What is the live edge for this session: record-hash propagation, implementation DDL, series-index repair, or another named repair?
+What is the live edge for this session: record-hash propagation, implementation DDL, payload registration, or another named repair?
 ```
 
 Do not assume the next move from stale context.
