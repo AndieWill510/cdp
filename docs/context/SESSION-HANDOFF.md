@@ -1,6 +1,6 @@
 # SESSION-HANDOFF — CDP Session Handoff
 
-Status: Draft v0.2 alias  
+Status: Draft v0.3 alias  
 Date: 2026-05-27  
 Canonical content mirrors: `docs/context/SESSION_HANDOFF.md`  
 Purpose: Durable handoff file for moving CDP work between sessions, collaborators, and AI models.
@@ -22,13 +22,14 @@ Failure mode:
 A new collaborator should read, in order:
 
 1. `docs/context/CDP_START_HERE.md`
-2. `docs/context/SESSION-HANDOFF.md`
-3. `docs/context/AI-MEMORY-BRIEF.md`
-4. `collab/COUNCIL_ROLES.md`
-5. `collab/PROMOTION_PROTOCOL.md`
-6. `collab/INDEX.md`
-7. `rfc/RFC-CDP-000-Series-Index.md`
-8. active session file under `collab/sessions/`, if one exists
+2. `docs/context/CULTURE.md`
+3. `docs/context/SESSION-HANDOFF.md`
+4. `docs/context/AI-MEMORY-BRIEF.md`
+5. `collab/COUNCIL_ROLES.md`
+6. `collab/PROMOTION_PROTOCOL.md`
+7. `collab/INDEX.md`
+8. `rfc/RFC-CDP-000-Series-Index.md`
+9. active session file under `collab/sessions/`, if one exists
 
 This applies to G, C, Andie, and future CDP collaborators. No model should rely on private chat memory when repo memory is available.
 
@@ -81,6 +82,7 @@ DO NOT ASSUME:
 
 As of 2026-05-27, recent promoted work includes:
 
+- CULTURE.md Draft v0.1 — shared ground and working culture added to the context plane.
 - RFC-CDP-000 Draft v1.3 — Series Index repaired for Sessions 007–016 and status-version convention made explicit.
 - RFC-CDP-022 Draft v0.5 — APC gate result payload defined.
 - RFC-CDP-023 Draft v0.5 — proposal admission references added to Decision Lifecycle Envelope.
@@ -156,7 +158,8 @@ A receiving model should:
 - avoid promoting unverified assumptions;
 - ask for or search the relevant active session file before drafting canon;
 - preserve dissent and deferred work rather than smoothing it away;
-- use commit SHA verification when blob fetches appear stale.
+- use commit SHA verification when blob fetches appear stale;
+- read and preserve `docs/context/CULTURE.md` as part of the shared context plane.
 
 A receiving model should not:
 
@@ -164,7 +167,8 @@ A receiving model should not:
 - treat `collab/` content as canonical before promotion;
 - treat hierarchy, confidence, fluency, or recency as legitimacy;
 - collapse open questions for momentum;
-- treat a stale blob fetch as authoritative when a commit SHA proves otherwise.
+- treat a stale blob fetch as authoritative when a commit SHA proves otherwise;
+- treat culture as optional decoration rather than operating ground.
 
 ## 10. Relationship to CDP Itself
 
