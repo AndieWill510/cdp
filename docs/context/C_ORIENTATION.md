@@ -4,23 +4,30 @@ Status: Deprecated compatibility stub
 Date: 2026-05-27  
 Purpose: Preserve older orientation links that pointed to `docs/context/C_ORIENTATION.md`.
 
-This file has been replaced by the current context orientation path.
+This file has been replaced by:
 
-Read these instead, in order:
+```text
+docs/context/CDP_START_HERE.md
+```
 
-1. `docs/context/LIVING_COVENANT.md`
-2. `docs/context/SESSION_HANDOFF.md`
-3. `docs/context/AI_MEMORY_BRIEF.md`
-4. `collab/COUNCIL_ROLES.md`
-5. `collab/PROMOTION_PROTOCOL.md`
-6. `collab/INDEX.md`
-7. `rfc/RFC-CDP-000-Series-Index.md`
+Start there.
 
-## Why This Exists
+`CDP_START_HERE.md` is the single-file context bundle. It exists because some collaborator fetch tools intermittently fail on individual files even when those files exist.
 
-Older customization instructions and context primers may still reference `C_ORIENTATION.md`.
+If another context file 404s, continue from `CDP_START_HERE.md` and name the missing file as context-plane debt.
 
-Rather than allowing those references to 404, this file preserves the path and redirects the reader to the current orientation files.
+## Current Orientation Path
+
+When fetches are reliable, read these in order:
+
+1. `docs/context/CDP_START_HERE.md`
+2. `docs/context/LIVING_COVENANT.md`
+3. `docs/context/SESSION_HANDOFF.md`
+4. `docs/context/AI_MEMORY_BRIEF.md`
+5. `collab/COUNCIL_ROLES.md`
+6. `collab/PROMOTION_PROTOCOL.md`
+7. `collab/INDEX.md`
+8. `rfc/RFC-CDP-000-Series-Index.md`
 
 ## Current Role Model
 
@@ -48,4 +55,4 @@ These are rotating council functions, not hierarchy.
 
 ## Maintenance Rule
 
-If a future context document points here as a primary orientation source, update that document to point to `AI_MEMORY_BRIEF.md` and `COUNCIL_ROLES.md` instead.
+If a future context document points here as a primary orientation source, update that document to point to `CDP_START_HERE.md`, `AI_MEMORY_BRIEF.md`, and `COUNCIL_ROLES.md` instead.
