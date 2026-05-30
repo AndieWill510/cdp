@@ -1,6 +1,6 @@
 # AI_MEMORY_BRIEF — CDP Orientation Brief
 
-Status: Draft v0.4 mirror  
+Status: Draft v0.5 mirror  
 Date: 2026-05-27  
 Canonical content mirrors: `docs/context/AI-MEMORY-BRIEF.md`  
 Purpose: Short orientation brief for AI collaborators entering CDP work.
@@ -91,6 +91,13 @@ docs/context/CULTURE.md
 ```
 
 CDP's culture document names the shared ground, lineage, obligations, and working culture the system stands on.
+
+Current status:
+
+```text
+CULTURE.md Draft v0.3 closed-promoted
+Commit: 617c01288c325a03291088dd4e06269f21a52f37
+```
 
 Key cultural commitments:
 
@@ -210,12 +217,29 @@ Verification method:
 commit SHA confirmed by G; blob fetch returned stale cache
 ```
 
+## 12. Latest Culture Promotion
+
+CULTURE.md closed promoted as Draft v0.3 on 2026-05-27.
+
+Promoted:
+
+- Primary Culture Frame established as the opening section.
+- CULTURE.md added to the orientation chain.
+- Thomas Glen Williams warning restored in §4.3 as a pull quote.
+- Architectural interpretation preserved after the inherited warning.
+
+Commit:
+
+```text
+617c01288c325a03291088dd4e06269f21a52f37
+```
+
 Deferred:
 
 - Record Hash Propagation
 - Reference implementation / DDL for RFC-CDP-025
 
-## 12. Do Not Assume
+## 13. Do Not Assume
 
 Do not assume:
 
@@ -230,7 +254,7 @@ Do not assume:
 - blob fetch reflects current repo state when CDN cache is stale;
 - culture is optional decoration rather than operating ground.
 
-## 13. Closing Frame
+## 14. Closing Frame
 
 CDP work should be legible, legitimate, auditable, contestable, humane, repairable, and buildable.
 
