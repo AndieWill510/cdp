@@ -1,6 +1,6 @@
 # CDP_START_HERE — Single-File Context Bundle
 
-Status: Draft v0.5  
+Status: Draft v0.6  
 Date: 2026-05-27  
 Purpose: One-file orientation bundle for CDP collaborators when multi-file fetching is unreliable.
 
@@ -92,8 +92,8 @@ docs/context/CULTURE.md
 Current status:
 
 ```text
-CULTURE.md Draft v0.3 closed-promoted
-Commit: 617c01288c325a03291088dd4e06269f21a52f37
+CULTURE.md Draft v0.4 closed-promoted
+Commit: 7c1cff13195b9c5369543254ec46d6071f1e3708
 ```
 
 The culture document names the ground CDP stands on: lineage, repair, challenge, legibility, beauty, uncertainty, anti-erasure, and council practice.
@@ -111,6 +111,7 @@ Short cultural commitments:
 - Context is sacred infrastructure.
 - Beauty is not decoration.
 - Sacred menace, professionally formatted.
+- Load-bearing phrases, warnings, or sayings may be captured when they carry governance weight.
 
 ---
 
@@ -193,7 +194,7 @@ As of 2026-05-27:
 - Sessions 001–016 are closed-promoted.
 - No active session is recorded in `collab/INDEX.md`.
 - Recent promoted work includes:
-  - CULTURE.md Draft v0.3 — shared ground and working culture added to the context plane; Thomas Glen Williams warning restored in §4.3.
+  - CULTURE.md Draft v0.4 — shared ground and working culture added to the context plane; Thomas Glen Williams warning restored in §4.3; Culture Capture Rule added in §7.10.
   - RFC-CDP-000 Draft v1.3 — Series Index repaired for Sessions 007–016 and status-version convention made explicit.
   - RFC-CDP-022 Draft v0.5 — APC gate result payload defined.
   - RFC-CDP-023 Draft v0.5 — proposal admission references added to Decision Lifecycle Envelope.
@@ -216,14 +217,14 @@ Latest verified commits:
 
 ```text
 563c4b9ec641e89edfaa2d7c00204885d12ef997
-617c01288c325a03291088dd4e06269f21a52f37
+7c1cff13195b9c5369543254ec46d6071f1e3708
 ```
 
 Verification note:
 
 ```text
 Session 016 was verified by commit SHA because blob fetch returned stale cache.
-CULTURE.md v0.3 was verified by commit SHA.
+CULTURE.md v0.4 was verified by direct fetch.
 ```
 
 ---
