@@ -1,6 +1,6 @@
 # SESSION_HANDOFF — CDP Session Handoff
 
-Status: Draft v0.3 mirror  
+Status: Draft v0.5 mirror  
 Date: 2026-05-27  
 Canonical content mirrors: `docs/context/SESSION-HANDOFF.md`  
 Purpose: Durable handoff file for moving CDP work between sessions, collaborators, and AI models.
@@ -82,7 +82,7 @@ DO NOT ASSUME:
 
 As of 2026-05-27, recent promoted work includes:
 
-- CULTURE.md Draft v0.1 — shared ground and working culture added to the context plane.
+- CULTURE.md Draft v0.4 — shared ground and working culture added to the context plane; Thomas Glen Williams warning restored in §4.3; Culture Capture Rule added in §7.10.
 - RFC-CDP-000 Draft v1.3 — Series Index repaired for Sessions 007–016 and status-version convention made explicit.
 - RFC-CDP-022 Draft v0.5 — APC gate result payload defined.
 - RFC-CDP-023 Draft v0.5 — proposal admission references added to Decision Lifecycle Envelope.
@@ -132,7 +132,22 @@ DO NOT ASSUME:
 - blob fetch reflects current repo state when CDN cache is stale; use commit SHA verification for authoritative confirmation
 ```
 
-## 7. Current Queue
+## 7. Latest Culture Promotion
+
+```text
+ARTIFACT: docs/context/CULTURE.md
+STATUS: Draft v0.4 closed-promoted
+COMMIT: 7c1cff13195b9c5369543254ec46d6071f1e3708
+PROMOTED:
+- Primary Culture Frame established as the opening section.
+- CULTURE.md added to the orientation chain.
+- Thomas Glen Williams warning restored in §4.3 as a pull quote.
+- Architectural interpretation preserved after the inherited warning.
+- Culture Capture Rule added in §7.10: load-bearing phrases, warnings, or sayings may be considered for CULTURE.md when they carry governance weight.
+VERIFICATION METHOD: direct fetch confirmed v0.4 and §7.10.
+```
+
+## 8. Current Queue
 
 Current likely queue:
 
@@ -140,7 +155,7 @@ Current likely queue:
 2. Reference implementation / DDL profile for RFC-CDP-025.
 3. Review whether `proposal_sufficiency_record` and `formation_challenge_record` should be registered in RFC-CDP-022.
 
-## 8. Verification Rule
+## 9. Verification Rule
 
 If a blob-path fetch disagrees with a known commit SHA, do not immediately assume the commit failed.
 
@@ -148,7 +163,7 @@ Verify by commit SHA or exact commit ref before declaring promotion failure.
 
 A stale blob fetch is context fetch fragility, not proof that the canonical patch failed.
 
-## 9. Rules for Model Handoff
+## 10. Rules for Model Handoff
 
 A receiving model should:
 
@@ -170,7 +185,7 @@ A receiving model should not:
 - treat a stale blob fetch as authoritative when a commit SHA proves otherwise;
 - treat culture as optional decoration rather than operating ground.
 
-## 10. Relationship to CDP Itself
+## 11. Relationship to CDP Itself
 
 This file is not an RFC.
 
