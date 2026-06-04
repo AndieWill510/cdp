@@ -278,7 +278,7 @@ If this document drifts from that description, repair it.
 | Artifact | Relationship |
 |----------|--------------|
 | `collab/PROMOTION_PROTOCOL.md` | Governs artifact lifecycle; this document governs role behavior |
-| `docs/context/AI_MEMORY_BRIEF.md` | References role map; should stay consistent with Section 7 |
+| `docs/context/AI-MEMORY-BRIEF.md` | References role map; should stay consistent with Section 7 |
 | `docs/context/LIVING_COVENANT.md` | Short covenant statement; COUNCIL_ROLES is the full expansion |
 | `RFC-CDP-033-Standing-and-Recusal-Model.md` | Governs standing in the decision lifecycle; this governs collaboration roles |
 
