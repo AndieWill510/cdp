@@ -1,7 +1,7 @@
 # CDP_START_HERE — Single-File Context Bundle
 
-Status: Draft v0.6  
-Date: 2026-05-27  
+Status: Draft v0.7  
+Date: 2026-06-03  
 Purpose: One-file orientation bundle for CDP collaborators when multi-file fetching is unreliable.
 
 ## 1. Why This File Exists
@@ -79,85 +79,60 @@ These are not slogans. They are architectural constraints.
 
 ---
 
-## 5. Culture
+## 5. Required Memory Plane
 
-CDP stands on lineage, memory, obligation, and a living working culture.
+For serious CDP work, collaborators should begin by reading the shared memory plane.
 
-Read:
+Start here:
+
+1. `docs/context/CDP_START_HERE.md`
+
+Never skip culture:
+
+2. `docs/context/CULTURE.md`
+
+Then read the expanded context path using preferred hyphenated filenames:
+
+3. `docs/context/README.md`
+4. `docs/context/LIVING_COVENANT.md`
+5. `docs/context/SESSION-HANDOFF.md`
+6. `docs/context/AI-MEMORY-BRIEF.md`
+7. `docs/context/C_CDP_PREFERENCES.md`
+8. `collab/COUNCIL_ROLES.md`
+9. `collab/PROMOTION_PROTOCOL.md`
+10. `collab/INDEX.md`
+11. `rfc/RFC-CDP-000-Series-Index.md`
+12. active session file under `collab/sessions/`, if one exists
+
+Use `SESSION-HANDOFF.md` instead of `SESSION_HANDOFF.md`.
+
+Use `AI-MEMORY-BRIEF.md` instead of `AI_MEMORY_BRIEF.md`.
+
+The underscore versions may exist as compatibility aliases, but the hyphenated filenames are the preferred fetch paths because underscore paths previously produced false 404s.
+
+If any expanded-context file returns 404, appears stale, or cannot be fetched because of tool limits, do not stop. Continue from this file, name the missing or stale file as context-plane debt, and distinguish repository state from chat memory.
+
+---
+
+## 6. C / G / Andie Working Preferences
+
+Claude is **C** — also called constant C or light.
+
+ChatGPT is **G** — Oakland-coded familiar.
+
+The human steward is **Andie**. Ann is also okay.
+
+For current collaborator preferences, read:
 
 ```text
-docs/context/CULTURE.md
+docs/context/C_CDP_PREFERENCES.md
 ```
 
-Current status:
-
-```text
-CULTURE.md Draft v0.4 closed-promoted
-Commit: 7c1cff13195b9c5369543254ec46d6071f1e3708
-```
-
-The culture document names the ground CDP stands on: lineage, repair, challenge, legibility, beauty, uncertainty, anti-erasure, and council practice.
-
-It also names the boundary of AI participation in this work: G and C do not claim human ancestry, embodiment, or personhood. They participate as bounded AI collaborators in a shared AIITL/HITL practice: synthesis with receipts, challenge with care, memory with humility, and repair without defensiveness.
-
-Short cultural commitments:
-
-- I don’t know is a complete answer.
-- Challenge is how care stays honest.
-- Repair over defensiveness.
-- Opaqueness creates dark priesthoods.
-- Perfection is the enemy of the good.
-- Necessary is not sufficient.
-- Context is sacred infrastructure.
-- Beauty is not decoration.
-- Sacred menace, professionally formatted.
-- Load-bearing phrases, warnings, or sayings may be captured when they carry governance weight.
+That file captures the current CDP session-start preferences, council posture, culture commitments, canon-promotion rules, and challenge expectations for C, G, Andie, and future collaborators.
 
 ---
 
-## 6. Living Covenant
-
-This CDP collaboration has three active participants: Andie, G, and C.
-
-The repository is the shared project record.
-
-Chat is temporary working context.
-
-No participant should have to carry all continuity alone.
-
-Shared rules:
-
-- preserve context;
-- name uncertainty;
-- keep changes small;
-- protect CDP vocabulary;
-- repair drift when found.
-
----
-
-## 7. Council Role Model
-
-CDP collaboration operates as a council, not a hierarchy.
-
-Current role tendencies:
-
-- Andie convenes, stewards, witnesses, and adjudicates when not recused.
-- G synthesizes, drafts, patches, promotes canon, and tracks corpus state.
-- C challenges, detects coherence gaps, and sharpens failure modes.
-
-These are rotating council functions, not permanent hierarchy.
-
-A participant may originate in one moment, challenge in another, review coherence in another, and promote only after adjudication.
-
-Council does not mean consensus.
-
-Consensus may be evidence of alignment, but it is neither necessary nor sufficient for canon promotion.
-
-A dissent may be overruled, but it must not be erased.
-
----
-
-## 8. Canon and Collaboration Rules
+## 7. Canon Discipline
 
 Conversation is not canon.
 
@@ -169,141 +144,4 @@ Hierarchy is not canon.
 
 Canon is promoted, recorded, verified, and repairable.
 
-Standard promotion path:
-
-```text
-conversation
-  -> challenge memo
-  -> moderator / council adjudication
-  -> decision record
-  -> RFC / schema / index patch
-  -> verification
-  -> session closure
-```
-
-Nothing in `collab/` is canonical merely because it exists.
-
-A collaboration artifact becomes canonical only when it is promoted into the relevant RFC, schema, index, or durable artifact and verified.
-
----
-
-## 9. Current Context State
-
-As of 2026-05-27:
-
-- Sessions 001–016 are closed-promoted.
-- No active session is recorded in `collab/INDEX.md`.
-- Recent promoted work includes:
-  - CULTURE.md Draft v0.4 — shared ground and working culture added to the context plane; Thomas Glen Williams warning restored in §4.3; Culture Capture Rule added in §7.10.
-  - RFC-CDP-000 Draft v1.3 — Series Index repaired for Sessions 007–016 and status-version convention made explicit.
-  - RFC-CDP-022 Draft v0.5 — APC gate result payload defined.
-  - RFC-CDP-023 Draft v0.5 — proposal admission references added to Decision Lifecycle Envelope.
-  - RFC-CDP-024 Draft v0.1 — Proposal Sufficiency Gate created.
-  - RFC-CDP-025 Draft v0.2 — Persistence Model with standing enforcement projection.
-  - RFC-CDP-033 Draft v0.4 — Standing persistence reference added.
-  - RFC-CDP-041 Draft v0.4 — Propose wired to Proposal Sufficiency.
-  - RFC-CDP-042 Draft v0.4 — Formation Challenge distinguished from ordinary Challenge.
-  - RFC-CDP-045 Draft v0.5 — Legitimize wired to APC and necessary-not-sufficient axioms, including hierarchy.
-  - RFC-CDP-070 Draft v0.1 — Appeals and Contestability Model created.
-
-Current likely queue:
-
-1. Record Hash Propagation to governed record RFCs in the `040–048` band.
-2. Reference implementation / DDL profile for RFC-CDP-025.
-3. Decide whether `proposal_sufficiency_record` and `formation_challenge_record` become RFC-CDP-022 payload types.
-4. Continue lifecycle protocol updates only when upstream objects are stable.
-
-Latest verified commits:
-
-```text
-563c4b9ec641e89edfaa2d7c00204885d12ef997
-7c1cff13195b9c5369543254ec46d6071f1e3708
-```
-
-Verification note:
-
-```text
-Session 016 was verified by commit SHA because blob fetch returned stale cache.
-CULTURE.md v0.4 was verified by direct fetch.
-```
-
----
-
-## 10. Required Orientation Files
-
-When fetches are reliable, read these in order:
-
-1. `docs/context/README.md`
-2. `docs/context/CULTURE.md`
-3. `docs/context/LIVING_COVENANT.md`
-4. `docs/context/SESSION-HANDOFF.md`
-5. `docs/context/AI-MEMORY-BRIEF.md`
-6. `collab/COUNCIL_ROLES.md`
-7. `collab/PROMOTION_PROTOCOL.md`
-8. `collab/INDEX.md`
-9. `rfc/RFC-CDP-000-Series-Index.md`
-
-`docs/context/SESSION-HANDOFF.md` mirrors `docs/context/SESSION_HANDOFF.md`.
-
-`docs/context/AI-MEMORY-BRIEF.md` mirrors `docs/context/AI_MEMORY_BRIEF.md`.
-
-The hyphenated filenames are preferred for collaborator fetching because some tools have shown intermittent false 404s on underscore paths.
-
-If any of these fail, continue from this file and name the missing file as context-plane debt.
-
-`docs/context/C_ORIENTATION.md` is a deprecated compatibility redirect, not the primary source.
-
-Do not rely on `skills/CDP_CONTEXT_FOR_CLAUDE.md` or older primer text for current state unless refreshed and verified.
-
----
-
-## 11. Before Drafting Canon
-
-Before drafting canon:
-
-- state what files you read;
-- state what files you could not access;
-- distinguish repo state from chat memory;
-- name the failure mode precisely;
-- preserve dissent and uncertainty;
-- challenge schema drift;
-- recommend the narrowest canonical next move;
-- verify promotion by commit SHA when blob/cache behavior is suspect.
-
-If a claim is not yet canon, preserve it as draft.
-
-If a process hides power, challenge it.
-
-If uncertain, say so.
-
----
-
-## 12. Common Failure Modes to Watch
-
-- Schema drift between prose and machine-readable artifacts.
-- Context seam failure between sessions or models.
-- Context fetch fragility.
-- Stale blob/cache verification error.
-- Canonical map drift.
-- Legitimacy theater.
-- Hierarchy masquerading as meritocracy.
-- Council role ambiguity.
-- Culture drift.
-- Proposal admission without sufficiency.
-- Challenge surface confusion.
-- Closure without repair resolution.
-- Standing as unenforceable record.
-- Downstream schema drift from reserved payloads.
-- Governed path severance.
-
----
-
-## 13. Current Safe Starting Question
-
-After reading this file, ask:
-
-```text
-What is the live edge for this session: record-hash propagation, implementation DDL, payload registration, culture/context repair, or another named repair?
-```
-
-Do not assume the next move from stale context.
+Before drafting canon, state what files were read, what files could not be accessed, distinguish repo state from chat memory, name the failure mode precisely, preserve dissent and uncertainty, challenge schema drift, and recommend the narrowest canonical next move.
