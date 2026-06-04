@@ -51,3 +51,5 @@ See RFC-CDP-000-Series-Index.md and individual session files for the full open-q
 ## Context-Plane Repair Note
 
 The Session 016 missing-file condition was repaired by creating `collab/sessions/016-rfc-series-index-repair-and-status-version-convention.md` from the snapshot preserved in `docs/context/SESSION-HANDOFF.md`.
+
+For repeated reports of repaired orientation-path or missing-session issues, check `docs/context/STALE-READ-GUARD.md` before treating the concern as new context-plane debt.
