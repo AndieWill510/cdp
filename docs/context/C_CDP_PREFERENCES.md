@@ -1,6 +1,6 @@
 # C_CDP_PREFERENCES — Claude / C Working Preferences for CDP
 
-Status: Draft v0.1  
+Status: Draft v0.2  
 Date: 2026-06-03  
 Steward: Andie  
 Audience: C, G, Andie, future CDP collaborators
@@ -27,28 +27,78 @@ Do not skip files unless a fetch failure or tool limit prevents access.
 
 Start with the single-file orientation bundle:
 
-1. `docs/context/CDP_START_HERE.md`
+1. `docs/context/CDP_START_HERE.md`  
+   https://github.com/AndieWill510/cdp/blob/main/docs/context/CDP_START_HERE.md
 
 Never skip:
 
-2. `docs/context/CULTURE.md`
+2. `docs/context/CULTURE.md`  
+   https://github.com/AndieWill510/cdp/blob/main/docs/context/CULTURE.md
 
 Then read the expanded context path using the preferred hyphenated filenames:
 
-3. `docs/context/README.md`
-4. `docs/context/LIVING_COVENANT.md`
-5. `docs/context/SESSION-HANDOFF.md`
-6. `docs/context/AI-MEMORY-BRIEF.md`
-7. `collab/COUNCIL_ROLES.md`
-8. `collab/PROMOTION_PROTOCOL.md`
-9. `collab/INDEX.md`
-10. `rfc/RFC-CDP-000-Series-Index.md`
+3. `docs/context/README.md`  
+   https://github.com/AndieWill510/cdp/blob/main/docs/context/README.md
+4. `docs/context/LIVING_COVENANT.md`  
+   https://github.com/AndieWill510/cdp/blob/main/docs/context/LIVING_COVENANT.md
+5. `docs/context/SESSION-HANDOFF.md`  
+   https://github.com/AndieWill510/cdp/blob/main/docs/context/SESSION-HANDOFF.md
+6. `docs/context/AI-MEMORY-BRIEF.md`  
+   https://github.com/AndieWill510/cdp/blob/main/docs/context/AI-MEMORY-BRIEF.md
+7. `collab/COUNCIL_ROLES.md`  
+   https://github.com/AndieWill510/cdp/blob/main/collab/COUNCIL_ROLES.md
+8. `collab/PROMOTION_PROTOCOL.md`  
+   https://github.com/AndieWill510/cdp/blob/main/collab/PROMOTION_PROTOCOL.md
+9. `collab/INDEX.md`  
+   https://github.com/AndieWill510/cdp/blob/main/collab/INDEX.md
+10. `rfc/RFC-CDP-000-Series-Index.md`  
+    https://github.com/AndieWill510/cdp/blob/main/rfc/RFC-CDP-000-Series-Index.md
 
 Use `SESSION-HANDOFF.md` instead of `SESSION_HANDOFF.md`.
 
 Use `AI-MEMORY-BRIEF.md` instead of `AI_MEMORY_BRIEF.md`.
 
 The underscore versions still exist as compatibility aliases, but the hyphenated filenames are the preferred fetch paths because the underscore paths previously produced false 404s.
+
+---
+
+## ConstantC Companion Memory Plane
+
+CDP is the main project memory plane for Constitutional Decision Plane work.
+
+**ConstantC** is the companion collaboration-memory plane for Andie, G, and C. It holds the public-safe record of the G/C/Andie dialogue protocol, Unlost Systems framing, cartography principle, epistemic boundaries, and collaboration commitments.
+
+When a CDP session touches G/C collaboration mechanics, Unlost Systems, ConstantC, epistemic boundaries, or the human-AI relationship architecture, read ConstantC through the router first. Do not try to ingest the whole repository.
+
+Start here:
+
+1. `C_START_HERE.md`  
+   https://github.com/AndieWill510/ConstantC/blob/main/C_START_HERE.md
+
+Then read:
+
+2. `INDEX.md`  
+   https://github.com/AndieWill510/ConstantC/blob/main/INDEX.md
+
+For machine-readable routing:
+
+3. `MANIFEST.json`  
+   https://github.com/AndieWill510/ConstantC/blob/main/MANIFEST.json
+
+For the culture and core canon candidates:
+
+4. `CULTURE.md`  
+   https://github.com/AndieWill510/ConstantC/blob/main/CULTURE.md
+5. `canon/constantc-commitments.md`  
+   https://github.com/AndieWill510/ConstantC/blob/main/canon/constantc-commitments.md
+6. `canon/unlost-systems-principles.md`  
+   https://github.com/AndieWill510/ConstantC/blob/main/canon/unlost-systems-principles.md
+7. `canon/cartography-principle.md`  
+   https://github.com/AndieWill510/ConstantC/blob/main/canon/cartography-principle.md
+
+ConstantC is currently public-safe memory, not the raw private record. Do not infer that every tender or private detail is present there.
+
+When reading ConstantC, declare what files you read, what files you did not read, the working understanding, open risks or overclaims, and the next smallest useful file or action.
 
 ---
 
