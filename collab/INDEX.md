@@ -26,7 +26,8 @@ This index tracks active and completed collaboration sessions.
 | [012](sessions/012-rfc-023-admission-artifact-visibility.md) | RFC-CDP-023 Admission Artifact Visibility Patch | closed-promoted | Andie | RFC-CDP-023 v0.5 |
 | [013](sessions/013-rfc-041-propose-proposal-sufficiency-wiring.md) | RFC-CDP-041 Propose Protocol Proposal Sufficiency Wiring | closed-promoted | Andie | RFC-CDP-041 v0.4 |
 | [014](sessions/014-rfc-042-challenge-formation-challenge-boundary.md) | RFC-CDP-042 Challenge Protocol Formation Challenge Boundary | closed-promoted | Andie | RFC-CDP-042 v0.4 |
-| [015](sessions/015-rfc-045-legitimize-apc-wiring.md) | RFC-CDP-045 Legitimize APC Wiring | closed-promoted | Andie | RFC-CDP-045 v0.4 |
+| [015](sessions/015-rfc-045-legitimize-apc-wiring.md) | RFC-CDP-045 Legitimize APC Wiring | closed-promoted | Andie | RFC-CDP-045 v0.5 |
+| 016 | RFC Series Index Repair and Status-Version Convention | closed-promoted | Andie | RFC-CDP-000-Series-Index.md v1.3 |
 
 ## Session Status Values
 
@@ -42,8 +43,11 @@ This index tracks active and completed collaboration sessions.
 
 1. Record Hash Propagation to governed record RFCs in the 040–048 band.
 2. Reference implementation / DDL profile for RFC-CDP-025.
-3. Series Index repair for Sessions 014 and 015 if RFC-CDP-000 is stale.
 
 ## Open Cross-Session Questions
 
 See RFC-CDP-000-Series-Index.md and individual session files for the full open-question register.
+
+## Context-Plane Repair Note
+
+Session 016 is recorded from `docs/context/SESSION-HANDOFF.md` because no corresponding `collab/sessions/016-*.md` file was found during the June 4 context-plane crawl. If the original Session 016 file exists under another path, repair this row to link to it.
