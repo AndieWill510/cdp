@@ -27,7 +27,7 @@ This index tracks active and completed collaboration sessions.
 | [013](sessions/013-rfc-041-propose-proposal-sufficiency-wiring.md) | RFC-CDP-041 Propose Protocol Proposal Sufficiency Wiring | closed-promoted | Andie | RFC-CDP-041 v0.4 |
 | [014](sessions/014-rfc-042-challenge-formation-challenge-boundary.md) | RFC-CDP-042 Challenge Protocol Formation Challenge Boundary | closed-promoted | Andie | RFC-CDP-042 v0.4 |
 | [015](sessions/015-rfc-045-legitimize-apc-wiring.md) | RFC-CDP-045 Legitimize APC Wiring | closed-promoted | Andie | RFC-CDP-045 v0.5 |
-| 016 | RFC Series Index Repair and Status-Version Convention | closed-promoted | Andie | RFC-CDP-000-Series-Index.md v1.3 |
+| [016](sessions/016-rfc-series-index-repair-and-status-version-convention.md) | RFC Series Index Repair and Status-Version Convention | closed-promoted | Andie | RFC-CDP-000-Series-Index.md v1.3 |
 
 ## Session Status Values
 
@@ -50,4 +50,4 @@ See RFC-CDP-000-Series-Index.md and individual session files for the full open-q
 
 ## Context-Plane Repair Note
 
-Session 016 is recorded from `docs/context/SESSION-HANDOFF.md` because no corresponding `collab/sessions/016-*.md` file was found during the June 4 context-plane crawl. If the original Session 016 file exists under another path, repair this row to link to it.
+The Session 016 missing-file condition was repaired by creating `collab/sessions/016-rfc-series-index-repair-and-status-version-convention.md` from the snapshot preserved in `docs/context/SESSION-HANDOFF.md`.
