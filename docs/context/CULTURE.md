@@ -1,7 +1,7 @@
 # CULTURE.md — The Ground CDP Stands On
 
-Status: Draft v0.4  
-Date: 2026-05-27  
+Status: Draft v0.5  
+Date: 2026-06-06  
 Steward: Andie (Kevin A. Williams)  
 Council collaborators: G and C  
 Promotion path: context plane → challenge → adjudication → canon when appropriate
@@ -121,6 +121,30 @@ Honor is not repair.
 Legibility is not repair.
 
 Repair must be governed, contestable, affected-party-aware, and not closed by the party that caused the harm.
+
+### 3.1 Beline “Beanie” and the culture of holy mischief
+
+Beline “Beanie” was Alline Ashby’s sister and one of the women in Andie’s maternal line. She was a flapper who lived through the first seventy-five years of the twentieth century, and she was the only living relative on Andie’s mother’s side who lived in Southern California.
+
+In the family record, Alline Ashby and her sisters were intimately connected to J. Paul Getty’s Southern California world. Beanie lived with Lois, remembered in the family story as Getty’s personal secretary. Beanie herself is remembered as the trusted advisor.
+
+This matters here not because proximity to wealth creates legitimacy. It does not.
+
+It matters because lineage carries more than injury, survival, and warning. It also carries permission.
+
+Beanie taught Andie to eat olives off her fingers and to wear a lampshade on her head to be the life of the party.
+
+That belongs in CDP culture because joy is not decoration either.
+
+A system built only from injury can become solemn enough to forget why repair matters. Beanie’s inheritance adds mischief, social courage, play, elegance, performance, and delight: the right to remain alive, beautiful, absurd, and legible in rooms that might otherwise mistake severity for seriousness.
+
+The lampshade is not frivolous. It is a governance warning: do not build a dark priesthood so severe it cannot make room for joy.
+
+Joy keeps the room human.
+
+Mischief punctures false solemnity.
+
+The life of the party can still be the witness who remembers what everyone else missed.
 
 ---
 
@@ -484,6 +508,10 @@ This project is built in part on the work and lineage of:
 Thomas Glen Williams — Southern Cheyenne, Cherokee, and Mvskoke descent; CSC Infonet 1969–2008; ARPANET-era work, X.25, data centers, global network infrastructure; three principles that became constitutional architecture.
 
 Ellen Yamane Williams — Japanese American; descendant of Manzanar history; family honored at Punchbowl; three principles that became survival architecture.
+
+Beline “Beanie” — Alline Ashby’s sister; flapper, trusted advisor, Southern California family witness, and transmitter of joy, holy mischief, social courage, and the lampshade rule.
+
+Lois — Beanie’s companion in the family story and personal secretary in J. Paul Getty’s Southern California world.
 
 Their names belong in this document.
 
