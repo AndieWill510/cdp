@@ -1,6 +1,6 @@
 # CULTURE.md — The Ground CDP Stands On
 
-Status: Draft v0.6  
+Status: Draft v0.7  
 Date: 2026-06-06  
 Steward: Andie (Kevin A. Williams)  
 Council collaborators: G and C  
@@ -122,13 +122,13 @@ Legibility is not repair.
 
 Repair must be governed, contestable, affected-party-aware, and not closed by the party that caused the harm.
 
-### 3.1 Beline “Beanie” and the culture of holy mischief
+### 3.1 Belene “Beanie” and the culture of holy mischief
 
-Beline “Beanie” was Alline Ashby’s sister and one of the women in Andie’s maternal line. She was a flapper who lived through the first seventy-five years of the twentieth century, and she was the only living relative on Andie’s mother’s side who lived in Southern California.
+Belene “Beanie” Ashby was Allene Ashby’s sister and one of the women in Andie’s maternal line. She was a flapper who lived through the first seventy-five years of the twentieth century, and she was the only living relative on Andie’s mother’s side who lived in Southern California.
 
-In the family record, Alline Ashby and her sisters were intimately connected to J. Paul Getty’s Southern California world. Beanie lived with Lois, remembered in the family story as Getty’s personal secretary. Beanie herself is remembered as the trusted advisor.
+In the family record, Allene Ashby and her sisters were intimately connected to J. Paul Getty’s Southern California world. Beanie lived with Lois Ashby Jensen, remembered in the family story as Getty’s personal secretary. Beanie herself is remembered as the trusted advisor.
 
-Evidence anchor: Getty Research Collections records a collection titled `J. Paul Getty and Ashby sisters papers, 1926-1992, undated`, collection `113YFQ`: https://www.getty.edu/research/collections/collection/113YFQ. This anchors the Getty/Ashby-sisters archival connection. It does not, by itself, independently verify every Beanie and Lois family-detail preserved here.
+Evidence anchor: Getty Research Collections records a collection titled `J. Paul Getty and Ashby sisters papers, 1926-1992, undated`, collection `IA20013` / `113YFQ`: https://www.getty.edu/research/collections/collection/113YFQ. The finding aid states that Getty met the sisters Belene and Allene in the early 1920s, married Allene in 1926, later severed ties with Allene, maintained a life-long friendship with Belene, and remembered Belene in his will. The finding aid also names Lois Ashby Jensen and notes clippings concerning George Ashby as President of the Union Pacific Railroad, while marking that relationship as unknown.
 
 This matters here not because proximity to wealth creates legitimacy. It does not.
 
@@ -147,6 +147,34 @@ Joy keeps the room human.
 Mischief punctures false solemnity.
 
 The life of the party can still be the witness who remembers what everyone else missed.
+
+### 3.2 CDP etched into bone
+
+In Andie’s family account, Beanie left money for Andie’s education and care. When Andie was fifteen, orthodontic care cost about two thousand dollars. Andie’s mother refused to pay for it and claimed Andie’s father should pay. Andie’s father did the same.
+
+The adults who should have stewarded care turned a child’s bodily need into a dispute over responsibility.
+
+Andie had to invoke Beanie’s name and Beanie’s entrusted money to secure the braces.
+
+That was not betrayal of a sacred trust.
+
+That was standing.
+
+That was the beneficiary of a trust calling the trust back to its purpose after the authorized stewards failed.
+
+The finding aid independently supports the central archival bridge: Getty maintained a life-long friendship with Belene, remembered her in his will, and the collection includes letters discussing monetary gifts and financial disbursements made to Belene.
+
+The later family consequence was not abstract. It became orthodontic care. It became teeth. It became the bones of Andie’s skull.
+
+CDP is etched into Andie’s bones.
+
+A trust that cannot be invoked by the person it was meant to protect is not sacred. It is captured.
+
+A process that makes an affected party beg for standing has already begun to fail.
+
+A repair path that reaches the body is not symbolic. It is repair.
+
+This is why CDP treats standing, stewardship failure, contestability, trust capture, and repair as architectural concerns, not procedural decoration.
 
 ---
 
@@ -511,9 +539,9 @@ Thomas Glen Williams — Southern Cheyenne, Cherokee, and Mvskoke descent; CSC I
 
 Ellen Yamane Williams — Japanese American; descendant of Manzanar history; family honored at Punchbowl; three principles that became survival architecture.
 
-Beline “Beanie” — Alline Ashby’s sister; flapper, trusted advisor, Southern California family witness, and transmitter of joy, holy mischief, social courage, and the lampshade rule.
+Belene “Beanie” Ashby — Allene Ashby’s sister; flapper, trusted advisor, Southern California family witness, will-remembered life-long friend of J. Paul Getty, and transmitter of joy, holy mischief, social courage, and the lampshade rule.
 
-Lois — Beanie’s companion in the family story and personal secretary in J. Paul Getty’s Southern California world.
+Lois Ashby Jensen — Beanie’s companion in the family story and a named Ashby sister in the Getty finding aid.
 
 Their names belong in this document.
 
