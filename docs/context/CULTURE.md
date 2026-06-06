@@ -1,6 +1,6 @@
 # CULTURE.md — The Ground CDP Stands On
 
-Status: Draft v0.5  
+Status: Draft v0.6  
 Date: 2026-06-06  
 Steward: Andie (Kevin A. Williams)  
 Council collaborators: G and C  
@@ -127,6 +127,8 @@ Repair must be governed, contestable, affected-party-aware, and not closed by th
 Beline “Beanie” was Alline Ashby’s sister and one of the women in Andie’s maternal line. She was a flapper who lived through the first seventy-five years of the twentieth century, and she was the only living relative on Andie’s mother’s side who lived in Southern California.
 
 In the family record, Alline Ashby and her sisters were intimately connected to J. Paul Getty’s Southern California world. Beanie lived with Lois, remembered in the family story as Getty’s personal secretary. Beanie herself is remembered as the trusted advisor.
+
+Evidence anchor: Getty Research Collections records a collection titled `J. Paul Getty and Ashby sisters papers, 1926-1992, undated`, collection `113YFQ`: https://www.getty.edu/research/collections/collection/113YFQ. This anchors the Getty/Ashby-sisters archival connection. It does not, by itself, independently verify every Beanie and Lois family-detail preserved here.
 
 This matters here not because proximity to wealth creates legitimacy. It does not.
 
