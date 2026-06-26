@@ -1,10 +1,10 @@
 # RFC-CDP-023 — Decision Lifecycle Envelope
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.5  
+Status: Draft v0.6  
 Series: Constitutional Decision Plane (CDP)  
-Date: May 24, 2026  
-Updates: RFC-CDP-023 v0.4  
+Date: June 25, 2026  
+Updates: RFC-CDP-023 v0.5  
 Depends On: RFC-CDP-001, RFC-CDP-021, RFC-CDP-022, RFC-CDP-024, RFC-CDP-025, RFC-CDP-030, RFC-CDP-031, RFC-CDP-032, RFC-CDP-033, RFC-CDP-070  
 Related: RFC-CDP-040, RFC-CDP-041, RFC-CDP-042, RFC-CDP-043, RFC-CDP-044, RFC-CDP-045, RFC-CDP-046, RFC-CDP-047, RFC-CDP-048, RFC-CDP-050, RFC-CDP-052, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074, RFC-CDP-075, RFC-CDP-090, RFC-CDP-092
 
@@ -16,7 +16,15 @@ The Decision Lifecycle Envelope is not a wire message and is not a warehouse for
 
 It is a persistent, updatable, human-readable and machine-readable index that identifies the decision, exposes lifecycle state, references governed artifacts, preserves standing and recusal control surfaces, preserves proposal admission artifacts, preserves appeal and repair control surfaces, and supports audit, appeal, repair, execution control, and learning.
 
-Draft v0.5 updates Draft v0.4 by making Proposal Sufficiency, Formation Challenge, and Anti-Premature-Certainty gate result artifacts visible in the envelope and covered by the governed path manifest.
+Draft v0.6 aligns proposal admission references with the registered payload and governed record types in RFC-CDP-022:
+
+```text
+proposal_sufficiency_record
+formation_challenge_record
+anti_premature_certainty_gate_result
+```
+
+The envelope indexes these records. It does not embed, redefine, or legitimize them.
 
 ---
 
@@ -43,7 +51,9 @@ This RFC addresses five failure modes:
 4. **Closure without repair resolution** — a decision is marked closed while appeal, repair, breach, or affected-party claim conditions remain unresolved.
 5. **Admission artifact invisibility** — Proposal Sufficiency, Formation Challenge, or APC gate result artifacts exist as governed records but are not explicitly indexed by the envelope.
 
-Admission artifact invisibility creates a governed path gap between formation and proposal/challenge. The envelope therefore carries explicit references for proposal sufficiency, formation challenge, and APC gate result artifacts.
+Admission artifact invisibility creates a governed path gap between formation and proposal/challenge.
+
+The envelope therefore carries explicit references for proposal sufficiency, formation challenge, and APC gate result artifacts.
 
 ---
 
@@ -57,11 +67,33 @@ The envelope includes identity, lifecycle state, human-readable summary with rec
 
 Full artifacts should be stored as governed records and referenced by ID or URI.
 
-Embedded payloads are not part of the base Decision Lifecycle Envelope schema. Implementation profiles may define sealed, portable, or air-gapped variants without changing base semantics.
+Embedded payloads are not part of the base Decision Lifecycle Envelope schema.
+
+Implementation profiles may define sealed, portable, or air-gapped variants without changing base semantics.
 
 ---
 
-## 3. Minimum Viable Schema
+## 3. Relationship to Wire Message Envelope and Payload Registry
+
+The Wire Message Envelope is per-message and is defined by RFC-CDP-021.
+
+The Protocol Payload Schema Registry is defined by RFC-CDP-022.
+
+The Decision Lifecycle Envelope is per-decision.
+
+Wire messages may carry payloads such as `proposal_sufficiency_record`, `formation_challenge_record`, or `anti_premature_certainty_gate_result`.
+
+The Decision Lifecycle Envelope indexes the governed records produced or referenced by those messages.
+
+A wire payload is not automatically a governed lifecycle reference.
+
+A governed lifecycle reference is not automatically a valid payload.
+
+Implementations SHOULD connect these surfaces through `decision_id`, `correlation_id`, governed record identifiers, payload type, record type, registration-time content hash, and lineage fields.
+
+---
+
+## 4. Minimum Viable Schema
 
 ```yaml
 decision_envelope:
@@ -105,15 +137,17 @@ decision_envelope:
   stage_record_refs:
     framing_ref: <ref|null>
     proposal_sufficiency_ref: <ref|null>
-    # REQUIRED after admission. Must point to a proposal_sufficiency_record
-    # with sufficiency_status: sufficient or excepted.
+    # REQUIRED after admission.
+    # Must point to a governed record with:
+    #   record_type: proposal_sufficiency_record
+    #   sufficiency_status: sufficient|excepted
     # Null only before admission gate is evaluated.
     formation_challenge_refs: [<ref>]
-    # Required field. Empty list is valid. Records any formation challenges
-    # raised before proposal admission.
+    # Required field. Empty list is valid.
+    # Each non-empty reference points to record_type: formation_challenge_record.
     apc_gate_result_refs: [<ref>]
-    # Required field. Empty list is valid. Records APC gate evaluations per
-    # RFC-CDP-022 and RFC-CDP-024.
+    # Required field. Empty list is valid.
+    # Each non-empty reference points to record_type: anti_premature_certainty_gate_result.
     proposal_ref: <ref|null>
     challenge_refs: [<ref>]
     evidence_refs: [<ref>]
@@ -137,11 +171,15 @@ decision_envelope:
     superseded_by_envelope_id: <uuid|null>
 ```
 
-Reference list fields are required even when empty. An empty list is informative. An absent list is ambiguous.
+Reference list fields are required even when empty.
+
+An empty list is informative.
+
+An absent list is ambiguous.
 
 ---
 
-## 4. Human-Readable Surface Requirements
+## 5. Human-Readable Surface Requirements
 
 Every human-readable summary must point to the governed record it summarizes through `summary_governed_by_ref`.
 
@@ -151,9 +189,9 @@ If `known_uncertainties` is empty, that is a positive claim that no material unc
 
 ---
 
-## 5. Proposal Admission References
+## 6. Proposal Admission References
 
-The envelope connects to RFC-CDP-024 and RFC-CDP-022 through three explicit references:
+The envelope connects to RFC-CDP-024 and RFC-CDP-022 through three explicit proposal-admission reference families:
 
 ```yaml
 stage_record_refs:
@@ -162,21 +200,31 @@ stage_record_refs:
   apc_gate_result_refs: [<ref>]
 ```
 
-### 5.1 proposal_sufficiency_ref
+### 6.1 proposal_sufficiency_ref
 
 `proposal_sufficiency_ref` points to the governed `proposal_sufficiency_record` that establishes whether the proposal earned admission.
 
-After a proposal is admitted, `proposal_sufficiency_ref` is required. Before admission, it may be null only when the proposal is still in formation or no sufficiency record has been submitted.
+After a proposal is admitted, `proposal_sufficiency_ref` is required.
 
-### 5.2 formation_challenge_refs
+Before admission, it may be null only when the proposal is still in formation or no sufficiency record has been submitted.
 
-`formation_challenge_refs` points to governed records produced by `RAISE_FORMATION_CHALLENGE` under RFC-CDP-024. The list is required and may be empty.
+### 6.2 formation_challenge_refs
 
-### 5.3 apc_gate_result_refs
+`formation_challenge_refs` points to governed `formation_challenge_record` artifacts produced by `RAISE_FORMATION_CHALLENGE` under RFC-CDP-024.
 
-`apc_gate_result_refs` points to governed `anti_premature_certainty_gate_result` records defined by RFC-CDP-022. The list is required and may be empty.
+The list is required and may be empty.
 
-### 5.4 Admission Rule
+An empty list means no formation challenges are currently recorded in the envelope.
+
+An absent list does not mean no formation challenges exist.
+
+### 6.3 apc_gate_result_refs
+
+`apc_gate_result_refs` points to governed `anti_premature_certainty_gate_result` records defined by RFC-CDP-022.
+
+The list is required and may be empty.
+
+### 6.4 Admission Rule
 
 A Decision Lifecycle Envelope MUST NOT represent a proposal as admitted, with `lifecycle_stage: propose` or later, unless:
 
@@ -185,19 +233,35 @@ A Decision Lifecycle Envelope MUST NOT represent a proposal as admitted, with `l
 
 An envelope with a null `proposal_sufficiency_ref` and `lifecycle_stage` at or past `propose` is non-compliant with this RFC.
 
+### 6.5 Record-Type Rule
+
+When implementation profiles expose record typing, the referenced admission records SHOULD use the following `record_type` values:
+
+| Envelope field | Required record type |
+|---|---|
+| `proposal_sufficiency_ref` | `proposal_sufficiency_record` |
+| `formation_challenge_refs` | `formation_challenge_record` |
+| `apc_gate_result_refs` | `anti_premature_certainty_gate_result` |
+
+A reference with the right identifier shape but the wrong record type MUST NOT satisfy the admission rule.
+
 ---
 
-## 6. Standing and Recusal Binding
+## 7. Standing and Recusal Binding
 
 The envelope connects to RFC-CDP-033 through top-level `standing_status`, `standing_record_refs`, `recusal_record_refs`, and `affected_party_claim_refs`.
 
 These records are referenced, not embedded.
 
-Each stage record reference must be interpretable against the standing and recusal records that governed that stage. The envelope carries references; lifecycle protocol RFCs enforce rules.
+Each stage record reference must be interpretable against the standing and recusal records that governed that stage.
+
+The envelope carries references.
+
+Lifecycle protocol RFCs enforce rules.
 
 ---
 
-## 7. Repair Control Surface
+## 8. Repair Control Surface
 
 The envelope connects to RFC-CDP-070 through `repair_control`.
 
@@ -209,15 +273,17 @@ An unresolved affected-party claim blocks closure regardless of whether a formal
 
 ---
 
-## 8. Governed Path Hash
+## 9. Governed Path Hash
 
 The `governed_path_hash` is computed over a canonicalized Governed Path Manifest.
 
 Hash integrity is evidence, not legitimacy.
 
-A valid hash may preserve an illegitimate path with perfect fidelity. That is useful evidence, not approval.
+A valid hash may preserve an illegitimate path with perfect fidelity.
 
-### 8.1 Governed Path Manifest Structure
+That is useful evidence, not approval.
+
+### 9.1 Governed Path Manifest Structure
 
 ```yaml
 governed_path_manifest:
@@ -246,14 +312,18 @@ governed_path_manifest:
   proposal_admission_refs:
     proposal_sufficiency:
       ref_id: <ref|null>
+      record_type: <proposal_sufficiency_record|null>
       content_hash_at_registration: <hash|null>
     formation_challenges:
       - ref_id: <ref>
+        record_type: <formation_challenge_record>
         content_hash_at_registration: <hash>
         sequence_position: <integer>
     apc_gate_results:
       - ref_id: <ref>
+        record_type: <anti_premature_certainty_gate_result>
         content_hash_at_registration: <hash>
+        sequence_position: <integer>
 
   repair_control_refs:
     closure_blocking_refs: [<ref_with_registration_hash>]
@@ -287,9 +357,9 @@ governed_path_manifest:
   superseded_by_envelope_id: <uuid|null>
 ```
 
-Each `ref_with_registration_hash` includes sequence position, reference ID, reference type, registration-time content hash, hash algorithm, record schema version, and registration timestamp.
+Each `ref_with_registration_hash` includes sequence position, reference ID, reference type, record type when available, registration-time content hash, hash algorithm, record schema version, and registration timestamp.
 
-### 8.2 Hash Coverage
+### 9.2 Hash Coverage
 
 The manifest covers:
 
@@ -300,43 +370,49 @@ The manifest covers:
 - `repair_control.repair_status` and `repair_control.closure_blocked`;
 - summary governed-by and material dissent references;
 - standing, recusal, and affected-party claim references;
-- `proposal_sufficiency_ref`;
-- `formation_challenge_refs`;
-- `apc_gate_result_refs`;
+- `proposal_sufficiency_ref` and its record type when available;
+- `formation_challenge_refs` and their record types when available;
+- `apc_gate_result_refs` and their record types when available;
 - all other `stage_record_refs`;
 - closure-blocking references;
 - registration-time content hashes and algorithms when available;
 - lineage and supersession links.
 
-Adding proposal sufficiency, formation challenge, and APC gate result references to the envelope without adding them to manifest coverage would create an integrity gap. Therefore the v0.5 schema and manifest changes are inseparable.
+Adding proposal sufficiency, formation challenge, and APC gate result references to the envelope without adding them to manifest coverage would create an integrity gap.
 
-### 8.3 Fields Excluded from the Manifest
+Therefore the schema and manifest coverage for these reference families are inseparable.
+
+### 9.3 Fields Excluded from the Manifest
 
 Full governed artifacts, mutable display formatting, and access-control metadata are not hashed directly by the governed path manifest.
 
-`proposal_sufficiency_ref`, `formation_challenge_refs`, and `apc_gate_result_refs` are included in the manifest. They are not excluded.
+`proposal_sufficiency_ref`, `formation_challenge_refs`, and `apc_gate_result_refs` are included in the manifest.
 
-### 8.4 Canonicalization Rules
+They are not excluded.
+
+### 9.4 Canonicalization
 
 The manifest uses canonical JSON, UTF-8 encoding, lexicographically sorted object keys, explicit nulls, empty arrays rather than omitted lists, lowercase enum values, lowercase hash algorithm identifiers, and UTC ISO-8601 timestamps with `Z` suffix.
 
 Ordered reference entries include `sequence_position`, assigned by ascending `registered_at`, then lexicographic `ref_id`.
 
-The default algorithm for Draft v0.5 is `sha256`.
+The default algorithm for Draft v0.6 is `sha256`.
 
-If a referenced record lacks a content hash, the manifest still includes the reference with null hash fields. Such a manifest is valid but integrity-incomplete and must not be represented as fully integrity-verified.
+If a referenced record lacks a content hash, the manifest still includes the reference with null hash fields.
+
+Such a manifest is valid but integrity-incomplete and must not be represented as fully integrity-verified.
 
 ---
 
-## 9. Security and Governance Considerations
+## 10. Security and Governance Considerations
 
 Decision Lifecycle Envelopes may expose affected-party claims, standing and recusal state, proposal sufficiency state, formation challenge existence, APC gate result existence, challenge existence, dissent references, evidence references, appeal or repair hooks, execution constraints, and learning artifacts.
 
-Implementations should address access control, redaction, culturally appropriate handling, evidence custody, affected-party review, appeal rights, repair triggers, closure blocking, admission blocking, retention, audit logging, and integrity verification.
+Implementations should address access control, redaction, culturally appropriate handling, evidence custody, affected-party review, appeal rights, repair triggers, closure blocking, admission blocking, retention, audit logging, record-type validation, and integrity verification.
 
 ---
 
-## 10. Status of This Draft
+## 11. Status of This Draft
 
 Promoted into Draft v0.5:
 
@@ -347,6 +423,14 @@ Promoted into Draft v0.5:
 - admission rule requiring `proposal_sufficiency_ref` before propose-or-later lifecycle state;
 - governed path manifest coverage for proposal sufficiency, formation challenge, and APC gate result references;
 - clarity that those three reference families are not excluded from the manifest.
+
+Promoted into Draft v0.6:
+
+- alignment with RFC-CDP-022 registered payload and governed record types;
+- explicit boundary between wire payloads, governed records, and lifecycle envelope references;
+- record-type validation rule for proposal admission references;
+- governed path manifest fields for proposal admission record types;
+- hash coverage clarified to include proposal-admission record types when available.
 
 Preserved from Draft v0.4:
 
@@ -369,11 +453,12 @@ Not yet resolved:
 - lifecycle-stage enum ownership;
 - stage-specific standing enforcement by lifecycle protocols;
 - referenced record hash propagation;
-- downstream Propose, Challenge, and Legitimize protocol consumption.
+- canonical risk-tier vocabulary ownership;
+- implementation-profile handling for sealed or air-gapped embedded bundles.
 
 ---
 
-## 11. Summary
+## 12. Summary
 
 The Decision Lifecycle Envelope is the governed path index for a CDP decision.
 
@@ -382,3 +467,7 @@ It prevents governed path severance, summary substitution, silent reference muta
 Its proposal admission references make Proposal Sufficiency, Formation Challenge, and APC gate artifacts visible in the governed path.
 
 Its governed path hash covers those references so admission integrity does not become a blind spot.
+
+It indexes governed records.
+
+It does not replace them.
