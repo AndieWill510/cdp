@@ -1,7 +1,7 @@
 # RFC-CDP-061 — Schema Drift and Context Preservation
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.2  
+Status: Draft v0.3  
 Series: Constitutional Decision Plane (CDP)  
 Date: July 1, 2026  
 Depends On: RFC-CDP-001, RFC-CDP-010, RFC-CDP-020, RFC-CDP-021, RFC-CDP-025, RFC-CDP-032, RFC-CDP-047, RFC-CDP-048, RFC-CDP-060  
@@ -194,6 +194,8 @@ Observation divergence is a context-preservation problem even when one observed 
 A **Verification Handle** is a fresh, independently usable path, record, receipt, manifest, snapshot, event, or queryable artifact that allows a reader to test a claimed artifact state without relying solely on another participant's private verification.
 
 A verification handle is not proof merely because it exists. It is useful only when it gives the reader an independent path to check the state claim or precisely name the remaining access failure.
+
+A fresh path is one cache-bypass strategy, not the protocol itself. Implementations SHOULD prefer the strongest substrate-appropriate handle available, such as a canonical snapshot, strongly consistent read, signed receipt, durable event, or commit-specific reference.
 
 ### 4.14 Canonical Anchor
 
@@ -436,6 +438,8 @@ Repair-required drift SHOULD trigger a repair path when drift has caused or pres
 
 Access-seam drift SHOULD trigger a verification-handle workflow when two or more observers report materially different state for the same governed artifact through different access paths.
 
+For material or blocking access-seam drift, a verification handle SHOULD be created before closure unless doing so is impossible, unsafe, or disclosure-prohibited. If a handle cannot be created, the implementation MUST record why and preserve the remaining uncertainty.
+
 The implementation SHOULD:
 
 1. record the divergent observations;
@@ -458,6 +462,8 @@ The seam is closed only when the reader can independently verify the claimed sta
 Verification handles are substrate-neutral.
 
 A CDP implementation MAY satisfy this requirement through files, database records, event receipts, object manifests, vector retrieval manifests, signed responses, cache-bypass receipts, or other independently usable verification artifacts.
+
+The adapters below are illustrative, not exhaustive. Implementations SHOULD define the strongest verifiable handle available for their substrate and risk level.
 
 A verification handle SHOULD include:
 
@@ -483,7 +489,7 @@ verification/YYYY-MM-DD-[subject]-confirmation.md
 
 The file SHOULD include:
 
-- full branch or file URLs;
+- full branch or file URLs where safe;
 - commit-specific URLs;
 - commit URL;
 - blob SHA or content SHA;
@@ -658,7 +664,7 @@ Implementations SHOULD support:
 - restricted evidence references;
 - non-public repair records;
 - provenance without unnecessary exposure;
-- verification without universal publication;
+- verification without universal disclosure;
 - retention limits where legally required;
 - audit without universal publication.
 
