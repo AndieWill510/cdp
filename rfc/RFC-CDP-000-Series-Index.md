@@ -406,7 +406,7 @@ Depends On:
 | RFC | Title | File | Status |
 |---:|---|---|---|
 | `060` | Covenant Protocol and AIITL | `RFC-CDP-060-Covenant-Protocol-and-AIITL.md` | Draft |
-| `061` | Schema Drift and Context Preservation | `RFC-CDP-061-Schema-Drift-and-Context-Preservation.md` | Draft |
+| `061` | Schema Drift and Context Preservation | `RFC-CDP-061-Schema-Drift-and-Context-Preservation.md` | Draft v0.3 |
 | `062` | HITL-AIITL Role Boundaries | `RFC-CDP-062-HITL-AIITL-Role-Boundaries.md` | Reserved |
 
 ### 6.8 Repair, Reparations, Rematriation, Appeal, and Sovereignty
