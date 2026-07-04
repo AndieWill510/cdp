@@ -29,6 +29,7 @@ This index tracks active and completed collaboration sessions.
 | [015](sessions/015-rfc-045-legitimize-apc-wiring.md) | RFC-CDP-045 Legitimize APC Wiring | closed-promoted | Andie | RFC-CDP-045 v0.5 |
 | [016](sessions/016-rfc-series-index-repair-and-status-version-convention.md) | RFC Series Index Repair and Status-Version Convention | closed-promoted | Andie | RFC-CDP-000-Series-Index.md v1.3 |
 | [017](sessions/017-repair-efficacy-and-verification.md) | Repair Efficacy and Verification | closed-promoted | Andie | RFC-CDP-076 |
+| [018](sessions/018-collaborator-entry-path.md) | Collaborator Entry Path | closed-promoted | Andie | CONTRIBUTING; PR template; NEW_COLLABORATOR_PATH |
 
 ## Session Status Values
 
@@ -45,6 +46,7 @@ This index tracks active and completed collaboration sessions.
 1. Record Hash Propagation to governed record RFCs in the 040–048 band.
 2. Reference implementation / DDL profile for RFC-CDP-025.
 3. Register `repair_efficacy_record` in RFC-CDP-022 and wire persistence/query projections if RFC-CDP-076 stabilizes.
+4. Advance `rfc/RFC-CDP-000-Series-Index.md` to Draft v1.4 after safe repair-band map update.
 
 ## Open Cross-Session Questions
 
