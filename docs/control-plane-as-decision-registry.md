@@ -1,8 +1,10 @@
 # Control Plane as Decision Registry
 
-Status: Architectural clarification  
+Status: Architectural clarification v0.2  
 Scope: CDP control-plane core and first-demo persistence direction  
 Audience: implementers, reviewers, attorney-facing demo builders  
+Related DDL: `db/ddl/001-decision-registry-kernel.sql`  
+Related ingestion contract: `docs/z-config-lookup-spreadsheet-ingestion.md`  
 
 ---
 
@@ -33,8 +35,10 @@ A Decision Registry is the durable place where every material decision receives:
 1. an identity;
 2. a bounded domain;
 3. a minimal grammatical structure;
-4. a created timestamp;
-5. a path to later governance.
+4. a permission source surface;
+5. a human-approval surface;
+6. a created timestamp;
+7. a path to later governance.
 
 For the first demo, the minimal grammar is:
 
@@ -49,17 +53,31 @@ domain
 key1/value1
 key2/value2
 key3/value3
+permission_source_type
+permission_source_id
+human_required
+human_approver_id
 created
 ```
 
 Where the recommended default meaning is:
 
 ```text
-domain      = decision set and decision identity
-key1/value1 = antecedent
-key2/value2 = subject
-key3/value3 = predicate
-created     = decision record creation timestamp
+domain                 = decision set and decision identity
+key1/value1            = antecedent
+key2/value2            = subject
+key3/value3            = predicate
+permission_source_type = kind of permission source
+permission_source_id   = identifier for the source
+human_required         = whether human approval was required
+human_approver_id      = approver ID, none, or unknown
+created                = decision record creation timestamp
+```
+
+Decision ID is derived from `domain` for v0.2:
+
+```text
+domain = decision_register:<registry_name>:<decision_id>
 ```
 
 This is not the final CDP schema.
@@ -74,7 +92,7 @@ It is the registry spine.
 
 But `z_config_lookup` is not the architecture.
 
-The architecture is not "configuration lookup."
+The architecture is not configuration lookup.
 
 The architecture is decision governance.
 
@@ -84,9 +102,11 @@ Therefore the architectural noun should be:
 decision_registry
 ```
 
-A lookup table can carry the first demo record shape.
+A lookup table can carry the first grammar shape.
 
 It should not define the mental model.
+
+Once the spreadsheet includes the four permission fields, the canonical target should be `cdp_core.decision_registry` unless `z_config_lookup` is explicitly extended.
 
 ---
 
@@ -94,91 +114,70 @@ It should not define the mental model.
 
 The first executable control-plane DDL should create a real decision registry table.
 
-The table can preserve the current lookup-shaped fields while naming the thing correctly.
+The table preserves the current lookup-shaped grammar while naming the thing correctly and adding the four attorney-facing permission fields.
 
-Recommended first table:
+The actual starter DDL lives at:
 
-```sql
-CREATE SCHEMA IF NOT EXISTS cdp_core;
+```text
+db/ddl/001-decision-registry-kernel.sql
+```
 
-CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+It creates:
 
-    -- Stable decision identity.
-    decision_id TEXT NOT NULL UNIQUE,
+```text
+cdp_core.decision_registry
+cdp_projection.decision_registry_flat
+```
 
-    -- Bounded registry/domain, for example:
-    -- decision_register:sample_attorney_demo
-    domain TEXT NOT NULL,
+The control-plane table includes:
 
-    -- Minimal grammatical slots.
-    key1 TEXT NOT NULL,
-    value1 TEXT NOT NULL,
-    key2 TEXT NOT NULL,
-    value2 TEXT NOT NULL,
-    key3 TEXT NOT NULL,
-    value3 TEXT NOT NULL,
+```text
+id
+domain
+key1
+value1
+key2
+value2
+key3
+value3
+permission_source_type
+permission_source_id
+human_required
+human_approver_id
+created
+ingested_at
+source_system
+source_ref
+row_hash
+```
 
-    -- Source-created timestamp from spreadsheet or upstream event.
-    created TIMESTAMPTZ NOT NULL,
+The projection derives:
 
-    -- Ingestion timestamp.
-    ingested_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-    -- Optional source metadata for audit/debugging.
-    source_ref TEXT,
-    source_row_number INTEGER,
-
-    -- Optional raw normalized row, useful for replay and test diagnostics.
-    raw_row JSONB NOT NULL DEFAULT '{}'::jsonb,
-
-    CONSTRAINT chk_decision_registry_domain_not_blank
-        CHECK (length(trim(domain)) > 0),
-
-    CONSTRAINT chk_decision_registry_key1_not_blank
-        CHECK (length(trim(key1)) > 0),
-
-    CONSTRAINT chk_decision_registry_value1_not_blank
-        CHECK (length(trim(value1)) > 0),
-
-    CONSTRAINT chk_decision_registry_key2_not_blank
-        CHECK (length(trim(key2)) > 0),
-
-    CONSTRAINT chk_decision_registry_value2_not_blank
-        CHECK (length(trim(value2)) > 0),
-
-    CONSTRAINT chk_decision_registry_key3_not_blank
-        CHECK (length(trim(key3)) > 0),
-
-    CONSTRAINT chk_decision_registry_value3_not_blank
-        CHECK (length(trim(value3)) > 0)
-);
-
-CREATE INDEX IF NOT EXISTS idx_decision_registry_domain
-    ON cdp_core.decision_registry (domain);
-
-CREATE INDEX IF NOT EXISTS idx_decision_registry_created
-    ON cdp_core.decision_registry (created);
-
-CREATE INDEX IF NOT EXISTS idx_decision_registry_key1
-    ON cdp_core.decision_registry (key1, value1);
-
-CREATE INDEX IF NOT EXISTS idx_decision_registry_key2
-    ON cdp_core.decision_registry (key2, value2);
-
-CREATE INDEX IF NOT EXISTS idx_decision_registry_key3
-    ON cdp_core.decision_registry (key3, value3);
+```text
+registry_name
+decision_id
+antecedent
+subject_type
+subject_id
+predicate_verb
+object_type
+object_id
+permission_source_type
+permission_source_id
+human_required
+human_approver_id
+plain_english_decision
 ```
 
 This is intentionally not yet the full RFC-025 persistence model.
 
-It is the first concrete registry table.
+It is the first concrete registry kernel.
 
 ---
 
 ## 5. Relationship to `z_config_lookup`
 
-If the current implementation already has this shape:
+The older compatibility shape is:
 
 ```text
 z_config_lookup
@@ -192,27 +191,36 @@ z_config_lookup
 - created
 ```
 
-then `z_config_lookup` can be treated as a temporary staging table or compatibility adapter.
-
-But the first control-plane DDL should make the target explicit:
+That shape can represent:
 
 ```text
-cdp_core.decision_registry
+antecedent -> subject -> predicate
+```
+
+It cannot represent the four permission fields unless it is extended.
+
+Those fields are now first-class in the spreadsheet and the registry:
+
+```text
+permission_source_type
+permission_source_id
+human_required
+human_approver_id
 ```
 
 Recommended flow:
 
 ```text
-spreadsheet -> parser/validator -> decision_registry
+spreadsheet -> parser/validator -> cdp_core.decision_registry -> cdp_projection.decision_registry_flat
 ```
 
-Temporary compatibility flow, if needed:
+Temporary compatibility flow, if required:
 
 ```text
-spreadsheet -> parser/validator -> z_config_lookup -> decision_registry
+spreadsheet -> parser/validator -> extended z_config_lookup -> cdp_core.decision_registry
 ```
 
-Do not let the temporary table become the canonical model by accident.
+Do not let a temporary lookup table become the canonical model by accident.
 
 ---
 
@@ -222,16 +230,19 @@ For the first demo, the Decision Registry should hold:
 
 | Field | Meaning |
 |---|---|
-| `decision_id` | stable identity for one decision record |
-| `domain` | bounded registry or decision set |
+| `domain` | bounded registry and decision identity path |
 | `key1/value1` | antecedent |
 | `key2/value2` | subject |
 | `key3/value3` | predicate |
+| `permission_source_type` | category of permission source |
+| `permission_source_id` | specific source identifier |
+| `human_required` | whether human approval was required |
+| `human_approver_id` | approver ID, `none`, or `unknown` |
 | `created` | decision record timestamp |
 | `ingested_at` | system ingestion timestamp |
+| `source_system` | source category, default `spreadsheet` |
 | `source_ref` | optional spreadsheet/file/batch reference |
-| `source_row_number` | optional row number for error repair |
-| `raw_row` | optional normalized row snapshot |
+| `row_hash` | integrity/test hash over normalized row fields |
 
 This keeps the table small but honest.
 
@@ -248,9 +259,8 @@ These are important, but later:
 - governed record body;
 - standing determinations;
 - recusal control;
-- human approval records;
 - evidence records;
-- policy references;
+- policy reference records;
 - tool-call audit records;
 - appeal and repair records;
 - controlled vocabulary registry;
@@ -275,7 +285,7 @@ The attorney-facing register is a review projection.
 The attorney should be able to ask:
 
 ```text
-Show me the decisions in this matter or time period.
+Show me the decisions in this matter or time period, including what allowed each decision to occur.
 ```
 
 The control plane should be able to answer from `decision_registry` without parsing logs, guessing from chat transcripts, or asking the model to summarize itself after the fact.
