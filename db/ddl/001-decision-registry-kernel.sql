@@ -20,10 +20,14 @@ CREATE SCHEMA IF NOT EXISTS cdp_projection;
 -- -----------------------------------------------------------------------------
 -- The decision registry is the control-plane kernel.
 --
--- For v0.1, it preserves the current key/value ingestion shape:
---   domain, key1/value1, key2/value2, key3/value3, created
+-- For v0.2, it preserves the current key/value decision grammar and adds the
+-- four attorney-facing governance fields required in the spreadsheet:
+--   permission_source_type
+--   permission_source_id
+--   human_required
+--   human_approver_id
 --
--- Convention:
+-- Core convention:
 --   domain      = decision_register:<registry_name>:<decision_id>
 --   key1/value1 = antecedent
 --   key2/value2 = subject
@@ -31,7 +35,7 @@ CREATE SCHEMA IF NOT EXISTS cdp_projection;
 --
 -- This is deliberately stricter than a generic lookup table. A registry table
 -- may start from key/value ingestion, but it must make decision identity,
--- validation, ordering, and queryability explicit.
+-- validation, ordering, permission traceability, and queryability explicit.
 
 CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,6 +51,11 @@ CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
     key3 TEXT NOT NULL,
     value3 TEXT NOT NULL,
 
+    permission_source_type TEXT NOT NULL,
+    permission_source_id TEXT NOT NULL,
+    human_required BOOLEAN NOT NULL,
+    human_approver_id TEXT NOT NULL DEFAULT 'none',
+
     created TIMESTAMPTZ NOT NULL,
     ingested_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
@@ -60,6 +69,8 @@ CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
                 key1 || '|' || value1 || '|' ||
                 key2 || '|' || value2 || '|' ||
                 key3 || '|' || value3 || '|' ||
+                permission_source_type || '|' || permission_source_id || '|' ||
+                human_required::TEXT || '|' || human_approver_id || '|' ||
                 created::TEXT,
                 'sha256'
             ),
@@ -88,33 +99,66 @@ CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
     CONSTRAINT chk_decision_registry_predicate_format
         CHECK (value3 ~ '^[A-Za-z][A-Za-z0-9_]*:[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_-]+$'),
 
+    CONSTRAINT chk_decision_registry_permission_source_type
+        CHECK (permission_source_type IN (
+            'policy_rule',
+            'human_approval',
+            'system_role',
+            'workflow_configuration',
+            'tool_permission',
+            'prior_decision',
+            'emergency_exception',
+            'unknown'
+        )),
+
+    CONSTRAINT chk_decision_registry_permission_source_id_not_blank
+        CHECK (btrim(permission_source_id) <> ''),
+
+    CONSTRAINT chk_decision_registry_human_approver_id_not_blank
+        CHECK (btrim(human_approver_id) <> ''),
+
+    CONSTRAINT chk_decision_registry_human_approver_when_not_required
+        CHECK (human_required OR human_approver_id = 'none'),
+
     CONSTRAINT uq_decision_registry_domain
         UNIQUE (domain)
 );
 
 COMMENT ON TABLE cdp_core.decision_registry IS
-'Control-plane kernel: one row per material decision clause ingested into CDP v0.1.';
+'Control-plane kernel: one row per material decision clause ingested into CDP v0.2.';
 
 COMMENT ON COLUMN cdp_core.decision_registry.domain IS
 'Decision identity path: decision_register:<registry_name>:<decision_id>.';
 
 COMMENT ON COLUMN cdp_core.decision_registry.key1 IS
-'Field name for antecedent. v0.1 requires key1 = antecedent.';
+'Field name for antecedent. v0.2 requires key1 = antecedent.';
 
 COMMENT ON COLUMN cdp_core.decision_registry.value1 IS
 'Antecedent value: condition, trigger, dependency, or none_supplied.';
 
 COMMENT ON COLUMN cdp_core.decision_registry.key2 IS
-'Field name for subject. v0.1 requires key2 = subject.';
+'Field name for subject. v0.2 requires key2 = subject.';
 
 COMMENT ON COLUMN cdp_core.decision_registry.value2 IS
 'Subject value formatted as <actor_type>:<actor_id>.';
 
 COMMENT ON COLUMN cdp_core.decision_registry.key3 IS
-'Field name for predicate. v0.1 requires key3 = predicate.';
+'Field name for predicate. v0.2 requires key3 = predicate.';
 
 COMMENT ON COLUMN cdp_core.decision_registry.value3 IS
 'Predicate value formatted as <verb>:<object_type>:<object_id>.';
+
+COMMENT ON COLUMN cdp_core.decision_registry.permission_source_type IS
+'Attorney-facing permission category, e.g. policy_rule, human_approval, system_role, workflow_configuration, tool_permission, prior_decision, emergency_exception, or unknown.';
+
+COMMENT ON COLUMN cdp_core.decision_registry.permission_source_id IS
+'Identifier of the policy, rule, role, workflow, tool permission, prior decision, emergency exception, or unknown permission source.';
+
+COMMENT ON COLUMN cdp_core.decision_registry.human_required IS
+'Whether human approval was required before the decision or action could take effect.';
+
+COMMENT ON COLUMN cdp_core.decision_registry.human_approver_id IS
+'Human approver ID when applicable; use none when human approval was not required or no approver is recorded.';
 
 COMMENT ON COLUMN cdp_core.decision_registry.row_hash IS
 'SHA-256 hash of normalized registry row fields for basic integrity and test assertions.';
@@ -131,11 +175,17 @@ CREATE INDEX IF NOT EXISTS idx_decision_registry_subject
 CREATE INDEX IF NOT EXISTS idx_decision_registry_predicate
     ON cdp_core.decision_registry (value3);
 
+CREATE INDEX IF NOT EXISTS idx_decision_registry_permission_source
+    ON cdp_core.decision_registry (permission_source_type, permission_source_id);
+
+CREATE INDEX IF NOT EXISTS idx_decision_registry_human_required
+    ON cdp_core.decision_registry (human_required, human_approver_id);
+
 -- -----------------------------------------------------------------------------
 -- Projection: cdp_projection.decision_registry_flat
 -- -----------------------------------------------------------------------------
 -- This view derives attorney-readable and test-friendly fields from the strict
--- v0.1 registry format without changing the underlying table shape.
+-- v0.2 registry format without changing the underlying decision grammar.
 
 CREATE OR REPLACE VIEW cdp_projection.decision_registry_flat AS
 SELECT
@@ -150,10 +200,17 @@ SELECT
     split_part(value3, ':', 1) AS predicate_verb,
     split_part(value3, ':', 2) AS object_type,
     split_part(value3, ':', 3) AS object_id,
+    permission_source_type,
+    permission_source_id,
+    human_required,
+    human_approver_id,
     'Because ' || value1 || ', ' ||
         split_part(value2, ':', 1) || ' ' || split_part(value2, ':', 2) ||
         ' performed ' || split_part(value3, ':', 1) ||
-        ' on ' || split_part(value3, ':', 2) || ' ' || split_part(value3, ':', 3) || '.'
+        ' on ' || split_part(value3, ':', 2) || ' ' || split_part(value3, ':', 3) ||
+        '. Permission source: ' || permission_source_type || ':' || permission_source_id ||
+        '. Human required: ' || human_required::TEXT ||
+        '. Human approver: ' || human_approver_id || '.'
         AS plain_english_decision,
     row_hash,
     source_system,
@@ -162,4 +219,4 @@ SELECT
 FROM cdp_core.decision_registry;
 
 COMMENT ON VIEW cdp_projection.decision_registry_flat IS
-'Read projection over the v0.1 decision registry kernel for attorney-facing/demo output.';
+'Read projection over the v0.2 decision registry kernel for attorney-facing/demo output.';
