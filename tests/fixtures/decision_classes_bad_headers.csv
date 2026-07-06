@@ -1,0 +1,7 @@
+Decision Set,Class Code,Parent Class,Pretty Name,Depth,Created At
+sample_attorney_demo,claim,,Claim Decisions,0,2026-07-06T18:00:00Z
+sample_attorney_demo,claim_intake,claim,Claim Intake,1,2026-07-06T18:00:00Z
+sample_attorney_demo,claim_approval,claim,Claim Approval,1,2026-07-06T18:00:00Z
+sample_attorney_demo,human_review_escalation,claim,Human Review Escalation,1,2026-07-06T18:00:00Z
+sample_attorney_demo,access,,Access Decisions,0,2026-07-06T18:00:00Z
+sample_attorney_demo,access_denial,access,Access Denial,1,2026-07-06T18:00:00Z
