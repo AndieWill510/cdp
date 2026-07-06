@@ -1,15 +1,16 @@
 -- CDP Decision Registry Kernel DDL
 --
--- Status: starter executable DDL for the first control-plane registry kernel
--- Scope: decision-registry core compatible with spreadsheet/key-value ingestion
+-- Status: starter executable DDL for the first normalized control-plane registry kernel
+-- Scope: decision-registry core compatible with spreadsheet ingestion
 --
 -- This file intentionally defines the smallest durable control-plane kernel:
--- one row per material decision clause, plus lightweight classification and
--- parent-child surfaces for analytics.
+-- one row per material decision clause, with normalized atomic columns for
+-- identity, classification, lineage, subject, predicate, object, permission,
+-- human approval, and timing.
 --
--- It does not replace the full RFC-025 persistence model. It gives the demo
--- a concrete registry kernel that can later feed Decision Lifecycle Envelopes,
--- governed records, standing projections, challenge records, and repair paths.
+-- v0.4 removes the packed-string/key-value design from the core table.
+-- Compatibility strings such as decision_register:<registry_name>:<decision_id>
+-- are derived in views only. They are not authoritative stored fields.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -19,94 +20,100 @@ CREATE SCHEMA IF NOT EXISTS cdp_projection;
 -- -----------------------------------------------------------------------------
 -- cdp_core.decision_class_registry
 -- -----------------------------------------------------------------------------
--- Lightweight classification registry for decision analytics.
+-- Lightweight normalized classification registry for decision analytics.
 --
--- This table lets a demo define parent-child classes such as:
---   decision_class:sample_attorney_demo:claim
---   decision_class:sample_attorney_demo:claim_approval
---   decision_class:sample_attorney_demo:claim_escalation
---
--- Decision rows soft-reference class domains through decision_class_domain.
--- Soft reference is intentional for v0.3 so spreadsheet ingestion order does not
--- have to load class rows before decision rows. Later profiles may harden this.
+-- Normal form rule:
+--   Store registry_name, class_id, and parent_class_id as separate columns.
+--   Do not store decision_class:<registry_name>:<class_id> as the authoritative key.
+--   Views may derive that compatibility string for display/interchange.
 
 CREATE TABLE IF NOT EXISTS cdp_core.decision_class_registry (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    domain TEXT NOT NULL UNIQUE,
-    parent_domain TEXT,
-
+    registry_name TEXT NOT NULL,
     class_id TEXT NOT NULL,
+    parent_class_id TEXT,
+
     class_label TEXT NOT NULL,
     class_level INTEGER NOT NULL DEFAULT 0,
 
     created TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT chk_decision_class_domain_format
-        CHECK (domain ~ '^decision_class:[A-Za-z0-9_-]+:[A-Za-z0-9_-]+$'),
+    CONSTRAINT chk_decision_class_registry_name_format
+        CHECK (registry_name ~ '^[A-Za-z0-9_-]+$'),
 
-    CONSTRAINT chk_decision_class_parent_domain_format
-        CHECK (parent_domain IS NULL OR parent_domain ~ '^decision_class:[A-Za-z0-9_-]+:[A-Za-z0-9_-]+$'),
+    CONSTRAINT chk_decision_class_id_format
+        CHECK (class_id ~ '^[A-Za-z0-9_-]+$'),
 
-    CONSTRAINT chk_decision_class_id_not_blank
-        CHECK (btrim(class_id) <> ''),
+    CONSTRAINT chk_decision_class_parent_class_id_format
+        CHECK (parent_class_id IS NULL OR parent_class_id ~ '^[A-Za-z0-9_-]+$'),
 
     CONSTRAINT chk_decision_class_label_not_blank
         CHECK (btrim(class_label) <> ''),
 
     CONSTRAINT chk_decision_class_level_nonnegative
-        CHECK (class_level >= 0)
+        CHECK (class_level >= 0),
+
+    CONSTRAINT uq_decision_class_registry
+        UNIQUE (registry_name, class_id),
+
+    CONSTRAINT fk_decision_class_parent
+        FOREIGN KEY (registry_name, parent_class_id)
+        REFERENCES cdp_core.decision_class_registry (registry_name, class_id)
+        DEFERRABLE INITIALLY DEFERRED
 );
 
 COMMENT ON TABLE cdp_core.decision_class_registry IS
-'Lightweight parent-child classification registry for decision analytics.';
+'Normalized parent-child classification registry for decision analytics.';
 
-CREATE INDEX IF NOT EXISTS idx_decision_class_parent_domain
-    ON cdp_core.decision_class_registry (parent_domain);
+COMMENT ON COLUMN cdp_core.decision_class_registry.registry_name IS
+'Atomic registry name. Do not pack into a decision_class domain string in the core table.';
+
+COMMENT ON COLUMN cdp_core.decision_class_registry.class_id IS
+'Atomic decision class identifier.';
+
+COMMENT ON COLUMN cdp_core.decision_class_registry.parent_class_id IS
+'Optional atomic parent class identifier within the same registry.';
+
+CREATE INDEX IF NOT EXISTS idx_decision_class_parent
+    ON cdp_core.decision_class_registry (registry_name, parent_class_id);
 
 CREATE INDEX IF NOT EXISTS idx_decision_class_level
-    ON cdp_core.decision_class_registry (class_level);
+    ON cdp_core.decision_class_registry (registry_name, class_level);
 
 -- -----------------------------------------------------------------------------
 -- cdp_core.decision_registry
 -- -----------------------------------------------------------------------------
 -- The decision registry is the control-plane kernel.
 --
--- For v0.3, it preserves the current key/value decision grammar, includes the
--- four attorney-facing governance fields, and adds lightweight hierarchy fields
--- for class/group analytics and parent-child decision lineage.
+-- Normal form rule:
+--   Do not store key1/value1, key2/value2, key3/value3.
+--   Do not store actor_type:actor_id.
+--   Do not store verb:object_type:object_id.
+--   Do not store decision_register:<registry_name>:<decision_id> as the
+--   authoritative key.
 --
--- Core convention:
---   domain                = decision_register:<registry_name>:<decision_id>
---   decision_class_domain = decision_class:<registry_name>:<class_id>
---   parent_domain         = optional parent decision domain
---   parent_relation_type  = relation from this decision to parent_domain
---   key1/value1           = antecedent
---   key2/value2           = subject
---   key3/value3           = predicate
---
--- This is deliberately stricter than a generic lookup table. A registry table
--- may start from key/value ingestion, but it must make decision identity,
--- validation, ordering, permission traceability, hierarchy, and queryability
--- explicit.
+-- Store each fact in its own atomic column.
 
 CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    domain TEXT NOT NULL,
-    decision_class_domain TEXT NOT NULL,
-    parent_domain TEXT,
+    registry_name TEXT NOT NULL,
+    decision_id TEXT NOT NULL,
+
+    decision_class_id TEXT NOT NULL,
+    parent_decision_id TEXT,
     parent_relation_type TEXT NOT NULL DEFAULT 'none',
 
-    key1 TEXT NOT NULL,
-    value1 TEXT NOT NULL,
+    antecedent_text TEXT NOT NULL,
 
-    key2 TEXT NOT NULL,
-    value2 TEXT NOT NULL,
+    subject_actor_type TEXT NOT NULL,
+    subject_actor_id TEXT NOT NULL,
 
-    key3 TEXT NOT NULL,
-    value3 TEXT NOT NULL,
+    predicate_verb TEXT NOT NULL,
+    object_type TEXT NOT NULL,
+    object_id TEXT NOT NULL,
 
     permission_source_type TEXT NOT NULL,
     permission_source_id TEXT NOT NULL,
@@ -122,11 +129,13 @@ CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
     row_hash TEXT GENERATED ALWAYS AS (
         encode(
             digest(
-                domain || '|' ||
-                decision_class_domain || '|' || coalesce(parent_domain, '') || '|' || parent_relation_type || '|' ||
-                key1 || '|' || value1 || '|' ||
-                key2 || '|' || value2 || '|' ||
-                key3 || '|' || value3 || '|' ||
+                registry_name || '|' ||
+                decision_id || '|' ||
+                decision_class_id || '|' ||
+                coalesce(parent_decision_id, '') || '|' || parent_relation_type || '|' ||
+                antecedent_text || '|' ||
+                subject_actor_type || '|' || subject_actor_id || '|' ||
+                predicate_verb || '|' || object_type || '|' || object_id || '|' ||
                 permission_source_type || '|' || permission_source_id || '|' ||
                 human_required::TEXT || '|' || human_approver_id || '|' ||
                 created::TEXT,
@@ -136,14 +145,17 @@ CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
         )
     ) STORED,
 
-    CONSTRAINT chk_decision_registry_domain_format
-        CHECK (domain ~ '^decision_register:[A-Za-z0-9_-]+:[A-Za-z0-9_-]+$'),
+    CONSTRAINT chk_decision_registry_registry_name_format
+        CHECK (registry_name ~ '^[A-Za-z0-9_-]+$'),
 
-    CONSTRAINT chk_decision_registry_class_domain_format
-        CHECK (decision_class_domain ~ '^decision_class:[A-Za-z0-9_-]+:[A-Za-z0-9_-]+$'),
+    CONSTRAINT chk_decision_registry_decision_id_format
+        CHECK (decision_id ~ '^[A-Za-z0-9_-]+$'),
 
-    CONSTRAINT chk_decision_registry_parent_domain_format
-        CHECK (parent_domain IS NULL OR parent_domain ~ '^decision_register:[A-Za-z0-9_-]+:[A-Za-z0-9_-]+$'),
+    CONSTRAINT chk_decision_registry_class_id_format
+        CHECK (decision_class_id ~ '^[A-Za-z0-9_-]+$'),
+
+    CONSTRAINT chk_decision_registry_parent_decision_id_format
+        CHECK (parent_decision_id IS NULL OR parent_decision_id ~ '^[A-Za-z0-9_-]+$'),
 
     CONSTRAINT chk_decision_registry_parent_relation_type
         CHECK (parent_relation_type IN (
@@ -161,28 +173,28 @@ CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
 
     CONSTRAINT chk_decision_registry_parent_pairing
         CHECK (
-            (parent_relation_type = 'none' AND parent_domain IS NULL)
+            (parent_relation_type = 'none' AND parent_decision_id IS NULL)
             OR
-            (parent_relation_type <> 'none' AND parent_domain IS NOT NULL)
+            (parent_relation_type <> 'none' AND parent_decision_id IS NOT NULL)
         ),
 
-    CONSTRAINT chk_decision_registry_key1
-        CHECK (key1 = 'antecedent'),
+    CONSTRAINT chk_decision_registry_antecedent_text_not_blank
+        CHECK (btrim(antecedent_text) <> ''),
 
-    CONSTRAINT chk_decision_registry_key2
-        CHECK (key2 = 'subject'),
+    CONSTRAINT chk_decision_registry_subject_actor_type
+        CHECK (subject_actor_type IN ('agent', 'human', 'system', 'institution', 'unknown')),
 
-    CONSTRAINT chk_decision_registry_key3
-        CHECK (key3 = 'predicate'),
+    CONSTRAINT chk_decision_registry_subject_actor_id_format
+        CHECK (subject_actor_id ~ '^[A-Za-z0-9_-]+$'),
 
-    CONSTRAINT chk_decision_registry_value1_not_blank
-        CHECK (btrim(value1) <> ''),
+    CONSTRAINT chk_decision_registry_predicate_verb_format
+        CHECK (predicate_verb ~ '^[A-Za-z][A-Za-z0-9_]*$'),
 
-    CONSTRAINT chk_decision_registry_subject_format
-        CHECK (value2 ~ '^(agent|human|system|institution|unknown):[A-Za-z0-9_-]+$'),
+    CONSTRAINT chk_decision_registry_object_type_format
+        CHECK (object_type ~ '^[A-Za-z][A-Za-z0-9_]*$'),
 
-    CONSTRAINT chk_decision_registry_predicate_format
-        CHECK (value3 ~ '^[A-Za-z][A-Za-z0-9_]*:[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_-]+$'),
+    CONSTRAINT chk_decision_registry_object_id_format
+        CHECK (object_id ~ '^[A-Za-z0-9_-]+$'),
 
     CONSTRAINT chk_decision_registry_permission_source_type
         CHECK (permission_source_type IN (
@@ -205,42 +217,55 @@ CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
     CONSTRAINT chk_decision_registry_human_approver_when_not_required
         CHECK (human_required OR human_approver_id = 'none'),
 
-    CONSTRAINT uq_decision_registry_domain
-        UNIQUE (domain)
+    CONSTRAINT uq_decision_registry_identity
+        UNIQUE (registry_name, decision_id),
+
+    CONSTRAINT fk_decision_registry_class
+        FOREIGN KEY (registry_name, decision_class_id)
+        REFERENCES cdp_core.decision_class_registry (registry_name, class_id)
+        DEFERRABLE INITIALLY DEFERRED,
+
+    CONSTRAINT fk_decision_registry_parent_decision
+        FOREIGN KEY (registry_name, parent_decision_id)
+        REFERENCES cdp_core.decision_registry (registry_name, decision_id)
+        DEFERRABLE INITIALLY DEFERRED
 );
 
 COMMENT ON TABLE cdp_core.decision_registry IS
-'Control-plane kernel: one row per material decision clause ingested into CDP v0.3.';
+'Normalized control-plane kernel: one row per material decision clause ingested into CDP v0.4.';
 
-COMMENT ON COLUMN cdp_core.decision_registry.domain IS
-'Decision identity path: decision_register:<registry_name>:<decision_id>.';
+COMMENT ON COLUMN cdp_core.decision_registry.registry_name IS
+'Atomic registry name. Views may derive decision_register:<registry_name>:<decision_id> for compatibility.';
 
-COMMENT ON COLUMN cdp_core.decision_registry.decision_class_domain IS
-'Classification path for analytics: decision_class:<registry_name>:<class_id>.';
+COMMENT ON COLUMN cdp_core.decision_registry.decision_id IS
+'Atomic decision identifier within registry_name.';
 
-COMMENT ON COLUMN cdp_core.decision_registry.parent_domain IS
-'Optional parent decision domain for parent-child decision lineage.';
+COMMENT ON COLUMN cdp_core.decision_registry.decision_class_id IS
+'Atomic decision class identifier within registry_name.';
+
+COMMENT ON COLUMN cdp_core.decision_registry.parent_decision_id IS
+'Optional atomic parent decision identifier within registry_name.';
 
 COMMENT ON COLUMN cdp_core.decision_registry.parent_relation_type IS
-'Relationship from this decision to parent_domain, such as child_of, depends_on, escalates_from, appeal_of, or repair_of.';
+'Relationship from this decision to parent_decision_id, such as depends_on, escalates_from, appeal_of, repair_of, or supersedes.';
 
-COMMENT ON COLUMN cdp_core.decision_registry.key1 IS
-'Field name for antecedent. v0.3 requires key1 = antecedent.';
+COMMENT ON COLUMN cdp_core.decision_registry.antecedent_text IS
+'Atomic antecedent text: condition, trigger, dependency, or none_supplied.';
 
-COMMENT ON COLUMN cdp_core.decision_registry.value1 IS
-'Antecedent value: condition, trigger, dependency, or none_supplied.';
+COMMENT ON COLUMN cdp_core.decision_registry.subject_actor_type IS
+'Atomic subject actor type: agent, human, system, institution, or unknown.';
 
-COMMENT ON COLUMN cdp_core.decision_registry.key2 IS
-'Field name for subject. v0.3 requires key2 = subject.';
+COMMENT ON COLUMN cdp_core.decision_registry.subject_actor_id IS
+'Atomic subject actor identifier.';
 
-COMMENT ON COLUMN cdp_core.decision_registry.value2 IS
-'Subject value formatted as <actor_type>:<actor_id>.';
+COMMENT ON COLUMN cdp_core.decision_registry.predicate_verb IS
+'Atomic predicate verb, e.g. recommend_approval, deny_access, escalate_review, approve_review.';
 
-COMMENT ON COLUMN cdp_core.decision_registry.key3 IS
-'Field name for predicate. v0.3 requires key3 = predicate.';
+COMMENT ON COLUMN cdp_core.decision_registry.object_type IS
+'Atomic object type affected by the decision.';
 
-COMMENT ON COLUMN cdp_core.decision_registry.value3 IS
-'Predicate value formatted as <verb>:<object_type>:<object_id>.';
+COMMENT ON COLUMN cdp_core.decision_registry.object_id IS
+'Atomic object identifier affected by the decision.';
 
 COMMENT ON COLUMN cdp_core.decision_registry.permission_source_type IS
 'Attorney-facing permission category, e.g. policy_rule, human_approval, system_role, workflow_configuration, tool_permission, prior_decision, emergency_exception, or unknown.';
@@ -260,68 +285,99 @@ COMMENT ON COLUMN cdp_core.decision_registry.row_hash IS
 CREATE INDEX IF NOT EXISTS idx_decision_registry_created
     ON cdp_core.decision_registry (created);
 
-CREATE INDEX IF NOT EXISTS idx_decision_registry_domain_prefix
-    ON cdp_core.decision_registry (domain text_pattern_ops);
+CREATE INDEX IF NOT EXISTS idx_decision_registry_identity
+    ON cdp_core.decision_registry (registry_name, decision_id);
 
-CREATE INDEX IF NOT EXISTS idx_decision_registry_class_domain
-    ON cdp_core.decision_registry (decision_class_domain);
+CREATE INDEX IF NOT EXISTS idx_decision_registry_class
+    ON cdp_core.decision_registry (registry_name, decision_class_id);
 
-CREATE INDEX IF NOT EXISTS idx_decision_registry_parent_domain
-    ON cdp_core.decision_registry (parent_domain);
+CREATE INDEX IF NOT EXISTS idx_decision_registry_parent
+    ON cdp_core.decision_registry (registry_name, parent_decision_id);
 
 CREATE INDEX IF NOT EXISTS idx_decision_registry_parent_relation
-    ON cdp_core.decision_registry (parent_relation_type, parent_domain);
+    ON cdp_core.decision_registry (registry_name, parent_relation_type, parent_decision_id);
 
 CREATE INDEX IF NOT EXISTS idx_decision_registry_subject
-    ON cdp_core.decision_registry (value2);
+    ON cdp_core.decision_registry (registry_name, subject_actor_type, subject_actor_id);
 
 CREATE INDEX IF NOT EXISTS idx_decision_registry_predicate
-    ON cdp_core.decision_registry (value3);
+    ON cdp_core.decision_registry (registry_name, predicate_verb, object_type);
 
 CREATE INDEX IF NOT EXISTS idx_decision_registry_permission_source
-    ON cdp_core.decision_registry (permission_source_type, permission_source_id);
+    ON cdp_core.decision_registry (registry_name, permission_source_type, permission_source_id);
 
 CREATE INDEX IF NOT EXISTS idx_decision_registry_human_required
-    ON cdp_core.decision_registry (human_required, human_approver_id);
+    ON cdp_core.decision_registry (registry_name, human_required, human_approver_id);
+
+-- -----------------------------------------------------------------------------
+-- Projection: cdp_projection.decision_class_registry_flat
+-- -----------------------------------------------------------------------------
+-- Compatibility/read projection. Packs display domains only in the view.
+
+CREATE OR REPLACE VIEW cdp_projection.decision_class_registry_flat AS
+SELECT
+    id,
+    registry_name,
+    class_id,
+    'decision_class:' || registry_name || ':' || class_id AS decision_class_domain,
+    parent_class_id,
+    CASE
+        WHEN parent_class_id IS NULL THEN NULL
+        ELSE 'decision_class:' || registry_name || ':' || parent_class_id
+    END AS parent_class_domain,
+    class_label,
+    class_level,
+    created,
+    updated_at
+FROM cdp_core.decision_class_registry;
+
+COMMENT ON VIEW cdp_projection.decision_class_registry_flat IS
+'Compatibility projection over normalized decision classes; domain strings are derived, not authoritative.';
 
 -- -----------------------------------------------------------------------------
 -- Projection: cdp_projection.decision_registry_flat
 -- -----------------------------------------------------------------------------
--- This view derives attorney-readable and test-friendly fields from the strict
--- v0.3 registry format without changing the underlying decision grammar.
+-- Attorney-readable and test-friendly projection over normalized atomic columns.
 
 CREATE OR REPLACE VIEW cdp_projection.decision_registry_flat AS
 SELECT
     d.id,
-    split_part(d.domain, ':', 2) AS registry_name,
-    split_part(d.domain, ':', 3) AS decision_id,
-    d.domain,
-    d.decision_class_domain,
-    split_part(d.decision_class_domain, ':', 3) AS decision_class_id,
-    c.parent_domain AS parent_class_domain,
+    d.registry_name,
+    d.decision_id,
+    'decision_register:' || d.registry_name || ':' || d.decision_id AS decision_domain,
+    d.decision_class_id,
+    'decision_class:' || d.registry_name || ':' || d.decision_class_id AS decision_class_domain,
+    c.parent_class_id,
+    CASE
+        WHEN c.parent_class_id IS NULL THEN NULL
+        ELSE 'decision_class:' || d.registry_name || ':' || c.parent_class_id
+    END AS parent_class_domain,
     c.class_label AS decision_class_label,
     c.class_level AS decision_class_level,
-    d.parent_domain,
-    split_part(d.parent_domain, ':', 3) AS parent_decision_id,
+    d.parent_decision_id,
+    CASE
+        WHEN d.parent_decision_id IS NULL THEN NULL
+        ELSE 'decision_register:' || d.registry_name || ':' || d.parent_decision_id
+    END AS parent_domain,
     d.parent_relation_type,
     d.created,
-    d.value1 AS antecedent,
-    split_part(d.value2, ':', 1) AS subject_type,
-    split_part(d.value2, ':', 2) AS subject_id,
-    split_part(d.value3, ':', 1) AS predicate_verb,
-    split_part(d.value3, ':', 2) AS object_type,
-    split_part(d.value3, ':', 3) AS object_id,
+    d.antecedent_text,
+    d.subject_actor_type,
+    d.subject_actor_id,
+    d.predicate_verb,
+    d.object_type,
+    d.object_id,
     d.permission_source_type,
     d.permission_source_id,
     d.human_required,
     d.human_approver_id,
-    'Because ' || d.value1 || ', ' ||
-        split_part(d.value2, ':', 1) || ' ' || split_part(d.value2, ':', 2) ||
-        ' performed ' || split_part(d.value3, ':', 1) ||
-        ' on ' || split_part(d.value3, ':', 2) || ' ' || split_part(d.value3, ':', 3) ||
-        '. Class: ' || split_part(d.decision_class_domain, ':', 3) ||
+    'Because ' || d.antecedent_text || ', ' ||
+        d.subject_actor_type || ' ' || d.subject_actor_id ||
+        ' performed ' || d.predicate_verb ||
+        ' on ' || d.object_type || ' ' || d.object_id ||
+        '. Class: ' || d.decision_class_id ||
         '. Parent relation: ' || d.parent_relation_type ||
-        coalesce(' -> ' || split_part(d.parent_domain, ':', 3), '') ||
+        coalesce(' -> ' || d.parent_decision_id, '') ||
         '. Permission source: ' || d.permission_source_type || ':' || d.permission_source_id ||
         '. Human required: ' || d.human_required::TEXT ||
         '. Human approver: ' || d.human_approver_id || '.'
@@ -332,22 +388,27 @@ SELECT
     d.ingested_at
 FROM cdp_core.decision_registry d
 LEFT JOIN cdp_core.decision_class_registry c
-    ON c.domain = d.decision_class_domain;
+    ON c.registry_name = d.registry_name
+   AND c.class_id = d.decision_class_id;
 
 COMMENT ON VIEW cdp_projection.decision_registry_flat IS
-'Read projection over the v0.3 decision registry kernel for attorney-facing/demo output.';
+'Read projection over the normalized v0.4 decision registry kernel for attorney-facing/demo output.';
 
 -- -----------------------------------------------------------------------------
 -- Projection: cdp_projection.decision_class_rollup
 -- -----------------------------------------------------------------------------
--- Simple class-level analytics surface.
+-- Simple class-level analytics surface over atomic columns.
 
 CREATE OR REPLACE VIEW cdp_projection.decision_class_rollup AS
 SELECT
-    coalesce(c.domain, d.decision_class_domain) AS decision_class_domain,
-    split_part(coalesce(c.domain, d.decision_class_domain), ':', 2) AS registry_name,
-    split_part(coalesce(c.domain, d.decision_class_domain), ':', 3) AS decision_class_id,
-    c.parent_domain AS parent_class_domain,
+    d.registry_name,
+    d.decision_class_id,
+    'decision_class:' || d.registry_name || ':' || d.decision_class_id AS decision_class_domain,
+    c.parent_class_id,
+    CASE
+        WHEN c.parent_class_id IS NULL THEN NULL
+        ELSE 'decision_class:' || d.registry_name || ':' || c.parent_class_id
+    END AS parent_class_domain,
     c.class_label,
     c.class_level,
     count(d.id) AS decision_count,
@@ -357,10 +418,12 @@ SELECT
     count(*) FILTER (WHERE d.permission_source_type = 'unknown') AS unknown_permission_count
 FROM cdp_core.decision_registry d
 LEFT JOIN cdp_core.decision_class_registry c
-    ON c.domain = d.decision_class_domain
+    ON c.registry_name = d.registry_name
+   AND c.class_id = d.decision_class_id
 GROUP BY
-    coalesce(c.domain, d.decision_class_domain),
-    c.parent_domain,
+    d.registry_name,
+    d.decision_class_id,
+    c.parent_class_id,
     c.class_label,
     c.class_level;
 
@@ -374,19 +437,24 @@ COMMENT ON VIEW cdp_projection.decision_class_rollup IS
 
 CREATE OR REPLACE VIEW cdp_projection.decision_parent_child_edges AS
 SELECT
-    child.domain AS child_domain,
-    split_part(child.domain, ':', 3) AS child_decision_id,
-    child.parent_domain,
-    split_part(child.parent_domain, ':', 3) AS parent_decision_id,
+    child.registry_name,
+    child.decision_id AS child_decision_id,
+    'decision_register:' || child.registry_name || ':' || child.decision_id AS child_domain,
+    child.parent_decision_id,
+    CASE
+        WHEN child.parent_decision_id IS NULL THEN NULL
+        ELSE 'decision_register:' || child.registry_name || ':' || child.parent_decision_id
+    END AS parent_domain,
     child.parent_relation_type,
-    child.decision_class_domain AS child_class_domain,
-    parent.decision_class_domain AS parent_class_domain,
+    child.decision_class_id AS child_class_id,
+    parent.decision_class_id AS parent_class_id,
     child.created AS child_created,
     parent.created AS parent_created
 FROM cdp_core.decision_registry child
 LEFT JOIN cdp_core.decision_registry parent
-    ON parent.domain = child.parent_domain
-WHERE child.parent_domain IS NOT NULL;
+    ON parent.registry_name = child.registry_name
+   AND parent.decision_id = child.parent_decision_id
+WHERE child.parent_decision_id IS NOT NULL;
 
 COMMENT ON VIEW cdp_projection.decision_parent_child_edges IS
-'Edge-list projection for parent-child decision lineage analytics.';
+'Edge-list projection for parent-child decision lineage analytics over atomic decision identifiers.';
