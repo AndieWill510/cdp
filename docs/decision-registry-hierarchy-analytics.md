@@ -1,7 +1,7 @@
 # Decision Registry Hierarchy and Analytics
 
-Status: design note v0.3  
-Scope: parent-child decision lineage and class/group analytics  
+Status: design note v0.4  
+Scope: normalized parent-child decision lineage and class/group analytics  
 Related DDL: `db/ddl/001-decision-registry-kernel.sql`  
 Related ingestion contract: `docs/z-config-lookup-spreadsheet-ingestion.md`  
 
@@ -38,31 +38,74 @@ A parent decision is a lineage relationship.
 
 ---
 
-## 2. Class hierarchy
+## 2. Normal form correction
+
+Earlier drafts used packed domain strings such as:
+
+```text
+decision_register:sample_attorney_demo:dec_001
+decision_class:sample_attorney_demo:claim_approval
+```
+
+and packed actor/predicate values such as:
+
+```text
+agent:claims_review_agent
+recommend_approval:claim:claim_9981
+```
+
+Those are useful display strings, but they violate the normalized shape we want for the control-plane table.
+
+The core registry now stores atomic columns:
+
+```text
+registry_name
+decision_id
+decision_class_id
+parent_decision_id
+subject_actor_type
+subject_actor_id
+predicate_verb
+object_type
+object_id
+```
+
+Compatibility strings may be generated in views.
+
+They are not authoritative stored fields.
+
+---
+
+## 3. Class hierarchy
 
 A decision class is a stable category used for grouping and analytics.
+
+In normalized form, class rows use:
+
+```text
+registry_name
+class_id
+parent_class_id
+class_label
+class_level
+```
 
 Examples:
 
 ```text
-decision_class:sample_attorney_demo:claim
-decision_class:sample_attorney_demo:claim_intake
-decision_class:sample_attorney_demo:claim_approval
-decision_class:sample_attorney_demo:human_review_escalation
-decision_class:sample_attorney_demo:access
-decision_class:sample_attorney_demo:access_denial
+registry_name = sample_attorney_demo
+class_id = claim
+parent_class_id = <null>
+class_label = Claim Decisions
+class_level = 0
 ```
 
-Class rows may be stored in:
-
 ```text
-cdp_core.decision_class_registry
-```
-
-A decision row points to a class using:
-
-```text
-decision_class_domain
+registry_name = sample_attorney_demo
+class_id = claim_approval
+parent_class_id = claim
+class_label = Claim Approval
+class_level = 1
 ```
 
 The class registry supports parent-child class structure:
@@ -88,14 +131,14 @@ all human-review escalations
 
 ---
 
-## 3. Decision lineage
+## 4. Decision lineage
 
 A parent decision is a specific prior decision that the current decision depends on, escalates from, approves, denies, repairs, appeals, or supersedes.
 
 A decision row uses:
 
 ```text
-parent_domain
+parent_decision_id
 parent_relation_type
 ```
 
@@ -109,7 +152,7 @@ Examples:
 | `dec_011` repair | `dec_002` denial | `repair_of` |
 | `dec_020` corrected result | `dec_002` denial | `supersedes` |
 
-Allowed v0.3 relation types:
+Allowed v0.4 relation types:
 
 ```text
 none
@@ -127,29 +170,29 @@ supersedes
 Rules:
 
 ```text
-parent_relation_type = none  -> parent_domain must be blank/null
-parent_relation_type != none -> parent_domain must be populated
+parent_relation_type = none  -> parent_decision_id must be blank/null
+parent_relation_type != none -> parent_decision_id must be populated
 ```
 
 ---
 
-## 4. Why this should not be prose
+## 5. Why this should not be prose
 
-Do not hide class or parent-child structure inside `antecedent`, `predicate`, notes, or rationale prose.
+Do not hide class or parent-child structure inside `antecedent_text`, `predicate_verb`, notes, or rationale prose.
 
 Bad:
 
 ```text
-value1 = this was a claim approval related to dec_003
+antecedent_text = this was a claim approval related to dec_003
 ```
 
 Better:
 
 ```text
-decision_class_domain = decision_class:sample_attorney_demo:claim_approval
-parent_domain = decision_register:sample_attorney_demo:dec_003
+decision_class_id = claim_approval
+parent_decision_id = dec_003
 parent_relation_type = approves
-value1 = prior decision dec_003 escalated claim
+antecedent_text = prior decision dec_003 escalated claim
 ```
 
 Prose helps humans.
@@ -160,31 +203,37 @@ CDP needs both.
 
 ---
 
-## 5. Spreadsheet fields
+## 6. Spreadsheet fields
 
-The v0.3 spreadsheet adds:
-
-```text
-decision_class_domain
-parent_domain
-parent_relation_type
-```
-
-These sit beside the existing grammar and permission fields:
+The v0.4 spreadsheet uses atomic fields:
 
 ```text
-domain,decision_class_domain,parent_domain,parent_relation_type,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
+registry_name,decision_id,decision_class_id,parent_decision_id,parent_relation_type,antecedent_text,subject_actor_type,subject_actor_id,predicate_verb,object_type,object_id,permission_source_type,permission_source_id,human_required,human_approver_id,created
 ```
 
-This keeps the spreadsheet flat enough for non-engineers while making parent-child analytics possible.
+This keeps the spreadsheet flat enough for non-engineers while making parent-child analytics possible without parsing packed strings.
 
 ---
 
-## 6. Analytics views
+## 7. Analytics views
 
-The v0.3 DDL exposes three read surfaces.
+The v0.4 DDL exposes four read surfaces.
 
-### 6.1 Flat registry
+### 7.1 Class registry flat view
+
+```text
+cdp_projection.decision_class_registry_flat
+```
+
+Use when a display/export surface wants compatibility strings such as:
+
+```text
+decision_class:sample_attorney_demo:claim_approval
+```
+
+Those strings are derived from atomic columns.
+
+### 7.2 Flat decision registry
 
 ```text
 cdp_projection.decision_registry_flat
@@ -192,7 +241,7 @@ cdp_projection.decision_registry_flat
 
 Use for attorney-facing review.
 
-### 6.2 Class rollup
+### 7.3 Class rollup
 
 ```text
 cdp_projection.decision_class_rollup
@@ -210,7 +259,7 @@ WHERE registry_name = 'sample_attorney_demo'
 ORDER BY decision_count DESC;
 ```
 
-### 6.3 Parent-child edges
+### 7.4 Parent-child edges
 
 ```text
 cdp_projection.decision_parent_child_edges
@@ -228,17 +277,11 @@ WHERE parent_decision_id = 'dec_001';
 
 ---
 
-## 7. Relationship to `z_config_lookup`
+## 8. Relationship to `z_config_lookup`
 
-A `z_config_lookup`-style table can support this pattern only if it can carry the extra hierarchy fields:
+A `z_config_lookup`-style table is not the right canonical model for this version because it encourages key/value slots and packed values.
 
-```text
-decision_class_domain
-parent_domain
-parent_relation_type
-```
-
-If it cannot, then `z_config_lookup` can only be a staging/compatibility table for the older flat grammar.
+It can be retained only as a staging adapter if it maps into normalized registry fields before control-plane insertion.
 
 The canonical analytics target should be:
 
@@ -255,7 +298,7 @@ cdp_projection.decision_parent_child_edges
 
 ---
 
-## 8. Design rule
+## 9. Design rule
 
 Use columns for structure.
 
@@ -263,8 +306,8 @@ Use prose for explanation.
 
 Use classes for categories.
 
-Use parent domains for lineage.
+Use parent IDs for lineage.
 
-Use projections for attorney-facing views.
+Use views for compatibility strings.
 
-Do not ask future code to infer hierarchy from words.
+Do not ask future code to infer hierarchy from words or parse colon-delimited values from core tables.
