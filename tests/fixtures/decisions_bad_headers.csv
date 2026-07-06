@@ -1,0 +1,5 @@
+Thingy,Decision #,Class-ish,Parent Maybe,Relationship,Why,Who Type,Who,Did What,Thing Type,Thing ID,Permission Kind,Permission,Needs Person?,Person,When
+sample_attorney_demo,dec_001,claim_intake,,none,claim submitted,agent,claims_review_agent,recommend_approval,claim,claim_9981,policy_rule,policy_claims_approval_v2,yes,user_442,2026-07-06T18:42:11Z
+sample_attorney_demo,dec_002,access_denial,,none,identity verification failed,agent,access_agent,deny_access,access_request,access_7731,workflow_configuration,workflow_access_v1,no,none,2026-07-06T18:44:09Z
+sample_attorney_demo,dec_003,human_review_escalation,dec_001,escalates_from,claim amount exceeded auto-approval threshold,agent,claims_review_agent,escalate_review,claim,claim_9982,policy_rule,policy_claims_approval_v2,yes,unknown,2026-07-06T18:45:33Z
+sample_attorney_demo,dec_004,claim_approval,dec_003,approves,prior decision dec_003 escalated claim,human,user_442,approve_review,claim,claim_9982,human_approval,user_442,yes,user_442,2026-07-06T18:52:10Z
