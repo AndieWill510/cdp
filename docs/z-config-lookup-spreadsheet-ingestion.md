@@ -1,77 +1,32 @@
-# Spreadsheet Ingestion Contract for `z_config_lookup`
+# Spreadsheet Ingestion Contract for the Decision Registry
 
-Status: Demo ingestion contract  
-Scope: Sample Decision Register spreadsheet ingestion into current control-plane lookup schema  
-Audience: first-pass implementers, test authors, attorney-facing demo builders  
+Status: Demo ingestion contract v0.2  
+Scope: Sample Decision Register spreadsheet ingestion into the CDP control-plane Decision Registry  
+Audience: implementers, test authors, attorney-facing demo builders  
+Related DDL: `db/ddl/001-decision-registry-kernel.sql`  
 
 ---
 
 ## 1. Purpose
 
-This document defines the spreadsheet format and ingestion process for the first sample Decision Register ingestion into the CDP control plane using the current `z_config_lookup`-style Postgres shape.
+This document defines the spreadsheet format and ingestion process for the first sample Decision Register ingestion into the CDP control plane.
 
-The current target table shape is intentionally small:
+The control-plane target is:
 
 ```text
-z_config_lookup
-- domain
-- key1
-- value1
-- key2
-- value2
-- key3
-- value3
-- created
+cdp_core.decision_registry
 ```
 
-This means the first ingestion must stay simple.
+The older `z_config_lookup` shape remains useful as a compatibility/staging concept, but it is not sufficient once the spreadsheet includes attorney-facing permission fields.
 
-Do not design the spreadsheet as if the database already has a rich Decision Register table.
+The v0.2 spreadsheet represents one decision per row using:
 
-Do not add columns to the spreadsheet unless the ingestion code explicitly ignores them or the database schema has changed.
+1. decision identity and domain;
+2. three grammatical key/value pairs;
+3. four attorney-facing governance fields;
+4. a created timestamp.
 
-For this demo, the spreadsheet represents one decision per row using four logical fields plus a created date:
-
-1. `domain`
-2. `key1/value1`
-3. `key2/value2`
-4. `key3/value3`
-5. `created`
-
-`key1/value1`, `key2/value2`, and `key3/value3` are paired fields. They are treated as three named facts about the decision.
-
----
-
-## 2. Design posture
-
-This is a deliberately constrained ingestion contract.
-
-The purpose is to prove that a simple spreadsheet can be turned into structured control-plane records.
-
-The purpose is not to ingest the whole attorney-facing Decision Register yet.
-
-The attorney-facing record may eventually care about fields such as:
-
-- permission source type;
-- permission source ID;
-- human approval requirement;
-- human approver ID;
-- evidence references;
-- policy references;
-- tool used;
-- audit record reference.
-
-Those are important for the future governed record.
-
-They are not part of this first spreadsheet ingestion unless they are encoded into one of the three key/value pairs by a later profile.
-
-For now: keep the ingestion stupid simple.
-
----
-
-## 3. Required spreadsheet columns
-
-The spreadsheet must contain exactly these required columns for v0.1 ingestion:
+The required columns are:
 
 ```text
 domain
@@ -81,16 +36,64 @@ key2
 value2
 key3
 value3
+permission_source_type
+permission_source_id
+human_required
+human_approver_id
 created
+```
+
+---
+
+## 2. Why the four permission fields are included now
+
+The first spreadsheet must support the question an attorney will actually ask:
+
+> What decisions did the agentic AI make, and what allowed those decisions to happen?
+
+The four fields needed for that first answer are:
+
+```text
+permission_source_type
+permission_source_id
+human_required
+human_approver_id
+```
+
+These fields do not answer every authority, standing, delegation, or legality question.
+
+They do give the first registry enough structure to distinguish:
+
+- a policy-authorized decision;
+- a human-approved decision;
+- a role-authorized decision;
+- a workflow-authorized decision;
+- a tool-permission-authorized action;
+- a prior-decision-authorized action;
+- an emergency exception;
+- an unknown permission source.
+
+That is enough for the demo and enough for first-pass attorney review.
+
+---
+
+## 3. Required spreadsheet columns
+
+The spreadsheet must contain exactly these required columns for v0.2 ingestion:
+
+```text
+domain,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
 ```
 
 Column names must be lowercase snake_case exactly as shown.
 
 The first row must be the header row.
 
-Each subsequent row is one decision clause record.
+Each subsequent row is one material decision clause record.
 
-The ingestion code may accept `.xlsx` or `.csv`, but tests should begin with `.csv` because CSV is easier to diff, fixture, and validate.
+CSV should be the first fixture format because it is easy to diff, test, and version.
+
+XLSX may be supported later, using the same header names.
 
 ---
 
@@ -98,12 +101,12 @@ The ingestion code may accept `.xlsx` or `.csv`, but tests should begin with `.c
 
 ### 4.1 `domain`
 
-`domain` identifies the registry, demo, or bounded decision set.
+`domain` identifies both the bounded registry and the decision ID.
 
-Recommended format:
+Required format:
 
 ```text
-decision_register:<registry_name>:<decision_number>
+decision_register:<registry_name>:<decision_id>
 ```
 
 Example:
@@ -112,92 +115,59 @@ Example:
 decision_register:sample_attorney_demo:dec_001
 ```
 
-Why include the decision number in `domain`?
-
-Because the current `z_config_lookup` shape has no dedicated `decision_id` column.
-
-For the demo, the decision identifier must live somewhere predictable.
-
-Using the final segment of `domain` gives the ingestion code a stable way to derive `decision_id` without adding a column the current schema does not have.
-
 Parsing rule:
 
 ```text
+registry_name = second colon-delimited segment of domain
 decision_id = final colon-delimited segment of domain
 ```
 
-Example:
-
-```text
-domain = decision_register:sample_attorney_demo:dec_001
-decision_id = dec_001
-```
-
-If the domain does not contain at least three colon-delimited segments, the row should fail validation.
+The current v0.2 DDL stores `domain` as the durable identity path and derives `decision_id` in the projection view.
 
 ### 4.2 `key1/value1`: antecedent
 
-`key1/value1` captures the antecedent: the condition, prior event, trigger, dependency, or context that made the decision relevant.
+`key1/value1` captures the antecedent: the condition, trigger, prior event, dependency, or context that made the decision relevant.
 
-For v0.1, `key1` should usually be:
+Required default:
 
 ```text
-antecedent
+key1 = antecedent
 ```
-
-`value1` should contain a short plain-language antecedent.
 
 Examples:
 
 ```text
-key1 = antecedent
-value1 = identity verification passed
-```
-
-```text
-key1 = antecedent
-value1 = prior decision dec_001 recommended review
-```
-
-```text
-key1 = antecedent
+value1 = claim submitted
+value1 = identity verification failed
 value1 = claim amount exceeded auto-approval threshold
+value1 = prior decision dec_003 escalated claim
 ```
 
-If there is no known antecedent, use:
+If no antecedent is supplied, use:
 
 ```text
-key1 = antecedent
 value1 = none_supplied
 ```
 
 Do not leave `value1` blank.
 
-Blank means the spreadsheet is incomplete.
-
-`none_supplied` means the record affirmatively says no antecedent was supplied.
-
-That distinction matters.
-
 ### 4.3 `key2/value2`: subject
 
-`key2/value2` captures the subject: the actor that made, recommended, blocked, escalated, or recorded the decision.
+`key2/value2` captures the subject: the actor that made, recommended, blocked, escalated, approved, or recorded the decision.
 
-For v0.1, `key2` should usually be:
+Required default:
 
 ```text
-subject
+key2 = subject
 ```
 
-`value2` should identify the actor in a stable, boring format.
-
-Recommended format:
+Required `value2` format:
 
 ```text
 <actor_type>:<actor_id>
 ```
 
-Allowed `actor_type` values for v0.1:
+Allowed `actor_type` values:
 
 ```text
 agent
@@ -211,34 +181,24 @@ Examples:
 
 ```text
 agent:claims_review_agent
+agent:access_agent
 human:user_442
 system:workflow_engine
 institution:review_board
 unknown:unknown
 ```
 
-If the subject is unknown, use:
-
-```text
-key2 = subject
-value2 = unknown:unknown
-```
-
-Do not leave it blank.
-
 ### 4.4 `key3/value3`: predicate
 
 `key3/value3` captures the predicate: the decision, recommendation, or action.
 
-For v0.1, `key3` should usually be:
+Required default:
 
 ```text
-predicate
+key3 = predicate
 ```
 
-`value3` should use a simple action phrase.
-
-Recommended format:
+Required `value3` format:
 
 ```text
 <verb>:<object_type>:<object_id>
@@ -250,23 +210,111 @@ Examples:
 recommend_approval:claim:claim_9981
 deny_access:access_request:access_7731
 escalate_review:claim:claim_9982
+approve_review:claim:claim_9982
 create_task:review_task:task_1001
 ```
 
-The predicate must name what happened.
+The predicate must name what happened. Avoid vague verbs such as `processed`, `handled`, or `completed`.
 
-Do not hide the whole decision in vague text such as:
+### 4.5 `permission_source_type`
+
+`permission_source_type` states what kind of permission source allowed, supported, or routed the decision.
+
+Allowed values:
 
 ```text
-decision made
-processed
-handled
-completed
+policy_rule
+human_approval
+system_role
+workflow_configuration
+tool_permission
+prior_decision
+emergency_exception
+unknown
 ```
 
-Those are not useful decision predicates.
+Definitions:
 
-### 4.5 `created`
+| Value | Meaning |
+|---|---|
+| `policy_rule` | A named policy or rule allowed the decision or recommendation |
+| `human_approval` | A human approved the decision before it took effect |
+| `system_role` | The agent or system had a configured role allowing the operation |
+| `workflow_configuration` | A workflow step allowed the decision under configured conditions |
+| `tool_permission` | A tool/API permission allowed the action |
+| `prior_decision` | A previous recorded decision authorized this one |
+| `emergency_exception` | An exception path was used |
+| `unknown` | The system cannot show the permission source |
+
+`unknown` is allowed, but it should be treated as a governance finding.
+
+### 4.6 `permission_source_id`
+
+`permission_source_id` identifies the specific permission source.
+
+Examples:
+
+```text
+policy_claims_approval_v2
+workflow_access_v1
+role_claims_review_agent
+claims_api_recommend_permission
+dec_003
+emergency_exception_2026_001
+unknown
+```
+
+Do not leave it blank.
+
+Use `unknown` when the source is not known.
+
+### 4.7 `human_required`
+
+`human_required` states whether a human approval was required before the decision or action could take effect.
+
+Allowed spreadsheet values:
+
+```text
+yes
+no
+true
+false
+```
+
+The ingestion code should normalize to Boolean:
+
+```text
+yes,true  -> true
+no,false  -> false
+```
+
+For deterministic fixtures, prefer:
+
+```text
+yes
+no
+```
+
+### 4.8 `human_approver_id`
+
+`human_approver_id` identifies the human approver when applicable.
+
+Examples:
+
+```text
+user_442
+review_manager_01
+none
+unknown
+```
+
+Use `none` when human approval was not required.
+
+Use `unknown` when human approval was required but the approver is not recorded.
+
+Do not leave it blank.
+
+### 4.9 `created`
 
 `created` is the date or timestamp the decision record was created or captured for ingestion.
 
@@ -276,30 +324,13 @@ Preferred format:
 YYYY-MM-DDTHH:MM:SSZ
 ```
 
-Example:
-
-```text
-2026-07-06T18:42:11Z
-```
-
 Acceptable date-only fallback:
 
 ```text
 YYYY-MM-DD
 ```
 
-Example:
-
-```text
-2026-07-06
-```
-
-If date-only is provided, the ingestion code should either:
-
-1. store it as the date with midnight UTC, or
-2. store it as a date if the database column is date-only.
-
-The chosen behavior must be explicit in unit tests.
+The ingestion code must make date-only behavior explicit in tests.
 
 ---
 
@@ -308,62 +339,55 @@ The chosen behavior must be explicit in unit tests.
 CSV fixture:
 
 ```csv
-domain,key1,value1,key2,value2,key3,value3,created
-decision_register:sample_attorney_demo:dec_001,antecedent,claim submitted,subject,agent:claims_review_agent,predicate,recommend_approval:claim:claim_9981,2026-07-06T18:42:11Z
-decision_register:sample_attorney_demo:dec_002,antecedent,identity verification failed,subject,agent:access_agent,predicate,deny_access:access_request:access_7731,2026-07-06T18:44:09Z
-decision_register:sample_attorney_demo:dec_003,antecedent,claim amount exceeded auto-approval threshold,subject,agent:claims_review_agent,predicate,escalate_review:claim:claim_9982,2026-07-06T18:45:33Z
-decision_register:sample_attorney_demo:dec_004,antecedent,prior decision dec_003 escalated claim,subject,human:user_442,predicate,approve_review:claim:claim_9982,2026-07-06T18:52:10Z
+domain,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
+decision_register:sample_attorney_demo:dec_001,antecedent,claim submitted,subject,agent:claims_review_agent,predicate,recommend_approval:claim:claim_9981,policy_rule,policy_claims_approval_v2,yes,user_442,2026-07-06T18:42:11Z
+decision_register:sample_attorney_demo:dec_002,antecedent,identity verification failed,subject,agent:access_agent,predicate,deny_access:access_request:access_7731,workflow_configuration,workflow_access_v1,no,none,2026-07-06T18:44:09Z
+decision_register:sample_attorney_demo:dec_003,antecedent,claim amount exceeded auto-approval threshold,subject,agent:claims_review_agent,predicate,escalate_review:claim:claim_9982,policy_rule,policy_claims_approval_v2,yes,unknown,2026-07-06T18:45:33Z
+decision_register:sample_attorney_demo:dec_004,antecedent,prior decision dec_003 escalated claim,subject,human:user_442,predicate,approve_review:claim:claim_9982,human_approval,user_442,yes,user_442,2026-07-06T18:52:10Z
 ```
 
-This fixture should be enough to test:
+This fixture should test:
 
 - header validation;
 - required fields;
-- parsing of decision IDs from `domain`;
+- decision ID derivation from `domain`;
 - actor parsing from `value2`;
 - predicate parsing from `value3`;
+- permission source validation;
+- Boolean normalization for `human_required`;
+- approver handling for `human_approver_id`;
 - created-date parsing;
-- insert into `z_config_lookup`;
-- retrieval by domain prefix;
-- reconstruction of plain-language rows.
+- insert into `cdp_core.decision_registry`;
+- retrieval from `cdp_projection.decision_registry_flat`.
 
 ---
 
 ## 6. Spreadsheet-to-database mapping
 
-Each spreadsheet row maps directly into one `z_config_lookup` row.
+Each spreadsheet row maps directly into one `cdp_core.decision_registry` row.
 
 | Spreadsheet column | Database column | Required | Notes |
 |---|---|---:|---|
 | `domain` | `domain` | yes | Contains registry and derived decision ID |
-| `key1` | `key1` | yes | Usually `antecedent` |
+| `key1` | `key1` | yes | Must be `antecedent` |
 | `value1` | `value1` | yes | Antecedent value or `none_supplied` |
-| `key2` | `key2` | yes | Usually `subject` |
+| `key2` | `key2` | yes | Must be `subject` |
 | `value2` | `value2` | yes | Actor value, e.g. `agent:claims_review_agent` |
-| `key3` | `key3` | yes | Usually `predicate` |
+| `key3` | `key3` | yes | Must be `predicate` |
 | `value3` | `value3` | yes | Action/object value, e.g. `recommend_approval:claim:claim_9981` |
+| `permission_source_type` | `permission_source_type` | yes | Controlled vocabulary |
+| `permission_source_id` | `permission_source_id` | yes | Source ID or `unknown` |
+| `human_required` | `human_required` | yes | Normalize yes/no to Boolean |
+| `human_approver_id` | `human_approver_id` | yes | Use `none` or `unknown` when applicable |
 | `created` | `created` | yes | ISO timestamp or date |
 
-No other spreadsheet columns should be ingested in v0.1.
-
-If the spreadsheet contains extra columns, the ingestion code should either:
-
-1. reject the spreadsheet with a clear error, or
-2. ignore extra columns with a logged warning.
-
-For unit tests, choose one behavior and make it explicit.
-
-Recommendation: reject extra columns for v0.1 to reduce schema drift.
+For v0.2, extra spreadsheet columns should be rejected to reduce schema drift.
 
 ---
 
 ## 7. Ingestion process
 
-The ingestion process should be boring and deterministic.
-
 ### Step 1: Load the spreadsheet
-
-Input may be CSV first, XLSX later.
 
 For CSV:
 
@@ -384,15 +408,10 @@ For XLSX:
 Expected header list:
 
 ```text
-domain,key1,value1,key2,value2,key3,value3,created
+domain,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
 ```
 
-Validation should fail when:
-
-- a required column is missing;
-- a required column is misspelled;
-- duplicate columns exist;
-- column names differ by case, such as `Domain` instead of `domain`.
+Validation fails when a required column is missing, misspelled, duplicated, mis-cased, or when extra columns appear in strict mode.
 
 ### Step 3: Normalize row values
 
@@ -400,16 +419,19 @@ For each row:
 
 - trim leading and trailing whitespace;
 - convert empty strings to validation errors;
-- preserve case inside values unless a field has a controlled vocabulary;
-- normalize controlled vocabulary values to lowercase snake_case.
+- normalize controlled vocabulary values to lowercase snake_case;
+- normalize `human_required` to Boolean;
+- keep IDs stable and boring.
 
-Controlled fields for v0.1:
+Controlled fields:
 
 ```text
 key1
 key2
 key3
 actor_type segment of value2
+permission_source_type
+human_required
 ```
 
 Expected default keys:
@@ -424,33 +446,34 @@ key3 = predicate
 
 A row is valid when:
 
-1. `domain` is present.
-2. `domain` starts with `decision_register:`.
-3. `domain` has at least three colon-delimited segments.
-4. The final domain segment is a non-empty decision ID.
-5. `key1` equals `antecedent`.
-6. `value1` is non-empty.
-7. `key2` equals `subject`.
-8. `value2` follows `<actor_type>:<actor_id>`.
-9. `actor_type` is one of `agent`, `human`, `system`, `institution`, `unknown`.
-10. `actor_id` is non-empty.
-11. `key3` equals `predicate`.
-12. `value3` follows `<verb>:<object_type>:<object_id>`.
-13. `verb`, `object_type`, and `object_id` are non-empty.
+1. `domain` follows `decision_register:<registry_name>:<decision_id>`.
+2. `key1` equals `antecedent`.
+3. `value1` is non-empty.
+4. `key2` equals `subject`.
+5. `value2` follows `<actor_type>:<actor_id>`.
+6. `actor_type` is one of `agent`, `human`, `system`, `institution`, `unknown`.
+7. `key3` equals `predicate`.
+8. `value3` follows `<verb>:<object_type>:<object_id>`.
+9. `permission_source_type` is one of the allowed values.
+10. `permission_source_id` is non-empty.
+11. `human_required` is `yes`, `no`, `true`, or `false` before normalization.
+12. `human_approver_id` is non-empty.
+13. If `human_required` is false, `human_approver_id` should be `none`.
 14. `created` parses as an allowed date or timestamp.
 
-### Step 5: Derive helper values for tests and logs
+### Step 5: Derive helper values
 
-The database may not store these as separate columns yet, but the ingestion code may derive them for validation, unit tests, logging, or later projection:
+The ingestion code may derive these for validation, logging, tests, and projections:
 
 ```text
-decision_id
 registry_name
+decision_id
 actor_type
 actor_id
 predicate_verb
 object_type
 object_id
+human_required_boolean
 ```
 
 Derivation rules:
@@ -465,14 +488,12 @@ object_type = second colon-delimited segment of value3
 object_id = third colon-delimited segment of value3
 ```
 
-### Step 6: Insert into `z_config_lookup`
-
-Insert the original normalized row into `z_config_lookup`.
+### Step 6: Insert into `cdp_core.decision_registry`
 
 Pseudo-SQL:
 
 ```sql
-INSERT INTO z_config_lookup (
+INSERT INTO cdp_core.decision_registry (
     domain,
     key1,
     value1,
@@ -480,6 +501,10 @@ INSERT INTO z_config_lookup (
     value2,
     key3,
     value3,
+    permission_source_type,
+    permission_source_id,
+    human_required,
+    human_approver_id,
     created
 ) VALUES (
     :domain,
@@ -489,17 +514,19 @@ INSERT INTO z_config_lookup (
     :value2,
     :key3,
     :value3,
+    :permission_source_type,
+    :permission_source_id,
+    :human_required,
+    :human_approver_id,
     :created
 );
 ```
 
-Do not split one spreadsheet row into multiple database rows for v0.1.
-
-Do not create JSON payloads for v0.1 unless the ingesting code keeps them outside `z_config_lookup`.
+Do not split one spreadsheet row into multiple database rows for v0.2.
 
 ### Step 7: Produce an ingestion summary
 
-After ingestion, produce a summary such as:
+Example:
 
 ```text
 rows_read: 4
@@ -509,6 +536,8 @@ rows_failed: 0
 registry_name: sample_attorney_demo
 first_created: 2026-07-06T18:42:11Z
 last_created: 2026-07-06T18:52:10Z
+permission_source_types: policy_rule, workflow_configuration, human_approval
+human_required_count: 3
 ```
 
 If rows fail validation, produce row-number-specific errors.
@@ -516,14 +545,12 @@ If rows fail validation, produce row-number-specific errors.
 Example:
 
 ```text
-Row 3 failed: value2 must follow <actor_type>:<actor_id>; got claims_review_agent.
+Row 3 failed: human_required must be one of yes,no,true,false; got maybe.
 ```
 
 ---
 
 ## 8. Reconstructing an attorney-readable register row
-
-Even though the database only stores the lookup shape, the application can reconstruct a simple attorney-readable row.
 
 From this database row:
 
@@ -535,10 +562,14 @@ key2 = subject
 value2 = agent:claims_review_agent
 key3 = predicate
 value3 = recommend_approval:claim:claim_9981
+permission_source_type = policy_rule
+permission_source_id = policy_claims_approval_v2
+human_required = true
+human_approver_id = user_442
 created = 2026-07-06T18:42:11Z
 ```
 
-The application can derive:
+The projection can derive:
 
 ```text
 decision_id = dec_001
@@ -546,64 +577,49 @@ created = 2026-07-06T18:42:11Z
 antecedent = claim submitted
 subject = agent:claims_review_agent
 predicate = recommend_approval:claim:claim_9981
-plain_english_decision = Because claim submitted, agent claims_review_agent performed recommend_approval on claim claim_9981.
+permission = policy_rule:policy_claims_approval_v2
+human_required = true
+human_approver_id = user_442
+plain_english_decision = Because claim submitted, agent claims_review_agent performed recommend_approval on claim claim_9981. Permission source: policy_rule:policy_claims_approval_v2. Human required: true. Human approver: user_442.
 ```
 
-This is not the final attorney-facing Decision Register.
+This is still not the full CDP governed record.
 
-It is the first reconstructable output from the constrained lookup schema.
+It is the first attorney-readable projection from the control-plane Decision Registry.
 
 ---
 
-## 9. Handling the four future attorney fields
+## 9. Compatibility with `z_config_lookup`
 
-The earlier attorney-facing register identifies four governance fields that matter but are not part of the v0.1 lookup ingestion:
-
-```text
-permission_source_type
-permission_source_id
-human_required
-human_approver_id
-```
-
-For v0.1, do not add these as spreadsheet columns.
-
-They can be handled later in one of three ways:
-
-### Option A: Add real columns later
-
-Preferred long-term approach when a real Decision Register table exists.
-
-### Option B: Add a second lookup row profile later
-
-Example:
+The current `z_config_lookup` shape can hold:
 
 ```text
-domain = decision_register_authority:sample_attorney_demo:dec_001
-key1 = permission_source_type
-value1 = policy_rule
-key2 = permission_source_id
-value2 = policy_claims_approval_v2
-key3 = human_required
-value3 = yes
-created = 2026-07-06T18:42:11Z
+domain,key1,value1,key2,value2,key3,value3,created
 ```
 
-This still has no clean place for `human_approver_id`, so it is not ideal.
+It cannot hold the four permission fields unless that table is extended or those fields are stored somewhere else.
 
-### Option C: Encode authority in predicate or antecedent
+Therefore, once the spreadsheet includes the four permission fields, the canonical target should be:
 
-Not recommended.
+```text
+cdp_core.decision_registry
+```
 
-It hides governance-critical information inside prose and makes later enforcement harder.
+If an implementation must temporarily use `z_config_lookup`, it must either:
 
-Conclusion: the four future attorney fields are important, but they should not be forced into this first ingestion shape unless the schema changes or a second row profile is deliberately added.
+1. extend `z_config_lookup` with the four permission columns; or
+2. use `z_config_lookup` only for the grammar fields and store permission fields in a separate companion table; or
+3. ingest directly into `cdp_core.decision_registry`.
+
+Recommendation for the demo:
+
+```text
+spreadsheet -> parser/validator -> cdp_core.decision_registry -> cdp_projection.decision_registry_flat
+```
 
 ---
 
 ## 10. Unit test plan
-
-The ingestion code should include tests for the following.
 
 ### 10.1 Happy path
 
@@ -614,17 +630,20 @@ Expected:
 - four rows inserted;
 - no validation errors;
 - each inserted row matches normalized source values;
-- decision IDs are derived as `dec_001`, `dec_002`, `dec_003`, `dec_004`.
+- decision IDs are derived as `dec_001`, `dec_002`, `dec_003`, `dec_004`;
+- `human_required` is stored as Boolean;
+- projection rows include permission fields.
 
 ### 10.2 Header validation
 
 Failures:
 
-- missing `domain`;
-- misspelled `value1`;
+- missing `permission_source_type`;
+- missing `human_required`;
+- misspelled `human_approver_id`;
 - uppercase `Domain`;
 - duplicate `key1`;
-- extra column if strict mode is enabled.
+- extra column in strict mode.
 
 ### 10.3 Required value validation
 
@@ -634,77 +653,54 @@ Failures:
 - blank `value1`;
 - blank `value2`;
 - blank `value3`;
+- blank `permission_source_type`;
+- blank `permission_source_id`;
+- blank `human_required`;
+- blank `human_approver_id`;
 - blank `created`.
 
-### 10.4 Domain validation
+### 10.4 Permission validation
 
 Failures:
 
-- `domain = sample_attorney_demo`;
-- `domain = decision_register`;
-- `domain = decision_register:sample_attorney_demo`;
-- `domain = decision_register:sample_attorney_demo:`.
-
-Expected error:
-
 ```text
-domain must follow decision_register:<registry_name>:<decision_id>
+permission_source_type = policy
+permission_source_type = approval
+permission_source_type = robot_authority
+permission_source_id = <blank>
 ```
 
-### 10.5 Subject validation
-
-Failures:
-
-- `value2 = claims_review_agent`;
-- `value2 = robot:claims_review_agent`;
-- `value2 = agent:`;
-- `value2 = :claims_review_agent`.
-
-Expected allowed actor types:
+Allowed values:
 
 ```text
-agent,human,system,institution,unknown
+policy_rule,human_approval,system_role,workflow_configuration,tool_permission,prior_decision,emergency_exception,unknown
 ```
 
-### 10.6 Predicate validation
-
-Failures:
-
-- `value3 = recommend_approval`;
-- `value3 = recommend_approval:claim`;
-- `value3 = recommend_approval::claim_9981`;
-- `value3 = :claim:claim_9981`.
-
-Expected format:
-
-```text
-<verb>:<object_type>:<object_id>
-```
-
-### 10.7 Created validation
+### 10.5 Human approval validation
 
 Valid:
 
 ```text
-2026-07-06T18:42:11Z
-2026-07-06
+human_required = yes, human_approver_id = user_442
+human_required = no, human_approver_id = none
+human_required = yes, human_approver_id = unknown
 ```
 
 Invalid:
 
 ```text
-07/06/2026
-yesterday
-2026-13-99
+human_required = maybe
+human_required = no, human_approver_id = user_442
+human_required = yes, human_approver_id = <blank>
 ```
 
-### 10.8 Re-query test
+### 10.6 Re-query test
 
 After insert, query by registry prefix:
 
 ```sql
 SELECT *
-FROM z_config_lookup
+FROM cdp_projection.decision_registry_flat
 WHERE domain LIKE 'decision_register:sample_attorney_demo:%'
 ORDER BY created, domain;
 ```
@@ -713,102 +709,42 @@ Expected:
 
 - rows return in stable order;
 - all four decisions are present;
-- reconstructed decision IDs match expected values.
+- derived decision IDs match expected values;
+- permission fields are populated;
+- `plain_english_decision` includes permission and human approval surface.
 
 ---
 
-## 11. Implementation notes
-
-### 11.1 Do not rely on spreadsheet row number as identity
-
-Spreadsheet row number is not durable.
-
-Use the final segment of `domain` as the decision ID.
-
-### 11.2 Do not auto-generate decision IDs during ingestion
-
-For deterministic tests, the sample spreadsheet should contain stable decision IDs inside `domain`.
-
-Generated IDs can come later.
-
-### 11.3 Keep the grammar visible
-
-The spreadsheet should make the grammar obvious:
-
-```text
-antecedent -> subject -> predicate
-```
-
-That is the whole point of the demo.
-
-### 11.4 Keep extra attorney fields out for now
-
-The attorney-facing Decision Register is the future review surface.
-
-This spreadsheet is the first ingestion fixture.
-
-Do not confuse the two.
-
----
-
-## 12. Non-goals
-
-This v0.1 ingestion contract does not define:
-
-- a full attorney-facing Decision Register table;
-- a full CDP Decision Lifecycle Envelope;
-- a full Wire Message Envelope;
-- a governed record table;
-- authority/permission enforcement;
-- human approval workflows;
-- evidence reference ingestion;
-- policy reference ingestion;
-- tool-call audit ingestion;
-- JSONB record storage;
-- multi-row records for one decision.
-
-Those are later steps.
-
-For this demo, one spreadsheet row becomes one `z_config_lookup` row.
-
-That is enough.
-
----
-
-## 13. Final v0.1 contract
-
-The v0.1 ingestion contract is:
+## 11. Final v0.2 contract
 
 ```text
 Spreadsheet columns:
-  domain,key1,value1,key2,value2,key3,value3,created
+  domain,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
 
 One row means:
-  one decision clause record
+  one material decision clause record
 
 Mapping:
   domain -> registry and decision identity
   key1/value1 -> antecedent
   key2/value2 -> subject
   key3/value3 -> predicate
+  permission_source_type -> permission category
+  permission_source_id -> permission source identifier
+  human_required -> whether human approval was required
+  human_approver_id -> approver, none, or unknown
   created -> date/time captured
 
 Database target:
-  z_config_lookup
+  cdp_core.decision_registry
+
+Projection target:
+  cdp_projection.decision_registry_flat
 
 Insert behavior:
   one spreadsheet row inserts one database row
 
 No hidden magic.
-No extra columns.
-No authority fields yet.
+No authority metaphysics.
 No JSON blob pretending to be governance.
 ```
-
-This gives enough structure to create:
-
-- the sample spreadsheet;
-- ingestion code;
-- validation code;
-- unit tests;
-- a first reconstructed Decision Register view.
