@@ -1,6 +1,6 @@
 # Spreadsheet Ingestion Contract for the Decision Registry
 
-Status: Demo ingestion contract v0.2  
+Status: Demo ingestion contract v0.3  
 Scope: Sample Decision Register spreadsheet ingestion into the CDP control-plane Decision Registry  
 Audience: implementers, test authors, attorney-facing demo builders  
 Related DDL: `db/ddl/001-decision-registry-kernel.sql`  
@@ -17,19 +17,23 @@ The control-plane target is:
 cdp_core.decision_registry
 ```
 
-The older `z_config_lookup` shape remains useful as a compatibility/staging concept, but it is not sufficient once the spreadsheet includes attorney-facing permission fields.
+The older `z_config_lookup` shape remains useful as a compatibility/staging concept, but it is not sufficient once the spreadsheet includes attorney-facing permission fields and hierarchy fields.
 
-The v0.2 spreadsheet represents one decision per row using:
+The v0.3 spreadsheet represents one decision per row using:
 
 1. decision identity and domain;
-2. three grammatical key/value pairs;
-3. four attorney-facing governance fields;
-4. a created timestamp.
+2. decision class / hierarchy fields;
+3. three grammatical key/value pairs;
+4. four attorney-facing governance fields;
+5. a created timestamp.
 
 The required columns are:
 
 ```text
 domain
+decision_class_domain
+parent_domain
+parent_relation_type
 key1
 value1
 key2
@@ -45,44 +49,51 @@ created
 
 ---
 
-## 2. Why the four permission fields are included now
+## 2. Why hierarchy fields are included now
 
-The first spreadsheet must support the question an attorney will actually ask:
-
-> What decisions did the agentic AI make, and what allowed those decisions to happen?
-
-The four fields needed for that first answer are:
+The registry should not only answer:
 
 ```text
-permission_source_type
-permission_source_id
-human_required
-human_approver_id
+What decisions happened?
 ```
 
-These fields do not answer every authority, standing, delegation, or legality question.
+It should also answer:
 
-They do give the first registry enough structure to distinguish:
+```text
+What kinds of decisions happened?
+Which decisions descend from other decisions?
+Where are decisions clustering?
+Which classes require the most human review?
+Which classes have unknown permission sources?
+```
 
-- a policy-authorized decision;
-- a human-approved decision;
-- a role-authorized decision;
-- a workflow-authorized decision;
-- a tool-permission-authorized action;
-- a prior-decision-authorized action;
-- an emergency exception;
-- an unknown permission source.
+The hierarchy fields are:
 
-That is enough for the demo and enough for first-pass attorney review.
+```text
+decision_class_domain
+parent_domain
+parent_relation_type
+```
+
+They support two different forms of analysis:
+
+1. **Class analytics**: grouping decisions by type, subtype, workflow, risk area, or legal/compliance category.
+2. **Parent-child lineage**: showing how one decision depends on, escalates from, approves, denies, repairs, appeals, or supersedes another decision.
+
+These should remain distinct.
+
+A decision can belong to a class without having a parent decision.
+
+A decision can have a parent decision while belonging to the same or a different class.
 
 ---
 
 ## 3. Required spreadsheet columns
 
-The spreadsheet must contain exactly these required columns for v0.2 ingestion:
+The spreadsheet must contain exactly these required columns for v0.3 ingestion:
 
 ```text
-domain,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
+domain,decision_class_domain,parent_domain,parent_relation_type,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
 ```
 
 Column names must be lowercase snake_case exactly as shown.
@@ -122,9 +133,88 @@ registry_name = second colon-delimited segment of domain
 decision_id = final colon-delimited segment of domain
 ```
 
-The current v0.2 DDL stores `domain` as the durable identity path and derives `decision_id` in the projection view.
+### 4.2 `decision_class_domain`
 
-### 4.2 `key1/value1`: antecedent
+`decision_class_domain` identifies the class of decision for analytics.
+
+Required format:
+
+```text
+decision_class:<registry_name>:<class_id>
+```
+
+Examples:
+
+```text
+decision_class:sample_attorney_demo:claim_intake
+decision_class:sample_attorney_demo:claim_approval
+decision_class:sample_attorney_demo:access_denial
+decision_class:sample_attorney_demo:human_review_escalation
+```
+
+The class domain should be stable and boring.
+
+Do not use long prose as the class ID.
+
+Use `decision_class:<registry_name>:unclassified` only when the class is genuinely unknown.
+
+### 4.3 `parent_domain`
+
+`parent_domain` optionally identifies a parent decision row.
+
+Required format when present:
+
+```text
+decision_register:<registry_name>:<parent_decision_id>
+```
+
+Examples:
+
+```text
+decision_register:sample_attorney_demo:dec_003
+```
+
+Use a blank cell when there is no parent decision.
+
+The ingestion code should normalize blank `parent_domain` to SQL `NULL`.
+
+Do not use `none` in this field.
+
+### 4.4 `parent_relation_type`
+
+`parent_relation_type` states the relationship from the current decision to `parent_domain`.
+
+Allowed values:
+
+```text
+none
+child_of
+depends_on
+derived_from
+escalates_from
+approves
+denies
+appeal_of
+repair_of
+supersedes
+```
+
+Rules:
+
+- If `parent_relation_type = none`, `parent_domain` must be blank.
+- If `parent_relation_type != none`, `parent_domain` must be populated.
+
+Examples:
+
+| Current decision | Parent decision | Relation |
+|---|---|---|
+| human approval | agent recommendation | `approves` |
+| denial | identity verification failure decision | `depends_on` |
+| appeal | original denial | `appeal_of` |
+| repair decision | harmful decision | `repair_of` |
+| later corrected decision | earlier decision | `supersedes` |
+
+### 4.5 `key1/value1`: antecedent
 
 `key1/value1` captures the antecedent: the condition, trigger, prior event, dependency, or context that made the decision relevant.
 
@@ -151,7 +241,7 @@ value1 = none_supplied
 
 Do not leave `value1` blank.
 
-### 4.3 `key2/value2`: subject
+### 4.6 `key2/value2`: subject
 
 `key2/value2` captures the subject: the actor that made, recommended, blocked, escalated, approved, or recorded the decision.
 
@@ -188,7 +278,7 @@ institution:review_board
 unknown:unknown
 ```
 
-### 4.4 `key3/value3`: predicate
+### 4.7 `key3/value3`: predicate
 
 `key3/value3` captures the predicate: the decision, recommendation, or action.
 
@@ -214,9 +304,7 @@ approve_review:claim:claim_9982
 create_task:review_task:task_1001
 ```
 
-The predicate must name what happened. Avoid vague verbs such as `processed`, `handled`, or `completed`.
-
-### 4.5 `permission_source_type`
+### 4.8 `permission_source_type`
 
 `permission_source_type` states what kind of permission source allowed, supported, or routed the decision.
 
@@ -233,22 +321,9 @@ emergency_exception
 unknown
 ```
 
-Definitions:
-
-| Value | Meaning |
-|---|---|
-| `policy_rule` | A named policy or rule allowed the decision or recommendation |
-| `human_approval` | A human approved the decision before it took effect |
-| `system_role` | The agent or system had a configured role allowing the operation |
-| `workflow_configuration` | A workflow step allowed the decision under configured conditions |
-| `tool_permission` | A tool/API permission allowed the action |
-| `prior_decision` | A previous recorded decision authorized this one |
-| `emergency_exception` | An exception path was used |
-| `unknown` | The system cannot show the permission source |
-
 `unknown` is allowed, but it should be treated as a governance finding.
 
-### 4.6 `permission_source_id`
+### 4.9 `permission_source_id`
 
 `permission_source_id` identifies the specific permission source.
 
@@ -266,9 +341,7 @@ unknown
 
 Do not leave it blank.
 
-Use `unknown` when the source is not known.
-
-### 4.7 `human_required`
+### 4.10 `human_required`
 
 `human_required` states whether a human approval was required before the decision or action could take effect.
 
@@ -295,7 +368,7 @@ yes
 no
 ```
 
-### 4.8 `human_approver_id`
+### 4.11 `human_approver_id`
 
 `human_approver_id` identifies the human approver when applicable.
 
@@ -314,7 +387,7 @@ Use `unknown` when human approval was required but the approver is not recorded.
 
 Do not leave it blank.
 
-### 4.9 `created`
+### 4.12 `created`
 
 `created` is the date or timestamp the decision record was created or captured for ingestion.
 
@@ -330,8 +403,6 @@ Acceptable date-only fallback:
 YYYY-MM-DD
 ```
 
-The ingestion code must make date-only behavior explicit in tests.
-
 ---
 
 ## 5. Minimal sample spreadsheet
@@ -339,11 +410,11 @@ The ingestion code must make date-only behavior explicit in tests.
 CSV fixture:
 
 ```csv
-domain,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
-decision_register:sample_attorney_demo:dec_001,antecedent,claim submitted,subject,agent:claims_review_agent,predicate,recommend_approval:claim:claim_9981,policy_rule,policy_claims_approval_v2,yes,user_442,2026-07-06T18:42:11Z
-decision_register:sample_attorney_demo:dec_002,antecedent,identity verification failed,subject,agent:access_agent,predicate,deny_access:access_request:access_7731,workflow_configuration,workflow_access_v1,no,none,2026-07-06T18:44:09Z
-decision_register:sample_attorney_demo:dec_003,antecedent,claim amount exceeded auto-approval threshold,subject,agent:claims_review_agent,predicate,escalate_review:claim:claim_9982,policy_rule,policy_claims_approval_v2,yes,unknown,2026-07-06T18:45:33Z
-decision_register:sample_attorney_demo:dec_004,antecedent,prior decision dec_003 escalated claim,subject,human:user_442,predicate,approve_review:claim:claim_9982,human_approval,user_442,yes,user_442,2026-07-06T18:52:10Z
+domain,decision_class_domain,parent_domain,parent_relation_type,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
+decision_register:sample_attorney_demo:dec_001,decision_class:sample_attorney_demo:claim_intake,,none,antecedent,claim submitted,subject,agent:claims_review_agent,predicate,recommend_approval:claim:claim_9981,policy_rule,policy_claims_approval_v2,yes,user_442,2026-07-06T18:42:11Z
+decision_register:sample_attorney_demo:dec_002,decision_class:sample_attorney_demo:access_denial,,none,antecedent,identity verification failed,subject,agent:access_agent,predicate,deny_access:access_request:access_7731,workflow_configuration,workflow_access_v1,no,none,2026-07-06T18:44:09Z
+decision_register:sample_attorney_demo:dec_003,decision_class:sample_attorney_demo:human_review_escalation,decision_register:sample_attorney_demo:dec_001,escalates_from,antecedent,claim amount exceeded auto-approval threshold,subject,agent:claims_review_agent,predicate,escalate_review:claim:claim_9982,policy_rule,policy_claims_approval_v2,yes,unknown,2026-07-06T18:45:33Z
+decision_register:sample_attorney_demo:dec_004,decision_class:sample_attorney_demo:claim_approval,decision_register:sample_attorney_demo:dec_003,approves,antecedent,prior decision dec_003 escalated claim,subject,human:user_442,predicate,approve_review:claim:claim_9982,human_approval,user_442,yes,user_442,2026-07-06T18:52:10Z
 ```
 
 This fixture should test:
@@ -351,6 +422,9 @@ This fixture should test:
 - header validation;
 - required fields;
 - decision ID derivation from `domain`;
+- class ID derivation from `decision_class_domain`;
+- parent decision derivation from `parent_domain`;
+- parent relation validation;
 - actor parsing from `value2`;
 - predicate parsing from `value3`;
 - permission source validation;
@@ -358,17 +432,44 @@ This fixture should test:
 - approver handling for `human_approver_id`;
 - created-date parsing;
 - insert into `cdp_core.decision_registry`;
-- retrieval from `cdp_projection.decision_registry_flat`.
+- retrieval from `cdp_projection.decision_registry_flat`;
+- class rollup from `cdp_projection.decision_class_rollup`;
+- parent-child edge output from `cdp_projection.decision_parent_child_edges`.
 
 ---
 
-## 6. Spreadsheet-to-database mapping
+## 6. Optional decision class registry fixture
 
-Each spreadsheet row maps directly into one `cdp_core.decision_registry` row.
+Class rows may be loaded separately into `cdp_core.decision_class_registry`.
+
+They are useful for labels, parent-child class hierarchy, and rollup display.
+
+CSV fixture:
+
+```csv
+domain,parent_domain,class_id,class_label,class_level,created
+decision_class:sample_attorney_demo:claim,,claim,Claim Decisions,0,2026-07-06T18:00:00Z
+decision_class:sample_attorney_demo:claim_intake,decision_class:sample_attorney_demo:claim,claim_intake,Claim Intake,1,2026-07-06T18:00:00Z
+decision_class:sample_attorney_demo:claim_approval,decision_class:sample_attorney_demo:claim,claim_approval,Claim Approval,1,2026-07-06T18:00:00Z
+decision_class:sample_attorney_demo:human_review_escalation,decision_class:sample_attorney_demo:claim,human_review_escalation,Human Review Escalation,1,2026-07-06T18:00:00Z
+decision_class:sample_attorney_demo:access, ,access,Access Decisions,0,2026-07-06T18:00:00Z
+decision_class:sample_attorney_demo:access_denial,decision_class:sample_attorney_demo:access,access_denial,Access Denial,1,2026-07-06T18:00:00Z
+```
+
+For strict CSV fixtures, prefer a truly blank `parent_domain` cell rather than a space.
+
+---
+
+## 7. Spreadsheet-to-database mapping
+
+Each decision spreadsheet row maps directly into one `cdp_core.decision_registry` row.
 
 | Spreadsheet column | Database column | Required | Notes |
 |---|---|---:|---|
 | `domain` | `domain` | yes | Contains registry and derived decision ID |
+| `decision_class_domain` | `decision_class_domain` | yes | Class path for analytics |
+| `parent_domain` | `parent_domain` | conditional | Blank when no parent decision |
+| `parent_relation_type` | `parent_relation_type` | yes | `none` when no parent decision |
 | `key1` | `key1` | yes | Must be `antecedent` |
 | `value1` | `value1` | yes | Antecedent value or `none_supplied` |
 | `key2` | `key2` | yes | Must be `subject` |
@@ -381,11 +482,11 @@ Each spreadsheet row maps directly into one `cdp_core.decision_registry` row.
 | `human_approver_id` | `human_approver_id` | yes | Use `none` or `unknown` when applicable |
 | `created` | `created` | yes | ISO timestamp or date |
 
-For v0.2, extra spreadsheet columns should be rejected to reduce schema drift.
+For v0.3, extra spreadsheet columns should be rejected to reduce schema drift.
 
 ---
 
-## 7. Ingestion process
+## 8. Ingestion process
 
 ### Step 1: Load the spreadsheet
 
@@ -395,7 +496,8 @@ For CSV:
 - preserve strings as strings;
 - do not auto-convert IDs into numbers;
 - trim leading/trailing whitespace;
-- preserve internal spaces.
+- preserve internal spaces;
+- normalize blank `parent_domain` to `NULL`.
 
 For XLSX:
 
@@ -408,7 +510,7 @@ For XLSX:
 Expected header list:
 
 ```text
-domain,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
+domain,decision_class_domain,parent_domain,parent_relation_type,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
 ```
 
 Validation fails when a required column is missing, misspelled, duplicated, mis-cased, or when extra columns appear in strict mode.
@@ -418,7 +520,8 @@ Validation fails when a required column is missing, misspelled, duplicated, mis-
 For each row:
 
 - trim leading and trailing whitespace;
-- convert empty strings to validation errors;
+- convert empty required strings to validation errors;
+- convert empty `parent_domain` to null;
 - normalize controlled vocabulary values to lowercase snake_case;
 - normalize `human_required` to Boolean;
 - keep IDs stable and boring.
@@ -430,6 +533,7 @@ key1
 key2
 key3
 actor_type segment of value2
+parent_relation_type
 permission_source_type
 human_required
 ```
@@ -447,19 +551,23 @@ key3 = predicate
 A row is valid when:
 
 1. `domain` follows `decision_register:<registry_name>:<decision_id>`.
-2. `key1` equals `antecedent`.
-3. `value1` is non-empty.
-4. `key2` equals `subject`.
-5. `value2` follows `<actor_type>:<actor_id>`.
-6. `actor_type` is one of `agent`, `human`, `system`, `institution`, `unknown`.
-7. `key3` equals `predicate`.
-8. `value3` follows `<verb>:<object_type>:<object_id>`.
-9. `permission_source_type` is one of the allowed values.
-10. `permission_source_id` is non-empty.
-11. `human_required` is `yes`, `no`, `true`, or `false` before normalization.
-12. `human_approver_id` is non-empty.
-13. If `human_required` is false, `human_approver_id` should be `none`.
-14. `created` parses as an allowed date or timestamp.
+2. `decision_class_domain` follows `decision_class:<registry_name>:<class_id>`.
+3. `parent_relation_type` is an allowed value.
+4. If `parent_relation_type = none`, `parent_domain` is blank/null.
+5. If `parent_relation_type != none`, `parent_domain` follows `decision_register:<registry_name>:<decision_id>`.
+6. `key1` equals `antecedent`.
+7. `value1` is non-empty.
+8. `key2` equals `subject`.
+9. `value2` follows `<actor_type>:<actor_id>`.
+10. `actor_type` is one of `agent`, `human`, `system`, `institution`, `unknown`.
+11. `key3` equals `predicate`.
+12. `value3` follows `<verb>:<object_type>:<object_id>`.
+13. `permission_source_type` is one of the allowed values.
+14. `permission_source_id` is non-empty.
+15. `human_required` is `yes`, `no`, `true`, or `false` before normalization.
+16. `human_approver_id` is non-empty.
+17. If `human_required` is false, `human_approver_id` should be `none`.
+18. `created` parses as an allowed date or timestamp.
 
 ### Step 5: Derive helper values
 
@@ -468,6 +576,8 @@ The ingestion code may derive these for validation, logging, tests, and projecti
 ```text
 registry_name
 decision_id
+decision_class_id
+parent_decision_id
 actor_type
 actor_id
 predicate_verb
@@ -481,6 +591,8 @@ Derivation rules:
 ```text
 registry_name = second colon-delimited segment of domain
 decision_id = final colon-delimited segment of domain
+decision_class_id = final colon-delimited segment of decision_class_domain
+parent_decision_id = final colon-delimited segment of parent_domain when present
 actor_type = segment before first colon in value2
 actor_id = segment after first colon in value2
 predicate_verb = first colon-delimited segment of value3
@@ -495,6 +607,9 @@ Pseudo-SQL:
 ```sql
 INSERT INTO cdp_core.decision_registry (
     domain,
+    decision_class_domain,
+    parent_domain,
+    parent_relation_type,
     key1,
     value1,
     key2,
@@ -508,6 +623,9 @@ INSERT INTO cdp_core.decision_registry (
     created
 ) VALUES (
     :domain,
+    :decision_class_domain,
+    :parent_domain,
+    :parent_relation_type,
     :key1,
     :value1,
     :key2,
@@ -522,7 +640,7 @@ INSERT INTO cdp_core.decision_registry (
 );
 ```
 
-Do not split one spreadsheet row into multiple database rows for v0.2.
+Do not split one decision spreadsheet row into multiple database rows for v0.3.
 
 ### Step 7: Produce an ingestion summary
 
@@ -536,6 +654,8 @@ rows_failed: 0
 registry_name: sample_attorney_demo
 first_created: 2026-07-06T18:42:11Z
 last_created: 2026-07-06T18:52:10Z
+decision_classes: claim_intake, access_denial, human_review_escalation, claim_approval
+parent_edge_count: 2
 permission_source_types: policy_rule, workflow_configuration, human_approval
 human_required_count: 3
 ```
@@ -545,83 +665,91 @@ If rows fail validation, produce row-number-specific errors.
 Example:
 
 ```text
-Row 3 failed: human_required must be one of yes,no,true,false; got maybe.
+Row 3 failed: parent_relation_type escalates_from requires a non-empty parent_domain.
 ```
 
 ---
 
-## 8. Reconstructing an attorney-readable register row
+## 9. Analytics targets
 
-From this database row:
+The v0.3 DDL exposes three useful read surfaces.
 
-```text
-domain = decision_register:sample_attorney_demo:dec_001
-key1 = antecedent
-value1 = claim submitted
-key2 = subject
-value2 = agent:claims_review_agent
-key3 = predicate
-value3 = recommend_approval:claim:claim_9981
-permission_source_type = policy_rule
-permission_source_id = policy_claims_approval_v2
-human_required = true
-human_approver_id = user_442
-created = 2026-07-06T18:42:11Z
-```
-
-The projection can derive:
+### 9.1 Flat register view
 
 ```text
-decision_id = dec_001
-created = 2026-07-06T18:42:11Z
-antecedent = claim submitted
-subject = agent:claims_review_agent
-predicate = recommend_approval:claim:claim_9981
-permission = policy_rule:policy_claims_approval_v2
-human_required = true
-human_approver_id = user_442
-plain_english_decision = Because claim submitted, agent claims_review_agent performed recommend_approval on claim claim_9981. Permission source: policy_rule:policy_claims_approval_v2. Human required: true. Human approver: user_442.
+cdp_projection.decision_registry_flat
 ```
 
-This is still not the full CDP governed record.
+Use this for attorney-facing review rows.
 
-It is the first attorney-readable projection from the control-plane Decision Registry.
+### 9.2 Class rollup view
+
+```text
+cdp_projection.decision_class_rollup
+```
+
+Use this for questions such as:
+
+```text
+How many decisions were claim approvals?
+How many access decisions were denials?
+Which classes required the most human review?
+Which classes have unknown permission sources?
+```
+
+### 9.3 Parent-child edge view
+
+```text
+cdp_projection.decision_parent_child_edges
+```
+
+Use this for graph/tree questions such as:
+
+```text
+Which decisions descended from dec_001?
+Which decisions approved, denied, appealed, repaired, or superseded another decision?
+What is the lineage of this decision?
+```
 
 ---
 
-## 9. Compatibility with `z_config_lookup`
+## 10. Compatibility with `z_config_lookup`
 
-The current `z_config_lookup` shape can hold:
+The older `z_config_lookup` shape can hold:
 
 ```text
 domain,key1,value1,key2,value2,key3,value3,created
 ```
 
-It cannot hold the four permission fields unless that table is extended or those fields are stored somewhere else.
+It cannot hold the v0.3 fields unless it is extended:
 
-Therefore, once the spreadsheet includes the four permission fields, the canonical target should be:
+```text
+decision_class_domain
+parent_domain
+parent_relation_type
+permission_source_type
+permission_source_id
+human_required
+human_approver_id
+```
+
+Therefore, the canonical v0.3 target should be:
 
 ```text
 cdp_core.decision_registry
 ```
 
-If an implementation must temporarily use `z_config_lookup`, it must either:
-
-1. extend `z_config_lookup` with the four permission columns; or
-2. use `z_config_lookup` only for the grammar fields and store permission fields in a separate companion table; or
-3. ingest directly into `cdp_core.decision_registry`.
-
-Recommendation for the demo:
+Recommended flow:
 
 ```text
-spreadsheet -> parser/validator -> cdp_core.decision_registry -> cdp_projection.decision_registry_flat
+spreadsheet -> parser/validator -> cdp_core.decision_registry -> projections
 ```
 
 ---
 
-## 10. Unit test plan
+## 11. Unit test plan
 
-### 10.1 Happy path
+### 11.1 Happy path
 
 Input: valid CSV with four rows.
 
@@ -629,15 +757,18 @@ Expected:
 
 - four rows inserted;
 - no validation errors;
-- each inserted row matches normalized source values;
 - decision IDs are derived as `dec_001`, `dec_002`, `dec_003`, `dec_004`;
+- class IDs are derived;
+- two parent-child edges exist;
 - `human_required` is stored as Boolean;
-- projection rows include permission fields.
+- projection rows include class, parent, permission, and human approval fields.
 
-### 10.2 Header validation
+### 11.2 Header validation
 
 Failures:
 
+- missing `decision_class_domain`;
+- missing `parent_relation_type`;
 - missing `permission_source_type`;
 - missing `human_required`;
 - misspelled `human_approver_id`;
@@ -645,30 +776,40 @@ Failures:
 - duplicate `key1`;
 - extra column in strict mode.
 
-### 10.3 Required value validation
-
-Failures:
-
-- blank `domain`;
-- blank `value1`;
-- blank `value2`;
-- blank `value3`;
-- blank `permission_source_type`;
-- blank `permission_source_id`;
-- blank `human_required`;
-- blank `human_approver_id`;
-- blank `created`.
-
-### 10.4 Permission validation
+### 11.3 Hierarchy validation
 
 Failures:
 
 ```text
-permission_source_type = policy
-permission_source_type = approval
-permission_source_type = robot_authority
-permission_source_id = <blank>
+parent_relation_type = none, parent_domain = decision_register:sample_attorney_demo:dec_001
+parent_relation_type = escalates_from, parent_domain = <blank>
+parent_domain = dec_001
+parent_domain = decision_class:sample_attorney_demo:claim
 ```
+
+Expected parent domain format:
+
+```text
+decision_register:<registry_name>:<decision_id>
+```
+
+### 11.4 Class validation
+
+Failures:
+
+```text
+decision_class_domain = claim_approval
+decision_class_domain = decision_register:sample_attorney_demo:claim_approval
+decision_class_domain = decision_class:sample_attorney_demo:
+```
+
+Expected class domain format:
+
+```text
+decision_class:<registry_name>:<class_id>
+```
+
+### 11.5 Permission validation
 
 Allowed values:
 
@@ -676,56 +817,47 @@ Allowed values:
 policy_rule,human_approval,system_role,workflow_configuration,tool_permission,prior_decision,emergency_exception,unknown
 ```
 
-### 10.5 Human approval validation
+### 11.6 Re-query tests
 
-Valid:
-
-```text
-human_required = yes, human_approver_id = user_442
-human_required = no, human_approver_id = none
-human_required = yes, human_approver_id = unknown
-```
-
-Invalid:
-
-```text
-human_required = maybe
-human_required = no, human_approver_id = user_442
-human_required = yes, human_approver_id = <blank>
-```
-
-### 10.6 Re-query test
-
-After insert, query by registry prefix:
+Class rollup:
 
 ```sql
 SELECT *
-FROM cdp_projection.decision_registry_flat
-WHERE domain LIKE 'decision_register:sample_attorney_demo:%'
-ORDER BY created, domain;
+FROM cdp_projection.decision_class_rollup
+WHERE registry_name = 'sample_attorney_demo'
+ORDER BY decision_class_id;
+```
+
+Parent-child edges:
+
+```sql
+SELECT *
+FROM cdp_projection.decision_parent_child_edges
+WHERE parent_decision_id = 'dec_001';
 ```
 
 Expected:
 
-- rows return in stable order;
-- all four decisions are present;
-- derived decision IDs match expected values;
-- permission fields are populated;
-- `plain_english_decision` includes permission and human approval surface.
+- rollup counts group decisions by class;
+- edge query returns descendants of `dec_001`;
+- no row requires parsing prose to determine class or parent.
 
 ---
 
-## 11. Final v0.2 contract
+## 12. Final v0.3 contract
 
 ```text
 Spreadsheet columns:
-  domain,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
+  domain,decision_class_domain,parent_domain,parent_relation_type,key1,value1,key2,value2,key3,value3,permission_source_type,permission_source_id,human_required,human_approver_id,created
 
 One row means:
   one material decision clause record
 
 Mapping:
   domain -> registry and decision identity
+  decision_class_domain -> class/group analytics
+  parent_domain -> optional parent decision
+  parent_relation_type -> relation to parent decision
   key1/value1 -> antecedent
   key2/value2 -> subject
   key3/value3 -> predicate
@@ -738,13 +870,15 @@ Mapping:
 Database target:
   cdp_core.decision_registry
 
-Projection target:
+Projection targets:
   cdp_projection.decision_registry_flat
+  cdp_projection.decision_class_rollup
+  cdp_projection.decision_parent_child_edges
 
 Insert behavior:
-  one spreadsheet row inserts one database row
+  one spreadsheet decision row inserts one database decision row
 
 No hidden magic.
-No authority metaphysics.
-No JSON blob pretending to be governance.
+No parent-child inference from prose.
+No JSON blob pretending to be hierarchy.
 ```
