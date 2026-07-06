@@ -1,0 +1,37 @@
+Namespace,ID,Type Namespace,Type ID,Parent Namespace,Parent ID,Label,Notes,State,When
+lookup_kind,enum_value,lookup_kind,registry,,,Enum Value,A controlled vocabulary value,active,2026-07-06T18:00:00Z
+lookup_kind,business_object,lookup_kind,registry,,,Business Object,A business object type,active,2026-07-06T18:00:00Z
+lookup_kind,actor,lookup_kind,registry,,,Actor,An actor identity,active,2026-07-06T18:00:00Z
+lookup_kind,source_system,lookup_kind,registry,,,Source System,An ingestion source system,active,2026-07-06T18:00:00Z
+actor_type,agent,lookup_kind,enum_value,,,Agent,AI or automated agent actor,active,2026-07-06T18:00:00Z
+actor_type,human,lookup_kind,enum_value,,,Human,Human actor,active,2026-07-06T18:00:00Z
+actor_type,system,lookup_kind,enum_value,,,System,System actor,active,2026-07-06T18:00:00Z
+actor_type,institution,lookup_kind,enum_value,,,Institution,Institutional actor,active,2026-07-06T18:00:00Z
+actor_type,unknown,lookup_kind,enum_value,,,Unknown Actor Type,Unknown actor type,active,2026-07-06T18:00:00Z
+actor,claims_review_agent,actor_type,agent,,,Claims Review Agent,Demo claims review agent,active,2026-07-06T18:00:00Z
+actor,access_agent,actor_type,agent,,,Access Agent,Demo access review agent,active,2026-07-06T18:00:00Z
+actor,user_442,actor_type,human,,,User 442,Demo human reviewer and approver,active,2026-07-06T18:00:00Z
+actor,workflow_engine,actor_type,system,,,Workflow Engine,Demo workflow engine,active,2026-07-06T18:00:00Z
+actor,unknown,actor_type,unknown,,,Unknown Actor,Unknown actor placeholder,active,2026-07-06T18:00:00Z
+object_type,claim,lookup_kind,business_object,,,Claim,Claim object type,active,2026-07-06T18:00:00Z
+object_type,access_request,lookup_kind,business_object,,,Access Request,Access request object type,active,2026-07-06T18:00:00Z
+object_type,review_task,lookup_kind,business_object,,,Review Task,Review task object type,active,2026-07-06T18:00:00Z
+object,claim_9981,object_type,claim,,,Claim 9981,Demo claim object,active,2026-07-06T18:00:00Z
+object,claim_9982,object_type,claim,,,Claim 9982,Demo claim object,active,2026-07-06T18:00:00Z
+object,access_7731,object_type,access_request,,,Access Request 7731,Demo access request object,active,2026-07-06T18:00:00Z
+predicate_verb,recommend_approval,lookup_kind,enum_value,,,Recommend Approval,Recommend approval action,active,2026-07-06T18:00:00Z
+predicate_verb,deny_access,lookup_kind,enum_value,,,Deny Access,Deny access action,active,2026-07-06T18:00:00Z
+predicate_verb,escalate_review,lookup_kind,enum_value,,,Escalate Review,Escalate for review action,active,2026-07-06T18:00:00Z
+predicate_verb,approve_review,lookup_kind,enum_value,,,Approve Review,Approve review action,active,2026-07-06T18:00:00Z
+permission_source_type,policy_rule,lookup_kind,enum_value,,,Policy Rule,A policy or rule allowed the decision,active,2026-07-06T18:00:00Z
+permission_source_type,human_approval,lookup_kind,enum_value,,,Human Approval,A human approved the decision,active,2026-07-06T18:00:00Z
+permission_source_type,workflow_configuration,lookup_kind,enum_value,,,Workflow Configuration,A workflow allowed the decision,active,2026-07-06T18:00:00Z
+permission_source_type,unknown,lookup_kind,enum_value,,,Unknown Permission Source Type,Unknown permission source type,active,2026-07-06T18:00:00Z
+permission_source,policy_claims_approval_v2,permission_source_type,policy_rule,,,Claims Approval Policy v2,Demo claims approval policy,active,2026-07-06T18:00:00Z
+permission_source,workflow_access_v1,permission_source_type,workflow_configuration,,,Access Workflow v1,Demo access workflow configuration,active,2026-07-06T18:00:00Z
+permission_source,user_442,permission_source_type,human_approval,,,User 442 Approval,Demo human approval source,active,2026-07-06T18:00:00Z
+permission_source,unknown,permission_source_type,unknown,,,Unknown Permission Source,Unknown permission source placeholder,active,2026-07-06T18:00:00Z
+parent_relation_type,none,lookup_kind,enum_value,,,None,No parent decision relation,active,2026-07-06T18:00:00Z
+parent_relation_type,escalates_from,lookup_kind,enum_value,,,Escalates From,Decision escalates from a prior decision,active,2026-07-06T18:00:00Z
+parent_relation_type,approves,lookup_kind,enum_value,,,Approves,Decision approves a prior decision or recommendation,active,2026-07-06T18:00:00Z
+source_system,spreadsheet,lookup_kind,source_system,,,Spreadsheet,Spreadsheet ingestion source,active,2026-07-06T18:00:00Z
