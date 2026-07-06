@@ -1,10 +1,11 @@
 # Control Plane as Decision Registry
 
-Status: Architectural clarification v0.2  
+Status: Architectural clarification v0.3  
 Scope: CDP control-plane core and first-demo persistence direction  
 Audience: implementers, reviewers, attorney-facing demo builders  
 Related DDL: `db/ddl/001-decision-registry-kernel.sql`  
 Related ingestion contract: `docs/z-config-lookup-spreadsheet-ingestion.md`  
+Related analytics note: `docs/decision-registry-hierarchy-analytics.md`  
 
 ---
 
@@ -26,6 +27,12 @@ If CDP cannot answer:
 
 then it does not yet have a control-plane core.
 
+If CDP cannot also answer:
+
+> What kinds of decisions exist, and how do they relate?
+
+then it does not yet have a useful analytic control-plane surface.
+
 ---
 
 ## 2. What a Decision Registry means
@@ -34,11 +41,13 @@ A Decision Registry is the durable place where every material decision receives:
 
 1. an identity;
 2. a bounded domain;
-3. a minimal grammatical structure;
-4. a permission source surface;
-5. a human-approval surface;
-6. a created timestamp;
-7. a path to later governance.
+3. a class/category surface;
+4. an optional parent-decision lineage surface;
+5. a minimal grammatical structure;
+6. a permission source surface;
+7. a human-approval surface;
+8. a created timestamp;
+9. a path to later governance.
 
 For the first demo, the minimal grammar is:
 
@@ -50,6 +59,9 @@ In table terms:
 
 ```text
 domain
+decision_class_domain
+parent_domain
+parent_relation_type
 key1/value1
 key2/value2
 key3/value3
@@ -64,6 +76,9 @@ Where the recommended default meaning is:
 
 ```text
 domain                 = decision set and decision identity
+decision_class_domain  = class/group for analytics
+parent_domain          = optional parent decision
+parent_relation_type   = relation to parent decision
 key1/value1            = antecedent
 key2/value2            = subject
 key3/value3            = predicate
@@ -74,10 +89,16 @@ human_approver_id      = approver ID, none, or unknown
 created                = decision record creation timestamp
 ```
 
-Decision ID is derived from `domain` for v0.2:
+Decision ID is derived from `domain` for v0.3:
 
 ```text
 domain = decision_register:<registry_name>:<decision_id>
+```
+
+Decision class is derived from `decision_class_domain`:
+
+```text
+decision_class_domain = decision_class:<registry_name>:<class_id>
 ```
 
 This is not the final CDP schema.
@@ -106,15 +127,13 @@ A lookup table can carry the first grammar shape.
 
 It should not define the mental model.
 
-Once the spreadsheet includes the four permission fields, the canonical target should be `cdp_core.decision_registry` unless `z_config_lookup` is explicitly extended.
+Once the spreadsheet includes permission and hierarchy fields, the canonical target should be `cdp_core.decision_registry` unless `z_config_lookup` is explicitly extended.
 
 ---
 
 ## 4. Minimum viable control-plane DDL
 
 The first executable control-plane DDL should create a real decision registry table.
-
-The table preserves the current lookup-shaped grammar while naming the thing correctly and adding the four attorney-facing permission fields.
 
 The actual starter DDL lives at:
 
@@ -125,8 +144,11 @@ db/ddl/001-decision-registry-kernel.sql
 It creates:
 
 ```text
+cdp_core.decision_class_registry
 cdp_core.decision_registry
 cdp_projection.decision_registry_flat
+cdp_projection.decision_class_rollup
+cdp_projection.decision_parent_child_edges
 ```
 
 The control-plane table includes:
@@ -134,6 +156,9 @@ The control-plane table includes:
 ```text
 id
 domain
+decision_class_domain
+parent_domain
+parent_relation_type
 key1
 value1
 key2
@@ -151,22 +176,12 @@ source_ref
 row_hash
 ```
 
-The projection derives:
+The projections support:
 
 ```text
-registry_name
-decision_id
-antecedent
-subject_type
-subject_id
-predicate_verb
-object_type
-object_id
-permission_source_type
-permission_source_id
-human_required
-human_approver_id
-plain_english_decision
+flat attorney-facing review
+class/group rollups
+parent-child decision edges
 ```
 
 This is intentionally not yet the full RFC-025 persistence model.
@@ -197,11 +212,12 @@ That shape can represent:
 antecedent -> subject -> predicate
 ```
 
-It cannot represent the four permission fields unless it is extended.
-
-Those fields are now first-class in the spreadsheet and the registry:
+It cannot represent the v0.3 surfaces unless it is extended:
 
 ```text
+decision_class_domain
+parent_domain
+parent_relation_type
 permission_source_type
 permission_source_id
 human_required
@@ -211,7 +227,7 @@ human_approver_id
 Recommended flow:
 
 ```text
-spreadsheet -> parser/validator -> cdp_core.decision_registry -> cdp_projection.decision_registry_flat
+spreadsheet -> parser/validator -> cdp_core.decision_registry -> projections
 ```
 
 Temporary compatibility flow, if required:
@@ -231,6 +247,9 @@ For the first demo, the Decision Registry should hold:
 | Field | Meaning |
 |---|---|
 | `domain` | bounded registry and decision identity path |
+| `decision_class_domain` | class/group for analytics |
+| `parent_domain` | optional parent decision domain |
+| `parent_relation_type` | relationship to the parent decision |
 | `key1/value1` | antecedent |
 | `key2/value2` | subject |
 | `key3/value3` | predicate |
@@ -285,24 +304,46 @@ The attorney-facing register is a review projection.
 The attorney should be able to ask:
 
 ```text
-Show me the decisions in this matter or time period, including what allowed each decision to occur.
+Show me the decisions in this matter or time period, including what allowed each decision to occur and what class of decision it was.
 ```
 
 The control plane should be able to answer from `decision_registry` without parsing logs, guessing from chat transcripts, or asking the model to summarize itself after the fact.
 
 ---
 
-## 9. Implementation posture
+## 9. Analytics implication
+
+The registry should support questions such as:
+
+```text
+How many access denials occurred?
+How many claim approvals required a human?
+Which decision classes have unknown permission sources?
+Which decisions descended from this prior recommendation?
+Which decisions repaired, appealed, or superseded earlier decisions?
+```
+
+Those questions need explicit columns and projections.
+
+They should not require prose parsing.
+
+---
+
+## 10. Implementation posture
 
 Build the registry first.
+
+Then build analytics over it.
 
 Then build governance around it.
 
 A decision plane without a decision registry is protocol without a floor.
 
-A registry without later governance is only a ledger.
+A registry without hierarchy is a flat ledger.
 
-CDP needs both.
+A registry without later governance is only an inventory.
+
+CDP needs all three: registry, hierarchy, and governance.
 
 But the first concrete DDL should name the floor:
 
