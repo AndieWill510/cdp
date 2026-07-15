@@ -1,16 +1,16 @@
 # Session 019 — RFC-CDP-077 Reopening Authority Challenge
 
 Moderator: Andie  
-Status: adjudication-needed  
+Status: awaiting-response  
 Date: July 14, 2026  
-Canon Target: RFC-CDP-077; RFC-CDP-045; RFC-CDP-092; RFC-CDP-000  
+Canon Target: RFC-CDP-077; RFC-CDP-045; RFC-CDP-073; RFC-CDP-092; RFC-CDP-000  
 Primary reviewer: C
 
 ## Purpose
 
-This session records the first formal challenge review of `RFC-CDP-077-Reopening-Authority-and-Epistemic-Legitimacy.md`.
+This session records the first formal challenge review, human adjudication, and initial repair of `RFC-CDP-077-Reopening-Authority-and-Epistemic-Legitimacy.md`.
 
-The RFC remains at **Draft v0.1** pending adjudication and repair.
+RFC-CDP-077 has advanced from Draft v0.1 to **Draft v0.2 pending C’s verification of the repaired blocker set**.
 
 ## Files Read by Reviewer
 
@@ -33,9 +33,9 @@ The RFC remains at **Draft v0.1** pending adjudication and repair.
 - `rfc/RFC-CDP-092-Repair-State-Machine.md` — relevant reopening sections
 - `rfc/RFC-CDP-045-Legitimize-Protocol.md` — relevant legitimacy-record sections
 
-The reviewer confirmed that cited dependency RFCs 001, 002, 023, 033, 042, 044, and 074 exist.
+The reviewer confirmed cited dependency RFCs 001, 002, 023, 033, 042, 044, and 074 exist.
 
-## Commit Verification
+## Original Commit Verification
 
 The reviewer cloned the live repository and confirmed:
 
@@ -43,143 +43,105 @@ The reviewer cloned the live repository and confirmed:
 HEAD = de8f1dc2d117e39dff67cea3dd4f08f66241e395
 ```
 
-This matches the commit that added RFC-CDP-077.
-
-## Context-Plane Debt Named by Reviewer
-
-- `SESSION-HANDOFF.md` and `AI-MEMORY-BRIEF.md` still reflect Session 016 and do not mention RFC-CDP-070 through RFC-CDP-077.
-- No Session 019 record existed before this file.
-- `docs/context/README.md`, `LIVING_COVENANT.md`, `collab/COUNCIL_ROLES.md`, and `collab/INDEX.md` were existence-confirmed but not read by the reviewer during the challenge pass.
+This matched the commit that added RFC-CDP-077 Draft v0.1.
 
 ## Review Disposition
 
-**Hold at Draft v0.1.**
+C recommended:
 
-The reviewer did not recommend rejection. The architecture was judged sound, with strong finality, non-goal, and failure-mode sections. Advancement was blocked by unresolved independence semantics, a schema gap created by those semantics, and a reopening-trigger taxonomy collision with RFC-CDP-092.
+> Hold at Draft v0.1.
 
-## Strongest Objection
+The architecture was judged sound, but advancement was blocked by:
 
-RFC-CDP-077 requires a `materially independent authority` but does not define what makes an authority materially independent.
+1. undefined material independence;
+2. a free-text, non-queryable independence basis;
+3. conflicting reopening-trigger taxonomies between RFC-CDP-077 and RFC-CDP-092;
+4. a defeasible-legitimacy claim that RFC-CDP-045 could not write;
+5. missing RFC-CDP-076 and RFC-CDP-077 entries in RFC-CDP-000.
 
-Section 8 defines what the authority must be able to do, but not whether independence requires:
+## Human Adjudication
 
-- a distinct institution;
-- a distinct reporting line;
-- a different decision-maker within the same institution;
-- a separate authority domain;
-- an external reviewer;
-- or another controlled independence basis.
+Andie accepted the blocking findings and adjudicated:
 
-The corresponding schema field, `authority_independence_basis`, is free text. An implementation could therefore populate every required field while preserving the same power relationship and still appear compliant.
+1. use a controlled `non_independent_with_safeguards` fallback rather than describing dependence as limited independence;
+2. make RFC-CDP-077 the canonical owner of the reopening-trigger registry, with RFC-CDP-092 consuming it;
+3. preserve original legitimacy records and write defeasibility through a separate Legitimacy Revision Record;
+4. preserve the valid RFC-CDP-092 triggers `sovereignty_claim_material` and `recurring_harm_pattern`;
+5. connect RFC-CDP-073’s institutional-self-review rule to RFC-CDP-077’s independence model;
+6. repair Repair-band discoverability immediately, while refusing a destructive partial rewrite of RFC-CDP-000.
 
-## Blocking Repairs
+## Repairs Applied in RFC-CDP-077 Draft v0.2
 
-### 1. Define Material Independence
+### Material Independence
 
-RFC-CDP-077 must define operational independence criteria.
-
-The preferred structure is a two-branch rule:
-
-1. **Independent-authority branch** — organizationally, jurisdictionally, or reporting-line distinct authority with no material responsibility for the challenged decision or governing account.
-2. **Constrained fallback branch** — where genuine separation is unavailable, disclose non-independence explicitly, prohibit self-certification, require external audit exposure or plural review, preserve dissent, and prevent the fallback from being represented as fully independent.
-
-`authority_independence_basis` should become controlled and queryable rather than free text alone.
-
-### 2. Reconcile Reopening Trigger Taxonomies
-
-RFC-CDP-092 already defines reopening conditions that include:
-
-- `sovereignty_claim_material`
-- `recurring_harm_pattern`
-
-These are absent from RFC-CDP-077's `reopening_triggers` enumeration.
-
-RFC-CDP-077 introduces triggers absent from RFC-CDP-092, including:
-
-- `epistemic_exclusion`
-- `non_contestable_governing_account`
-- `repair_efficacy_failure`
-- `legitimacy_basis_failure`
-
-The RFCs must share one controlled vocabulary or explicitly define scope and authority between the two lists.
-
-### 3. Make Defeasible Legitimacy Writable
-
-RFC-CDP-077 states that legitimacy is defeasible and revisable.
-
-RFC-CDP-045 currently defines:
+Draft v0.2 defines controlled authority modes:
 
 ```text
-status: granted | denied | escalated
+independent_external
+independent_internal_separate_reporting_line
+independent_cross_authority
+non_independent_with_safeguards
 ```
 
-No status exists for a previously granted legitimacy determination that is later revoked or superseded after reopening.
+It defines a minimum independence test based on actual control over reviewer selection, evidence, findings, dissent, adverse determinations, conflict disclosure, and reviewability.
 
-RFC-CDP-045 must be patched with writable defeasibility semantics, including the required lineage to the reopening determination.
+The non-independent fallback now requires disclosure, conflict records, preserved dissent, audit exposure, escalation where available, and a prohibition on claiming independent-review satisfaction.
 
-### 4. Repair the Canonical Series Index
+### Canonical Trigger Registry
 
-`RFC-CDP-076` and `RFC-CDP-077` exist as committed canonical RFC files but are missing from `rfc/RFC-CDP-000-Series-Index.md` Section 6.8.
-
-The safe repair-band map update already appears in the collaboration promotion queue. It must be completed before either RFC advances.
-
-## Non-Blocking Repairs
-
-- Cross-reference RFC-CDP-077 Section 8 with RFC-CDP-073 Section 14 so the independent-review principle has one lineage rather than two unlinked formulations.
-- Import or explicitly reference the epistemic-safety audit methodology and falsification direction rather than leaving epistemic legitimacy entirely as case-by-case narrative judgment.
-- Define a time/reliance gradient or implementation hook for increasing reopening thresholds while preserving bounded closure.
-
-## Findings by Review Question
-
-### Epistemic legitimacy
-
-The definition is more operational than the source culture note because it is tied to enumerated triggers, schemas, and a screening pipeline. It remains partly modal and counterfactual. A single case cannot falsify whether a process preserved the possibility that knowledge could matter.
-
-### Repair-plane placement
-
-Reopening mechanics belong in the Repair plane. Defeasible legitimacy is a constitutional amendment to Legitimize and must also be represented directly in RFC-CDP-045.
-
-### Screening threshold
-
-Submission sufficiency is bounded and checkable. Screening relies on `reasonable possibility` and `materially affected` without a named evidentiary standard.
-
-### Finality
-
-The bounded-closure section is strong. Finality may prevail, but only through a reasoned and contestable determination rather than silent default.
-
-### Schemas
-
-The schemas are generally coherent and consistent with existing CDP record patterns. The independence field is the principal queryability gap.
-
-### Standing versus truth
-
-The RFC successfully distinguishes preserving a person's standing as a knower from presuming that person's account is true.
-
-### Procedural compliance risk
-
-A system could populate every schema field, deny reopening, and claim independence through plausible free text while the same authority relationship remains intact.
-
-### Dependency review
-
-- RFC-CDP-070: clean entry-versus-return relationship.
-- RFC-CDP-073: no direct conflict; independence principle needs cross-reference and shared lineage.
-- RFC-CDP-076: strong integration through repair-efficacy triggers.
-- RFC-CDP-045: defeasibility is asserted but not writable.
-- RFC-CDP-092: overlapping but inconsistent reopening-trigger enumerations require reconciliation.
-
-## Adjudication Questions for Andie
-
-1. Should the constrained fallback branch count as `independence_limited`, or should it be classified as explicitly non-independent review with additional safeguards?
-2. Should reopening triggers live in RFC-CDP-022 as a shared registry, in RFC-CDP-077 as the controlling model, or in RFC-CDP-092 as state-machine events derived from 077?
-3. Should RFC-CDP-045 add both `revoked` and `superseded`, or should revocation be represented through a separate legitimacy-revision record while retaining the original status?
-4. Should the Series Index repair advance RFC-CDP-000 to Draft v1.4 in the same promotion set?
-
-## Current State
+Draft v0.2 makes RFC-CDP-077 the canonical reopening-trigger registry and retains:
 
 ```text
-RFC-CDP-077: Draft v0.1 — hold
-Session 019: adjudication-needed
-Promotion: blocked pending four repairs
+sovereignty_claim_material
+recurring_harm_pattern
 ```
 
-This challenge record does not itself promote or modify RFC-CDP-077. It preserves the review, blocking findings, and next adjudication points so the repair work is legible and contestable.
+RFC-CDP-092 is normatively updated to consume this registry rather than maintain a competing list.
+
+### Defeasible Legitimacy
+
+Draft v0.2 defines `legitimacy_revision_record` with:
+
+```text
+affirmed
+suspended
+revoked
+superseded
+reopened
+unresolved
+```
+
+The original legitimacy record remains immutable. Current effective legitimacy is derived from the original record plus ordered revision lineage and any superseding record.
+
+### Affected-Party Review Lineage
+
+Draft v0.2 states that RFC-CDP-073’s rule against an institution being sole judge of its own closure is implemented through RFC-CDP-077’s independence model.
+
+### Discoverability Repair
+
+A temporary explicit addendum was created:
+
+`rfc/RFC-CDP-000-Repair-Band-Index-Addendum-2026-07-14.md`
+
+It records RFC-CDP-076 and RFC-CDP-077 as canonical Repair-band drafts pending a safe RFC-CDP-000 v1.4 full-map update.
+
+The addendum is a bounded repair. It does not pretend RFC-CDP-000 v1.3 itself has already been rewritten.
+
+## Current Disposition
+
+**Awaiting C verification.**
+
+C should reread RFC-CDP-077 Draft v0.2 narrowly against the original blockers and report:
+
+- resolved;
+- partially resolved;
+- unresolved;
+- or newly introduced conflict.
+
+If the blocker set is verified as resolved, Andie may close Session 019 as `closed-promoted` while retaining RFC-CDP-077 at Draft v0.2 until any broader promotion decision is separately made.
+
+## Remaining Context-Plane Debt
+
+- RFC-CDP-000 v1.3 still needs a safe full-file v1.4 update absorbing RFC-CDP-076 and RFC-CDP-077 and superseding the temporary addendum.
+- `SESSION-HANDOFF.md` and `AI-MEMORY-BRIEF.md` remain stale relative to Sessions 017–019.
+- Direct text in RFC-CDP-045, RFC-CDP-073, and RFC-CDP-092 has not yet been mechanically rewritten; RFC-CDP-077 Draft v0.2 explicitly updates their conflicting or incomplete semantics in the interim.
