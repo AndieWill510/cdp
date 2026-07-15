@@ -6,7 +6,7 @@ This index tracks active and completed collaboration sessions.
 
 | Session | Topic | Status | Moderator | Canon Target |
 |---|---|---|---|---|
-| [019](sessions/019-rfc-077-reopening-authority-challenge.md) | RFC-CDP-077 Reopening Authority and Epistemic Legitimacy challenge | adjudication-needed | Andie | RFC-CDP-077; RFC-CDP-045; RFC-CDP-092; RFC-CDP-000 |
+| [019](sessions/019-rfc-077-reopening-authority-challenge.md) | RFC-CDP-077 Reopening Authority and Epistemic Legitimacy challenge | awaiting-response | Andie | RFC-CDP-077; RFC-CDP-045; RFC-CDP-073; RFC-CDP-092; RFC-CDP-000 |
 
 ## Closed Sessions
 
@@ -43,11 +43,12 @@ This index tracks active and completed collaboration sessions.
 
 ## Canon Promotion Queue
 
-1. Adjudicate and repair RFC-CDP-077 independence semantics, trigger taxonomy, defeasible-legitimacy wiring, and canonical indexing under Session 019.
-2. Record Hash Propagation to governed record RFCs in the 040–048 band.
-3. Reference implementation / DDL profile for RFC-CDP-025.
-4. Register `repair_efficacy_record` in RFC-CDP-022 and wire persistence/query projections if RFC-CDP-076 stabilizes.
-5. Advance `rfc/RFC-CDP-000-Series-Index.md` to Draft v1.4 after safe repair-band map update.
+1. Obtain C verification of RFC-CDP-077 Draft v0.2 blocker repairs under Session 019.
+2. Safely advance `rfc/RFC-CDP-000-Series-Index.md` to Draft v1.4 and absorb the temporary Repair-band addendum.
+3. Mechanically align RFC-CDP-045, RFC-CDP-073, and RFC-CDP-092 text with RFC-CDP-077 Draft v0.2 when a surgical patch path is available.
+4. Record Hash Propagation to governed record RFCs in the 040–048 band.
+5. Reference implementation / DDL profile for RFC-CDP-025.
+6. Register `repair_efficacy_record`, `reopening_request_record`, `reopening_determination_record`, and `legitimacy_revision_record` in RFC-CDP-022 and wire persistence/query projections as the drafts stabilize.
 
 ## Open Cross-Session Questions
 
