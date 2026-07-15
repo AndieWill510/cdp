@@ -6,7 +6,7 @@ This index tracks active and completed collaboration sessions.
 
 | Session | Topic | Status | Moderator | Canon Target |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| [019](sessions/019-rfc-077-reopening-authority-challenge.md) | RFC-CDP-077 Reopening Authority and Epistemic Legitimacy challenge | adjudication-needed | Andie | RFC-CDP-077; RFC-CDP-045; RFC-CDP-092; RFC-CDP-000 |
 
 ## Closed Sessions
 
@@ -43,10 +43,11 @@ This index tracks active and completed collaboration sessions.
 
 ## Canon Promotion Queue
 
-1. Record Hash Propagation to governed record RFCs in the 040–048 band.
-2. Reference implementation / DDL profile for RFC-CDP-025.
-3. Register `repair_efficacy_record` in RFC-CDP-022 and wire persistence/query projections if RFC-CDP-076 stabilizes.
-4. Advance `rfc/RFC-CDP-000-Series-Index.md` to Draft v1.4 after safe repair-band map update.
+1. Adjudicate and repair RFC-CDP-077 independence semantics, trigger taxonomy, defeasible-legitimacy wiring, and canonical indexing under Session 019.
+2. Record Hash Propagation to governed record RFCs in the 040–048 band.
+3. Reference implementation / DDL profile for RFC-CDP-025.
+4. Register `repair_efficacy_record` in RFC-CDP-022 and wire persistence/query projections if RFC-CDP-076 stabilizes.
+5. Advance `rfc/RFC-CDP-000-Series-Index.md` to Draft v1.4 after safe repair-band map update.
 
 ## Open Cross-Session Questions
 
