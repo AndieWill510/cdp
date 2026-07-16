@@ -1,0 +1,32 @@
+name: RFC Index Integrity
+
+on:
+  push:
+    paths:
+      - 'rfc/**'
+      - 'scripts/verify_rfc_index.py'
+      - 'Makefile'
+      - '.github/workflows/rfc-index-integrity.yml'
+  pull_request:
+    paths:
+      - 'rfc/**'
+      - 'scripts/verify_rfc_index.py'
+      - 'Makefile'
+      - '.github/workflows/rfc-index-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-rfc-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify RFC index
+        run: make verify-rfc-index
