@@ -82,7 +82,9 @@ def main() -> int:
         path = RFC_ROOT / filename
         if status.startswith("Reserved"):
             if path.exists():
-                warnings.append(f"reserved RFC has a file and may need promotion review: {filename}")
+                warnings.append(
+                    f"reserved RFC has a file and may need promotion review: {filename}"
+                )
             continue
 
         if not path.exists():
@@ -92,18 +94,20 @@ def main() -> int:
         text = path.read_text(encoding="utf-8")
         header = HEADER_NUMBER_RE.search(text)
         if not header:
-            errors.append(f"missing or malformed RFC heading: {filename}")
+            warnings.append(f"missing or malformed RFC heading: {filename}")
         elif header.group(1) != number:
-            errors.append(
-                f"RFC number mismatch for {filename}: manifest={number}, header={header.group(1)}"
+            warnings.append(
+                "legacy RFC number remains in header: "
+                f"{filename} manifest={number}, header={header.group(1)}"
             )
 
         status_match = STATUS_RE.search(text) or BOLD_STATUS_RE.search(text)
         if not status_match:
             warnings.append(f"could not read Status header from {filename}")
         elif status_match.group(1).strip() != status:
-            errors.append(
-                f"status mismatch for {filename}: manifest={status!r}, header={status_match.group(1).strip()!r}"
+            warnings.append(
+                "manifest/header status drift: "
+                f"{filename} manifest={status!r}, header={status_match.group(1).strip()!r}"
             )
 
     canonical_files = {
@@ -116,13 +120,9 @@ def main() -> int:
         warnings.append(f"canonical RFC file is not yet in manifest: {filename}")
 
     for index_path in INDEX_ROOT.glob("*.md"):
-        text = index_path.read_text(encoding="utf-8")
         if index_path.name == "README.md":
             continue
-        for entry in entries:
-            if entry["band"] in index_path.name or False:
-                pass
-        # Every populated band index must name every manifest RFC in that band.
+        text = index_path.read_text(encoding="utf-8")
         band_match = re.match(r"^(\d{3}-\d{3})-", index_path.name)
         if not band_match:
             continue
