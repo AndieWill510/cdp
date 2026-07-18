@@ -2,30 +2,31 @@ COMPOSE_FILE ?= docker/docker-compose.yml
 PYTEST ?= pytest
 PYTHON ?= python3
 
-.PHONY: help up up-build down down-volumes reset-local ps logs logs-api logs-worker logs-localstack smoke test codex-test verify verify-rfc-index shell-postgres localstack-health localstack-buckets localstack-queues
+.PHONY: help up up-build down down-volumes reset-local ps logs logs-api logs-worker logs-localstack smoke test codex-test repair-local-postgres-bootstrap verify verify-rfc-index shell-postgres localstack-health localstack-buckets localstack-queues
 
 help:
 	@echo "CDP local development commands"
 	@echo ""
-	@echo "  make up                 Start the local stack"
-	@echo "  make up-build           Build and start the local stack"
-	@echo "  make down               Stop the local stack"
-	@echo "  make down-volumes       Stop the stack and remove local volumes"
-	@echo "  make reset-local        Reset the local stack (down-volumes + up-build)"
-	@echo "  make ps                 Show compose service status"
-	@echo "  make logs               Tail all logs"
-	@echo "  make logs-api           Tail API logs"
-	@echo "  make logs-worker        Tail worker logs"
-	@echo "  make logs-localstack    Tail LocalStack logs"
-	@echo "  make smoke              Run shell-based local smoke tests"
-	@echo "  make test               Run pytest build verification tests"
-	@echo "  make codex-test         Build Docker, run the canonical suite, and verify Postgres + LocalStack"
-	@echo "  make verify-rfc-index   Verify RFC manifest and band-index integrity"
-	@echo "  make verify             Run RFC index + smoke + pytest verification"
-	@echo "  make shell-postgres     Open psql in the Postgres container"
-	@echo "  make localstack-health  Check LocalStack health endpoint"
-	@echo "  make localstack-buckets List LocalStack S3 buckets"
-	@echo "  make localstack-queues  List LocalStack SQS queues"
+	@echo "  make up                              Start the local stack"
+	@echo "  make up-build                        Build and start the local stack"
+	@echo "  make down                            Stop the local stack"
+	@echo "  make down-volumes                    Stop the stack and remove local volumes"
+	@echo "  make reset-local                     Reset the local stack (down-volumes + up-build)"
+	@echo "  make ps                              Show compose service status"
+	@echo "  make logs                            Tail all logs"
+	@echo "  make logs-api                        Tail API logs"
+	@echo "  make logs-worker                     Tail worker logs"
+	@echo "  make logs-localstack                 Tail LocalStack logs"
+	@echo "  make smoke                           Run shell-based local smoke tests"
+	@echo "  make test                            Run pytest build verification tests"
+	@echo "  make codex-test                      Build Docker, run the canonical suite, and verify Postgres + LocalStack"
+	@echo "  make repair-local-postgres-bootstrap Deduplicate and uniquely index the local bootstrap marker"
+	@echo "  make verify-rfc-index                Verify RFC manifest and band-index integrity"
+	@echo "  make verify                          Run RFC index + smoke + pytest verification"
+	@echo "  make shell-postgres                  Open psql in the Postgres container"
+	@echo "  make localstack-health               Check LocalStack health endpoint"
+	@echo "  make localstack-buckets              List LocalStack S3 buckets"
+	@echo "  make localstack-queues               List LocalStack SQS queues"
 
 up:
 	docker compose -f $(COMPOSE_FILE) up -d
@@ -64,6 +65,11 @@ test:
 
 codex-test:
 	bash scripts/codex_test_loop.sh
+
+repair-local-postgres-bootstrap:
+	docker compose -f $(COMPOSE_FILE) exec -T postgres \
+		sh -c 'psql --username "$$POSTGRES_USER" --dbname "$$POSTGRES_DB" --set ON_ERROR_STOP=1' \
+		< docker/postgres/init/01-init-cdp.sql
 
 verify-rfc-index:
 	$(PYTHON) scripts/verify_rfc_index.py
