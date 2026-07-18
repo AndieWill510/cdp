@@ -22,7 +22,7 @@ This skill is read-only. It exists to prevent guesses such as “the tables were
 2. Confirm the current branch and preserve unrelated work.
 3. Read:
    - `docker/docker-compose.yml`
-   - `docker/postgres/init/001_initialize.sh`
+   - `docker/postgres/init/02_initialize_repository.sh`
    - `docker/postgres/init/01-init-cdp.sql`
 4. Enumerate initialization sources before deciding which repository DDL or seed files are relevant.
 5. Do not delete volumes, rerun initialization manually, modify DDL, or change database state during inspection.
@@ -237,11 +237,11 @@ POSTGRES_LOG_FILE="$(mktemp -t cdp-postgres-logs.XXXXXX.log)"
 docker compose -f "${COMPOSE_FILE}" logs --no-color postgres > "${POSTGRES_LOG_FILE}"
 ```
 
-Then inspect both CDP wrapper execution and native PostgreSQL entrypoint execution:
+Then inspect both CDP repository-hook execution and native PostgreSQL entrypoint execution:
 
 ```bash
 if ! grep -E \
-  "Initializing CDP database|Executing .*\.sql|running /docker-entrypoint-initdb\.d/.*\.sql|CDP database initialization complete|Skipping .*decision_registry" \
+  "Initializing CDP repository database objects|Executing .*\.sql|running /docker-entrypoint-initdb\.d/.*\.sql|CDP repository database initialization complete|Skipping .*decision_registry" \
   "${POSTGRES_LOG_FILE}"; then
   echo "No matching PostgreSQL initialization evidence was found in the captured logs."
 fi
@@ -320,7 +320,7 @@ This index helps locate definitions; it is not proof of execution. Logs and init
 
 1. Use the catalog query from Step 7 as the runtime relation inventory.
 2. Use the source enumeration, checksums, and definition index from Step 11 as the source inventory.
-3. Use `docker/postgres/init/001_initialize.sh`, the resolved Compose mounts, and initialization logs to establish execution order and ownership.
+3. Use `docker/postgres/init/02_initialize_repository.sh`, the resolved Compose mounts, and initialization logs to establish execution order and ownership.
 4. For each missing or unexpected runtime object, locate its exact source references:
 
    ```bash
@@ -363,7 +363,7 @@ If repair is needed, route next to the appropriate skill:
 - The active database, user, schema, and search path are known.
 - Runtime extensions, schemas, and every supported relation type are recorded.
 - Bootstrap evidence is evaluated for both presence and cardinality.
-- Initialization logs include both wrapper and native-entrypoint execution evidence.
+- Initialization logs include both repository-hook and native-entrypoint execution evidence.
 - Docker or permission failures cannot be mistaken for successful evidence collection.
 - Initialization source paths, duplicate files, execution ownership, and optional absent directories are explicit.
 - Persistent-volume and container lifecycle evidence are recorded before claiming stale state.
