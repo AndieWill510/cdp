@@ -47,6 +47,7 @@ Then use these sections:
 ## Current Skills
 
 - `engineering/investigate-bug.md` — diagnose failures before patching.
+- `database/inspect-schema.md` — inspect the live PostgreSQL schema and initialization evidence without changing state.
 - `database/db-migration.md` — change PostgreSQL structure safely.
 - `testing/docker-test.md` — run the canonical local Docker verification loop.
 - `testing/regression-test.md` — prove a fix without hiding adjacent breakage.
