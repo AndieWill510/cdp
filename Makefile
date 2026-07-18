@@ -2,7 +2,7 @@ COMPOSE_FILE ?= docker/docker-compose.yml
 PYTEST ?= pytest
 PYTHON ?= python3
 
-.PHONY: help up up-build down down-volumes ps logs logs-api logs-worker logs-localstack smoke test verify verify-rfc-index shell-postgres localstack-health localstack-buckets localstack-queues
+.PHONY: help up up-build down down-volumes reset-local ps logs logs-api logs-worker logs-localstack smoke test codex-test verify verify-rfc-index shell-postgres localstack-health localstack-buckets localstack-queues
 
 help:
 	@echo "CDP local development commands"
@@ -19,6 +19,7 @@ help:
 	@echo "  make logs-localstack    Tail LocalStack logs"
 	@echo "  make smoke              Run shell-based local smoke tests"
 	@echo "  make test               Run pytest build verification tests"
+	@echo "  make codex-test         Build Docker, run the canonical suite, and verify Postgres"
 	@echo "  make verify-rfc-index   Verify RFC manifest and band-index integrity"
 	@echo "  make verify             Run RFC index + smoke + pytest verification"
 	@echo "  make shell-postgres     Open psql in the Postgres container"
@@ -60,6 +61,9 @@ smoke:
 
 test:
 	$(PYTEST) tests/test_build_verification.py
+
+codex-test:
+	bash scripts/codex_test_loop.sh
 
 verify-rfc-index:
 	$(PYTHON) scripts/verify_rfc_index.py
