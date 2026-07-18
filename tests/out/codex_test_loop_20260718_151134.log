@@ -1,0 +1,451 @@
+cdp-qdrant  |            _                 _    
+cdp-qdrant  |   __ _  __| |_ __ __ _ _ __ | |_  
+cdp-qdrant  |  / _` |/ _` | '__/ _` | '_ \| __| 
+cdp-qdrant  | | (_| | (_| | | | (_| | | | | |_  
+cdp-qdrant  |  \__, |\__,_|_|  \__,_|_| |_|\__| 
+cdp-qdrant  |     |_|                           
+cdp-qdrant  | 
+cdp-qdrant  | Version: 1.18.3, build: db8fa43f
+cdp-qdrant  | Access web UI at http://localhost:6333/dashboard
+cdp-qdrant  | Agentic Skills: https://skills.qdrant.tech/
+cdp-qdrant  | 
+cdp-qdrant  | 2026-07-18T22:12:15.860026Z  INFO storage::content_manager::consensus::persistent: Initializing new raft state at ./storage/raft_state.json
+cdp-qdrant  | 2026-07-18T22:12:15.871439Z  INFO qdrant: Distributed mode disabled
+cdp-qdrant  | 2026-07-18T22:12:15.871588Z  INFO qdrant: Telemetry reporting enabled, id: d667f3a5-3ae9-4bd2-ba25-34cd3f2b67ca
+cdp-qdrant  | 2026-07-18T22:12:15.900374Z  INFO qdrant::actix: REST transport settings: keep_alive=5s, client_request_timeout=5s, client_disconnect_timeout=5s
+cdp-qdrant  | 2026-07-18T22:12:15.900392Z  INFO qdrant::actix: TLS disabled for REST API
+cdp-qdrant  | 2026-07-18T22:12:15.900446Z  INFO qdrant::actix: Qdrant HTTP listening on 6333
+cdp-qdrant  | 2026-07-18T22:12:15.900474Z  INFO actix_server::builder: starting 9 workers
+cdp-qdrant  | 2026-07-18T22:12:15.900499Z  INFO actix_server::server: Actix runtime found; starting in Actix runtime
+cdp-qdrant  | 2026-07-18T22:12:15.900508Z  INFO actix_server::server: starting service: "actix-web-service-0.0.0.0:6333", workers: 9, listening on: 0.0.0.0:6333
+cdp-qdrant  | 2026-07-18T22:12:15.903564Z  INFO qdrant::tonic: Qdrant gRPC listening on 6334
+cdp-qdrant  | 2026-07-18T22:12:15.903574Z  INFO qdrant::tonic: TLS disabled for gRPC API
+cdp-worker  | 2026-07-18 22:12:26,545 INFO cdp.worker Starting CDP worker in local environment
+cdp-worker  | 2026-07-18 22:12:26,545 INFO cdp.worker Configured queues: intake=cdp-intake-queue review=cdp-review-queue execution=cdp-execution-queue appeal=cdp-appeal-queue repair=cdp-repair-queue dlq=cdp-dead-letter-queue
+cdp-worker  | 2026-07-18 22:12:26,545 INFO cdp.worker AWS region=us-east-1 endpoint=http://localstack:4566
+cdp-worker  | 2026-07-18 22:12:26,545 INFO cdp.worker Worker is currently running in no-op mode
+cdp-redis   | Starting Redis Server
+cdp-redis   | 1:C 18 Jul 2026 22:12:15.857 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+cdp-redis   | 1:C 18 Jul 2026 22:12:15.857 * Redis version=8.8.0, bits=64, commit=00000000, modified=1, pid=1, just started
+cdp-redis   | 1:C 18 Jul 2026 22:12:15.857 * Configuration loaded
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.858 * monotonic clock: ARM CNTVCT @ 24 ticks/us
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.860 * Running mode=standalone, port=6379.
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> RedisBloom version 8.8.0 (Git=unknown)
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> Registering configuration options: [
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> 	{ bf-error-rate       :      0.01 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> 	{ bf-initial-size     :       100 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> 	{ bf-expansion-factor :         2 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> 	{ cf-bucket-size      :         2 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> 	{ cf-initial-size     :      1024 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> 	{ cf-max-iterations   :        20 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> 	{ cf-expansion-factor :         1 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> 	{ cf-max-expansions   :        32 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.861 * <bf> ]
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.862 * Module 'bf' loaded from /usr/local/lib/redis/modules//redisbloom.so
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.864 * <search> search-workers default: 10 (min of MAX_WORKER_THREADS=16 and CPU cores)
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.865 * <search> Redis version found by RedisSearch : 8.8.0 - oss
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.865 * <search> RediSearch version 8.8.0 (Git=d2ae026)
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.865 * <search> Low level api version 1 initialized successfully
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.865 * <search> gc: ON, prefix min length: 2, min word length to stem: 4, prefix max expansions: 200, query timeout (ms): 500, timeout policy: return, oom policy: return, cursor read size: 1000, cursor max idle (ms): 300000, max doctable size: 1000000, max number of search results:  1000000, default scorer: BM25STD, 
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.865 * <search> Initialized thread pools!
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.865 * <search> Enabled workers threadpool of size 10
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.868 * <search> Subscribe to config changes
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.868 * <search> Subscribe to cluster slot migration events
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.868 * <search> Enabled role change notification
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.869 * <search> Cluster configuration: AUTO partitions, type: 0, coordinator timeout: 0ms
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.869 * Module 'search' loaded from /usr/local/lib/redis/modules//redisearch.so
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> RedisTimeSeries version 80800, git_sha=42ca4f1078fca732b7f9256adbf25914d67e1cc9
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> Redis version found by RedisTimeSeries : 8.8.0 - oss
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> Registering configuration options: [
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> 	{ ts-compaction-policy   :              }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> 	{ ts-num-threads         :            3 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> 	{ ts-libmr-protocol      :     INTERNAL }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> 	{ ts-retention-policy    :            0 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> 	{ ts-duplicate-policy    :        block }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> 	{ ts-chunk-size-bytes    :         4096 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> 	{ ts-encoding            :   compressed }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> 	{ ts-ignore-max-time-diff:            0 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> 	{ ts-ignore-max-val-diff :     0.000000 }
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.870 * <timeseries> ]
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.871 * <timeseries> Detected redis oss
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <timeseries> Subscribe to ASM events
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <timeseries> Enabled diskless replication
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * Module 'timeseries' loaded from /usr/local/lib/redis/modules//redistimeseries.so
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> Created new data type 'ReJSON-RL'
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> version: 80800 git sha: unknown branch: unknown
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> Exported RedisJSON_V1 API
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> Exported RedisJSON_V2 API
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> Exported RedisJSON_V3 API
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> Exported RedisJSON_V4 API
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> Exported RedisJSON_V5 API
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> Exported RedisJSON_V6 API
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> Exported RedisJSON_V7 API
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> Enabled diskless replication
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <ReJSON> Initialized shared string cache, thread safe: true.
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * Module 'ReJSON' loaded from /usr/local/lib/redis/modules//rejson.so
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * <search> Acquired RedisJSON_V7 API
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.872 * Server initialized
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.873 * Ready to accept connections tcp
+cdp-redis   | 1:M 18 Jul 2026 22:12:15.873 # WARNING: Redis does not require authentication and is not protected by network restrictions. Redis will accept connections from any IP address on any network interface.
+cdp-api     | INFO:     Started server process [7]
+cdp-api     | INFO:     Waiting for application startup.
+cdp-api     | INFO:     Application startup complete.
+cdp-api     | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+cdp-api     | INFO:     192.168.65.1:19708 - "GET /health HTTP/1.1" 200 OK
+cdp-api     | INFO:     192.168.65.1:38156 - "GET /health HTTP/1.1" 200 OK
+cdp-api     | INFO:     192.168.65.1:60061 - "GET /health HTTP/1.1" 200 OK
+cdp-api     | INFO:     192.168.65.1:18818 - "POST /proposals HTTP/1.1" 404 Not Found
+cdp-api     | INFO:     127.0.0.1:50106 - "GET /health HTTP/1.1" 200 OK
+cdp-postgres  | The files belonging to this database system will be owned by user "postgres".
+cdp-localstack  | LocalStack supervisor: starting
+cdp-localstack  | LocalStack supervisor: localstack process (PID 15) starting
+cdp-localstack  | 2026-07-18T22:12:16.079 DEBUG --- [  MainThread] l.utils.docker_utils       : Using SdkDockerClient. LEGACY_DOCKER_CLIENT: False, SDK installed: True
+cdp-localstack  | 2026-07-18T22:12:16.168  WARN --- [  MainThread] l.services.internal        : Enabling diagnose endpoint, please be aware that this can expose sensitive information via your network.
+cdp-localstack  | 2026-07-18T22:12:16.171 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.runtime.components.aws = <class 'localstack.aws.components.AwsComponents'>)
+cdp-localstack  | 2026-07-18T22:12:16.171 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.runtime.components:aws
+cdp-localstack  | 
+cdp-localstack  | LocalStack version: 3.8.1
+cdp-localstack  | LocalStack build date: 2024-10-08
+cdp-localstack  | LocalStack build git hash: 529aba7d8
+cdp-localstack  | 
+cdp-localstack  | 2026-07-18T22:12:16.171 DEBUG --- [  MainThread] localstack.utils.run       : Executing command: rm -rf "/tmp/localstack"
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start._patch_botocore_endpoint_in_memory = <function _patch_botocore_endpoint_in_memory at 0xffff893e02c0>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : plugin localstack.hooks.on_infra_start:_patch_botocore_endpoint_in_memory is disabled, reason: Load condition for plugin was false
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start._patch_botocore_json_parser = <function _patch_botocore_json_parser at 0xffff893c3ec0>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:_patch_botocore_json_parser
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start._patch_cbor2 = <function _patch_cbor2 at 0xffff893e0040>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:_patch_cbor2
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start._publish_config_as_analytics_event = <function _publish_config_as_analytics_event at 0xffff882ae840>)
+cdp-postgres  | This user must also own the server process.
+cdp-postgres    | 
+cdp-postgres    | The database cluster will be initialized with locale "en_US.utf8".
+cdp-postgres    | The default database encoding has accordingly been set to "UTF8".
+cdp-postgres    | The default text search configuration will be set to "english".
+cdp-postgres    | 
+cdp-postgres    | Data page checksums are disabled.
+cdp-postgres    | 
+cdp-postgres    | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+cdp-postgres    | creating subdirectories ... ok
+cdp-postgres    | selecting dynamic shared memory implementation ... posix
+cdp-postgres    | selecting default max_connections ... 100
+cdp-postgres    | selecting default shared_buffers ... 128MB
+cdp-postgres    | selecting default time zone ... Etc/UTC
+cdp-postgres    | creating configuration files ... ok
+cdp-postgres    | running bootstrap script ... ok
+cdp-postgres    | performing post-bootstrap initialization ... ok
+cdp-postgres    | syncing data to disk ... ok
+cdp-postgres    | 
+cdp-postgres    | initdb: warning: enabling "trust" authentication for local connections
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:_publish_config_as_analytics_event
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start._publish_container_info = <function _publish_container_info at 0xffff882aec00>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:_publish_container_info
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start._run_init_scripts_on_start = <function _run_init_scripts_on_start at 0xffff8823fec0>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:_run_init_scripts_on_start
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.apply_aws_runtime_patches = <function apply_aws_runtime_patches at 0xffff882aef20>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:apply_aws_runtime_patches
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.apply_runtime_patches = <function apply_runtime_patches at 0xffff882af2e0>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:apply_runtime_patches
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.conditionally_enable_debugger = <function conditionally_enable_debugger at 0xffff882af740>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:conditionally_enable_debugger
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.delete_cached_certificate = <function delete_cached_certificate at 0xffff882afb00>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : plugin localstack.hooks.on_infra_start:delete_cached_certificate is disabled, reason: Load condition for plugin was false
+cdp-postgres    | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+cdp-postgres    | 
+cdp-postgres    | Success. You can now start the database server using:
+cdp-postgres    | 
+cdp-postgres    |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+cdp-postgres    | 
+cdp-postgres    | waiting for server to start....2026-07-18 22:12:16.175 UTC [48] LOG:  starting PostgreSQL 16.14 (Debian 16.14-1.pgdg12+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+cdp-postgres    | 2026-07-18 22:12:16.176 UTC [48] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+cdp-postgres    | 2026-07-18 22:12:16.177 UTC [51] LOG:  database system was shut down at 2026-07-18 22:12:16 UTC
+cdp-postgres    | 2026-07-18 22:12:16.179 UTC [48] LOG:  database system is ready to accept connections
+cdp-postgres    |  done
+cdp-postgres    | server started
+cdp-postgres    | CREATE DATABASE
+cdp-postgres    | 
+cdp-postgres    | 
+cdp-postgres    | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/001_initialize.sh
+cdp-postgres    | Initializing CDP database...
+cdp-postgres    | Executing /docker-entrypoint-initdb.d/01-init-cdp.sql
+cdp-postgres    | CREATE EXTENSION
+cdp-postgres    | CREATE EXTENSION
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.deprecation_warnings = <function deprecation_warnings at 0xffff882af920>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:deprecation_warnings
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | INSERT 0 1
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.register_cloudformation_deploy_ui = <function register_cloudformation_deploy_ui at 0xffff882afec0>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:register_cloudformation_deploy_ui
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.register_custom_endpoints = <function register_custom_endpoints at 0xffff88313060>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:register_custom_endpoints
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.register_swagger_endpoints = <function register_swagger_endpoints at 0xffff8805c720>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:register_swagger_endpoints
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.setup_dns_configuration_on_host = <function setup_dns_configuration_on_host at 0xffff8805ca40>)
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | INSERT 0 1
+cdp-postgres    | Executing /cdp-init/db/ddl/001-decision-registry-kernel.sql
+cdp-postgres    | psql:/cdp-init/db/ddl/001-decision-registry-kernel.sql:18: NOTICE:  extension "pgcrypto" already exists, skipping
+cdp-postgres    | CREATE EXTENSION
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:setup_dns_configuration_on_host
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.start_dns_server = <function start_dns_server at 0xffff8805c900>)
+cdp-postgres    | psql:/cdp-init/db/ddl/001-decision-registry-kernel.sql:20: NOTICE:  schema "cdp_core" already exists, skipping
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | psql:/cdp-init/db/ddl/001-decision-registry-kernel.sql:21: NOTICE:  schema "cdp_projection" already exists, skipping
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | INSERT 0 2
+cdp-postgres    | INSERT 0 8
+cdp-postgres    | INSERT 0 9
+cdp-postgres    | INSERT 0 26
+cdp-postgres    | INSERT 0 23
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:start_dns_server
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_start.validate_configuration = <function validate_configuration at 0xffff88312f20>)
+cdp-localstack  | 2026-07-18T22:12:16.185 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_start:validate_configuration
+cdp-localstack  | 2026-07-18T22:12:16.253 DEBUG --- [  MainThread] localstack.dns.server      : Determined fallback dns: 127.0.0.11
+cdp-localstack  | 2026-07-18T22:12:16.253 DEBUG --- [  MainThread] localstack.dns.server      : Starting DNS servers (tcp/udp port 53 on 0.0.0.0)...
+cdp-localstack  | 2026-07-18T22:12:16.253 DEBUG --- [  MainThread] localstack.dns.server      : Adding host .*localhost.localstack.cloud pointing to LocalStack
+cdp-localstack  | 2026-07-18T22:12:16.253 DEBUG --- [  MainThread] localstack.dns.server      : Adding host .*localhost.localstack.cloud with record DynamicRecord(record_type=<RecordType.A: 1>, record_id=None)
+cdp-localstack  | 2026-07-18T22:12:16.253 DEBUG --- [  MainThread] localstack.dns.server      : Adding host .*localhost.localstack.cloud with record DynamicRecord(record_type=<RecordType.AAAA: 2>, record_id=None)
+cdp-localstack  | 2026-07-18T22:12:16.254 DEBUG --- [-functhread1] localstack.dns.server      : DNS Server started
+cdp-localstack  | 2026-07-18T22:12:17.265 DEBUG --- [  MainThread] localstack.dns.server      : DNS server startup finished.
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | CREATE FUNCTION
+cdp-postgres    | psql:/cdp-init/db/ddl/001-decision-registry-kernel.sql:545: NOTICE:  trigger "trg_set_decision_registry_row_hash" for relation "cdp_core.decision_registry" does not exist, skipping
+cdp-postgres    | DROP TRIGGER
+cdp-postgres    | CREATE TRIGGER
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE FUNCTION
+cdp-localstack  | 2026-07-18T22:12:17.269 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.init.runner.py = <class 'localstack.runtime.init.PythonScriptRunner'>)
+cdp-localstack  | 2026-07-18T22:12:17.269 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.init.runner:py
+cdp-localstack  | 2026-07-18T22:12:17.269 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.init.runner.sh = <class 'localstack.runtime.init.ShellScriptRunner'>)
+cdp-localstack  | 2026-07-18T22:12:17.269 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.init.runner:sh
+cdp-localstack  | 2026-07-18T22:12:17.269 DEBUG --- [  MainThread] localstack.runtime.init    : Init scripts discovered: {BOOT: [], START: [], READY: [Script(path='/etc/localstack/init/ready.d/01-bootstrap-cdp.sh', stage=READY, state=UNKNOWN)], SHUTDOWN: []}
+cdp-localstack  | 2026-07-18T22:12:17.269 DEBUG --- [  MainThread] localstack.plugins         : Checking for the usage of deprecated community features and configs...
+cdp-localstack  | 2026-07-18T22:12:17.282 DEBUG --- [  MainThread] localstack.dns.server      : Overwriting container DNS server to point to localhost
+cdp-localstack  | 2026-07-18T22:12:17.283 DEBUG --- [  MainThread] localstack.utils.ssl       : Attempting to download local SSL certificate file
+cdp-localstack  | 2026-07-18T22:12:17.495 DEBUG --- [  MainThread] localstack.utils.ssl       : SSL certificate downloaded successfully
+cdp-localstack  | 2026-07-18T22:12:17.496 DEBUG --- [  MainThread] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.runtime.server.twisted = <class 'localstack.runtime.server.plugins.TwistedRuntimeServerPlugin'>)
+cdp-localstack  | 2026-07-18T22:12:17.496 DEBUG --- [  MainThread] plux.runtime.manager       : loading plugin localstack.runtime.server:twisted
+cdp-localstack  | 2026-07-18T22:12:17.556 DEBUG --- [ady_monitor)] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_ready._run_init_scripts_on_ready = <function _run_init_scripts_on_ready at 0xffff88260040>)
+cdp-localstack  | 2026-07-18T22:12:17.556 DEBUG --- [ady_monitor)] plux.runtime.manager       : loading plugin localstack.hooks.on_infra_ready:_run_init_scripts_on_ready
+cdp-localstack  | 2026-07-18T22:12:17.556 DEBUG --- [ady_monitor)] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.hooks.on_infra_ready.register_virtual_host_routes = <function register_virtual_host_routes at 0xffff67217e20>)
+cdp-localstack  | 2026-07-18T22:12:17.556 DEBUG --- [ady_monitor)] plux.runtime.manager       : plugin localstack.hooks.on_infra_ready:register_virtual_host_routes is disabled, reason: Load condition for plugin was false
+cdp-localstack  | 2026-07-18T22:12:17.556 DEBUG --- [ady_monitor)] localstack.runtime.init    : Running READY script /etc/localstack/init/ready.d/01-bootstrap-cdp.sh
+cdp-postgres    | CREATE FUNCTION
+cdp-postgres    | CREATE FUNCTION
+cdp-postgres    | psql:/cdp-init/db/ddl/001-decision-registry-kernel.sql:683: NOTICE:  trigger "trg_validate_decision_registry_identifiers" for relation "cdp_core.decision_registry" does not exist, skipping
+cdp-localstack  | 2026-07-18T22:12:17.556 ERROR --- [ady_monitor)] localstack.runtime.init    : Error while running script Script(path='/etc/localstack/init/ready.d/01-bootstrap-cdp.sh', stage=READY, state=ERROR)
+cdp-localstack  | Traceback (most recent call last):
+cdp-postgres    | DROP TRIGGER
+cdp-postgres    | CREATE TRIGGER
+cdp-postgres    | CREATE VIEW
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE VIEW
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE VIEW
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE VIEW
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE VIEW
+cdp-postgres    | COMMENT
+cdp-postgres    | Executing /cdp-init/db/ddl/003-nemawashi-workflow-rules.sql
+cdp-localstack  |   File "/opt/code/localstack/localstack-core/localstack/runtime/init.py", line 169, in run_stage
+cdp-localstack  |     runner.run(script.path)
+cdp-localstack  |   File "/opt/code/localstack/localstack-core/localstack/runtime/init.py", line 94, in run
+cdp-localstack  |     exit_code = subprocess.call(args=[], executable=path)
+cdp-localstack  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+cdp-localstack  |   File "/usr/local/lib/python3.11/subprocess.py", line 389, in call
+cdp-localstack  |     with Popen(*popenargs, **kwargs) as p:
+cdp-localstack  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+cdp-localstack  |   File "/usr/local/lib/python3.11/subprocess.py", line 1026, in __init__
+cdp-localstack  |     self._execute_child(args, executable, preexec_fn, close_fds,
+cdp-localstack  |   File "/usr/local/lib/python3.11/subprocess.py", line 1955, in _execute_child
+cdp-localstack  |     raise child_exception_type(errno_num, err_msg, err_filename)
+cdp-postgres    | psql:/cdp-init/db/ddl/003-nemawashi-workflow-rules.sql:12: NOTICE:  extension "pgcrypto" already exists, skipping
+cdp-postgres    | CREATE EXTENSION
+cdp-postgres    | psql:/cdp-init/db/ddl/003-nemawashi-workflow-rules.sql:14: NOTICE:  schema "cdp_core" already exists, skipping
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | psql:/cdp-init/db/ddl/003-nemawashi-workflow-rules.sql:15: NOTICE:  schema "cdp_projection" already exists, skipping
+cdp-localstack  | PermissionError: [Errno 13] Permission denied: '/etc/localstack/init/ready.d/01-bootstrap-cdp.sh'
+cdp-localstack  | Ready.
+cdp-localstack  | 2026-07-18T22:12:20.918 DEBUG --- [et.reactor-0] l.a.p.service_router       : building service catalog index cache file /var/lib/localstack/cache/service-catalog-3_8_1-1_35_34.pickle
+cdp-localstack  | 2026-07-18T22:12:29.750 DEBUG --- [et.reactor-0] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.aws.provider.s3:default = <function s3 at 0xffff51c036a0>)
+cdp-localstack  | 2026-07-18T22:12:29.750 DEBUG --- [et.reactor-0] plux.runtime.manager       : loading plugin localstack.aws.provider:s3:default
+cdp-localstack  | 2026-07-18T22:12:29.977  INFO --- [et.reactor-0] localstack.request.aws     : AWS s3.ListBuckets => 200
+cdp-localstack  | 2026-07-18T22:12:29.993 DEBUG --- [et.reactor-0] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.aws.provider.sqs:default = <function sqs at 0xffff519080e0>)
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | INSERT 0 19
+cdp-postgres    | INSERT 0 143
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE TABLE
+cdp-localstack  | 2026-07-18T22:12:29.993 DEBUG --- [et.reactor-0] plux.runtime.manager       : loading plugin localstack.aws.provider:sqs:default
+cdp-localstack  | 2026-07-18T22:12:30.017  INFO --- [et.reactor-0] localstack.request.aws     : AWS sqs.ListQueues => 200
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-localstack  | 2026-07-18T22:12:30.031 DEBUG --- [et.reactor-0] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.aws.provider.events:default = <function events at 0xffff51908360>)
+cdp-localstack  | 2026-07-18T22:12:30.031 DEBUG --- [et.reactor-0] plux.runtime.manager       : loading plugin localstack.aws.provider:events:default
+cdp-localstack  | 2026-07-18T22:12:30.091  INFO --- [et.reactor-0] localstack.request.aws     : AWS events.ListEventBuses => 200
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | INSERT 0 2
+cdp-postgres    | INSERT 0 18
+cdp-postgres    | INSERT 0 2
+cdp-postgres    | INSERT 0 5
+cdp-postgres    | CREATE VIEW
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE VIEW
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE VIEW
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE VIEW
+cdp-postgres    | COMMENT
+cdp-postgres    | CREATE VIEW
+cdp-localstack  | 2026-07-18T22:12:30.108 DEBUG --- [et.reactor-0] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.aws.provider.dynamodb:default = <function dynamodb at 0xffff51c01da0>)
+cdp-localstack  | 2026-07-18T22:12:30.108 DEBUG --- [et.reactor-0] plux.runtime.manager       : loading plugin localstack.aws.provider:dynamodb:default
+cdp-localstack  | 2026-07-18T22:12:30.122 DEBUG --- [et.reactor-0] localstack.packages.api    : Installation of dynamodb-local skipped (already installed).
+cdp-localstack  | 2026-07-18T22:12:30.122 DEBUG --- [et.reactor-0] localstack.packages.api    : Performing runtime setup for already installed package.
+cdp-localstack  | 2026-07-18T22:12:30.122 DEBUG --- [et.reactor-0] l.services.dynamodb.server : Starting DynamoDB Local: ['java', '-Xmx256m', '-javaagent:/usr/lib/localstack/dynamodb-local/latest/ddb-local-loader-0.1.jar', '-Djava.library.path=/usr/lib/localstack/dynamodb-local/latest/DynamoDBLocal_lib', '-jar', '/usr/lib/localstack/dynamodb-local/latest/DynamoDBLocal.jar', '-port', '56173', '-dbPath', '/tmp/localstack/state/dynamodb']
+cdp-localstack  | 2026-07-18T22:12:30.122 DEBUG --- [-functhread7] localstack.utils.run       : Executing command: ['java', '-Xmx256m', '-javaagent:/usr/lib/localstack/dynamodb-local/latest/ddb-local-loader-0.1.jar', '-Djava.library.path=/usr/lib/localstack/dynamodb-local/latest/DynamoDBLocal_lib', '-jar', '/usr/lib/localstack/dynamodb-local/latest/DynamoDBLocal.jar', '-port', '56173', '-dbPath', '/tmp/localstack/state/dynamodb']
+cdp-localstack  | 2026-07-18T22:12:30.499 DEBUG --- [-functhread7] l.services.dynamodb.server : Initializing DynamoDB Local with the following configuration:
+cdp-localstack  | 2026-07-18T22:12:30.499 DEBUG --- [-functhread7] l.services.dynamodb.server : Port:	56173
+cdp-localstack  | 2026-07-18T22:12:30.499 DEBUG --- [-functhread7] l.services.dynamodb.server : InMemory:	false
+cdp-localstack  | 2026-07-18T22:12:30.499 DEBUG --- [-functhread7] l.services.dynamodb.server : Version:	1.25.0
+cdp-localstack  | 2026-07-18T22:12:30.499 DEBUG --- [-functhread7] l.services.dynamodb.server : DbPath:	/tmp/localstack/state/dynamodb
+cdp-postgres    | COMMENT
+cdp-postgres    | CDP database initialization complete.
+cdp-postgres    | 
+cdp-localstack  | 2026-07-18T22:12:30.499 DEBUG --- [-functhread7] l.services.dynamodb.server : SharedDb:	false
+cdp-localstack  | 2026-07-18T22:12:30.499 DEBUG --- [-functhread7] l.services.dynamodb.server : shouldDelayTransientStatuses:	false
+cdp-localstack  | 2026-07-18T22:12:30.499 DEBUG --- [-functhread7] l.services.dynamodb.server : CorsParams:	null
+cdp-localstack  | 2026-07-18T22:12:30.499 DEBUG --- [-functhread7] l.services.dynamodb.server : 
+cdp-localstack  | 2026-07-18T22:12:30.809  INFO --- [et.reactor-0] localstack.utils.bootstrap : Execution of "require" took 700.83ms
+cdp-localstack  | 2026-07-18T22:12:31.003  INFO --- [et.reactor-0] localstack.request.aws     : AWS dynamodb.ListTables => 200
+cdp-localstack  | 2026-07-18T22:12:31.027 DEBUG --- [et.reactor-0] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.aws.provider.ssm:default = <function ssm at 0xffff51908220>)
+cdp-postgres    | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-cdp.sql
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:11: NOTICE:  extension "vector" already exists, skipping
+cdp-postgres    | CREATE EXTENSION
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:12: NOTICE:  extension "pgcrypto" already exists, skipping
+cdp-postgres    | CREATE EXTENSION
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:14: NOTICE:  schema "cdp_core" already exists, skipping
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:15: NOTICE:  schema "cdp_audit" already exists, skipping
+cdp-postgres    | CREATE SCHEMA
+cdp-localstack  | 2026-07-18T22:12:31.027 DEBUG --- [et.reactor-0] plux.runtime.manager       : loading plugin localstack.aws.provider:ssm:default
+cdp-localstack  | 2026-07-18T22:12:31.217  INFO --- [et.reactor-0] localstack.request.aws     : AWS ssm.GetParameter => 400 (ParameterNotFound)
+cdp-localstack  | 2026-07-18T22:12:31.239 DEBUG --- [et.reactor-0] plux.runtime.manager       : instantiating plugin PluginSpec(localstack.aws.provider.secretsmanager:default = <function secretsmanager at 0xffff51c03ce0>)
+cdp-localstack  | 2026-07-18T22:12:31.240 DEBUG --- [et.reactor-0] plux.runtime.manager       : loading plugin localstack.aws.provider:secretsmanager:default
+cdp-localstack  | 2026-07-18T22:12:31.243  INFO --- [et.reactor-0] localstack.request.aws     : AWS secretsmanager.GetSecretValue => 400 (ResourceNotFoundException)
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:16: NOTICE:  schema "cdp_repair" already exists, skipping
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:17: NOTICE:  schema "cdp_projection" already exists, skipping
+cdp-postgres    | CREATE SCHEMA
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | COMMENT
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:31: NOTICE:  relation "schema_version" already exists, skipping
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | INSERT 0 1
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:48: NOTICE:  relation "event_log" already exists, skipping
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:51: NOTICE:  relation "idx_event_log_aggregate" already exists, skipping
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:54: NOTICE:  relation "idx_event_log_event_type" already exists, skipping
+cdp-postgres    | CREATE INDEX
+cdp-postgres    | psql:/docker-entrypoint-initdb.d/01-init-cdp.sql:63: NOTICE:  relation "vector_smoke_test" already exists, skipping
+cdp-postgres    | CREATE TABLE
+cdp-postgres    | INSERT 0 1
+cdp-postgres    | 
+cdp-postgres    | 
+cdp-postgres    | /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/ddl
+cdp-postgres    | 
+cdp-postgres    | /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/seed
+cdp-postgres    | 
+cdp-postgres    | waiting for server to shut down...2026-07-18 22:12:16.464 UTC [48] LOG:  received fast shutdown request
+cdp-postgres    | .2026-07-18 22:12:16.465 UTC [48] LOG:  aborting any active transactions
+cdp-postgres    | 2026-07-18 22:12:16.465 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1
+cdp-postgres    | 2026-07-18 22:12:16.465 UTC [49] LOG:  shutting down
+cdp-postgres    | 2026-07-18 22:12:16.466 UTC [49] LOG:  checkpoint starting: shutdown immediate
+cdp-postgres    | 2026-07-18 22:12:16.487 UTC [49] LOG:  checkpoint complete: wrote 1092 buffers (6.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.005 s, sync=0.016 s, total=0.022 s; sync files=424, longest=0.004 s, average=0.001 s; distance=5989 kB, estimate=5989 kB; lsn=0/1AC3928, redo lsn=0/1AC3928
+cdp-postgres    | 2026-07-18 22:12:16.489 UTC [48] LOG:  database system is shut down
+cdp-postgres    |  done
+cdp-postgres    | server stopped
+cdp-postgres    | 
+cdp-postgres    | PostgreSQL init process complete; ready for start up.
+cdp-postgres    | 
+cdp-postgres    | 2026-07-18 22:12:16.574 UTC [1] LOG:  starting PostgreSQL 16.14 (Debian 16.14-1.pgdg12+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+cdp-postgres    | 2026-07-18 22:12:16.575 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+cdp-postgres    | 2026-07-18 22:12:16.575 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+cdp-postgres    | 2026-07-18 22:12:16.576 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+cdp-postgres    | 2026-07-18 22:12:16.577 UTC [88] LOG:  database system was shut down at 2026-07-18 22:12:16 UTC
+cdp-postgres    | 2026-07-18 22:12:16.579 UTC [1] LOG:  database system is ready to accept connections

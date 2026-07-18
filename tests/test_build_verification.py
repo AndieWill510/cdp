@@ -20,10 +20,12 @@ from __future__ import annotations
 
 import json
 import os
+import stat
 import urllib.error
 import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import boto3
@@ -79,6 +81,19 @@ EXPECTED_SECRETS = {
     "/cdp/local/signing-key",
     "/cdp/local/database-password",
 }
+
+
+def test_localstack_bootstrap_script_is_executable() -> None:
+    """LocalStack READY scripts must be executable inside the container."""
+    bootstrap_script = (
+        Path(__file__).resolve().parents[1]
+        / "docker"
+        / "localstack"
+        / "init"
+        / "01-bootstrap-cdp.sh"
+    )
+
+    assert bootstrap_script.stat().st_mode & stat.S_IXUSR
 
 
 def fetch_json(url: str) -> dict[str, Any]:
