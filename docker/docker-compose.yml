@@ -90,11 +90,15 @@ services:
       POSTGRES_DB: cdp
       POSTGRES_USER: cdp
       POSTGRES_PASSWORD: cdp
+      TERM: xterm-256color
+    tty: true
+    stdin_open: true
     ports:
       - "5432:5432"
     volumes:
       - cdp-postgres-data:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./postgres/init:/docker-entrypoint-initdb.d
+      - ../db:/cdp-init/db:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cdp -d cdp"]
       interval: 10s
@@ -128,7 +132,7 @@ services:
       - cdp-net
 
   localstack:
-    image: localstack/localstack:latest
+    image: localstack/localstack:3
     container_name: cdp-localstack
     ports:
       - "4566:4566"

@@ -1,0 +1,723 @@
+Running ruff lint...
+cdp/worker/main.py:37:34: UP037 [*] Remove quotes from type annotation
+   |
+36 |     @classmethod
+37 |     def from_environment(cls) -> "WorkerConfig":
+   |                                  ^^^^^^^^^^^^^^ UP037
+38 |         """Build worker configuration from environment variables."""
+39 |         return cls(
+   |
+   = help: Remove quotes
+
+prototype/src/app/config.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+  |
+1 | / from pydantic_settings import BaseSettings, SettingsConfigDict
+2 | | 
+3 | | class Settings(BaseSettings):
+  | |_^ I001
+4 |       app_env: str = "local"
+5 |       app_port: int = 8000
+  |
+  = help: Organize imports
+
+prototype/src/app/db.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+  |
+1 | / from sqlalchemy import create_engine
+2 | | from sqlalchemy.orm import sessionmaker, DeclarativeBase
+3 | | from .config import settings
+4 | | 
+5 | | engine = create_engine(settings.sync_database_url, future=True, pool_pre_ping=True)
+  | |_^ I001
+6 |   SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+  |
+  = help: Organize imports
+
+prototype/src/app/main.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+   |
+ 1 | / from collections.abc import Generator
+ 2 | | from fastapi import Depends, FastAPI, HTTPException
+ 3 | | from sqlalchemy import text
+ 4 | | from sqlalchemy.orm import Session
+ 5 | | from .db import get_db
+ 6 | | from .schemas import (
+ 7 | |     AdjudicationCreate,
+ 8 | |     ChallengeCreate,
+ 9 | |     ExecutionCreate,
+10 | |     LegitimationCreate,
+11 | |     ProposalCreate,
+12 | | )
+13 | | 
+14 | | app = FastAPI(title="CDP Prototype", version="0.1.0")
+   | |_^ I001
+15 |   
+16 |   def emit_event(db: Session, proposal_id: int, event_type: str, actor: str, body: dict):
+   |
+   = help: Organize imports
+
+prototype/src/app/main.py:1:29: F401 [*] `collections.abc.Generator` imported but unused
+  |
+1 | from collections.abc import Generator
+  |                             ^^^^^^^^^ F401
+2 | from fastapi import Depends, FastAPI, HTTPException
+3 | from sqlalchemy import text
+  |
+  = help: Remove unused import: `collections.abc.Generator`
+
+prototype/src/app/main.py:22:101: E501 Line too long (119 > 100)
+   |
+20 |             VALUES (:proposal_id, :event_type, :actor, CAST(:body AS jsonb))
+21 |         """),
+22 |         {"proposal_id": proposal_id, "event_type": event_type, "actor": actor, "body": __import__("json").dumps(body)},
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^^ E501
+23 |     )
+   |
+
+prototype/src/app/main.py:26:26: B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   |
+25 | @app.get("/health")
+26 | def health(db: Session = Depends(get_db)):
+   |                          ^^^^^^^^^^^^^^^ B008
+27 |     db.execute(text("SELECT 1"))
+28 |     return {"ok": True}
+   |
+
+prototype/src/app/main.py:31:34: B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   |
+30 | @app.get("/proposals")
+31 | def list_proposals(db: Session = Depends(get_db)):
+   |                                  ^^^^^^^^^^^^^^^ B008
+32 |     rows = db.execute(text("""
+33 |         SELECT id, title, domain, proposer, status, policy_basis, payload::text, created_at
+   |
+
+prototype/src/app/main.py:40:60: B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   |
+39 | @app.post("/proposals")
+40 | def create_proposal(payload: ProposalCreate, db: Session = Depends(get_db)):
+   |                                                            ^^^^^^^^^^^^^^^ B008
+41 |     row = db.execute(
+42 |         text("""
+   |
+
+prototype/src/app/main.py:60:62: B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   |
+59 | @app.post("/challenges")
+60 | def create_challenge(payload: ChallengeCreate, db: Session = Depends(get_db)):
+   |                                                              ^^^^^^^^^^^^^^^ B008
+61 |     exists = db.execute(text("SELECT 1 FROM cdp_proposal WHERE id=:id"), {"id": payload.proposal_id}).first()
+62 |     if not exists:
+   |
+
+prototype/src/app/main.py:61:101: E501 Line too long (109 > 100)
+   |
+59 | @app.post("/challenges")
+60 | def create_challenge(payload: ChallengeCreate, db: Session = Depends(get_db)):
+61 |     exists = db.execute(text("SELECT 1 FROM cdp_proposal WHERE id=:id"), {"id": payload.proposal_id}).first()
+   |                                                                                                     ^^^^^^^^^ E501
+62 |     if not exists:
+63 |         raise HTTPException(status_code=404, detail="Proposal not found")
+   |
+
+prototype/src/app/main.py:68:101: E501 Line too long (101 > 100)
+   |
+66 |             INSERT INTO cdp_challenge (proposal_id, challenger, challenge_type, reason, evidence)
+67 |             VALUES (:proposal_id, :challenger, :challenge_type, :reason, CAST(:evidence AS jsonb))
+68 |             RETURNING id, proposal_id, challenger, challenge_type, reason, evidence::text, created_at
+   |                                                                                                     ^ E501
+69 |         """),
+70 |         {
+   |
+
+prototype/src/app/main.py:78:101: E501 Line too long (109 > 100)
+   |
+76 |         },
+77 |     ).mappings().one()
+78 |     db.execute(text("UPDATE cdp_proposal SET status='challenged' WHERE id=:id"), {"id": payload.proposal_id})
+   |                                                                                                     ^^^^^^^^^ E501
+79 |     emit_event(db, payload.proposal_id, "challenge_created", payload.challenger, payload.model_dump())
+80 |     db.commit()
+   |
+
+prototype/src/app/main.py:79:101: E501 Line too long (102 > 100)
+   |
+77 |     ).mappings().one()
+78 |     db.execute(text("UPDATE cdp_proposal SET status='challenged' WHERE id=:id"), {"id": payload.proposal_id})
+79 |     emit_event(db, payload.proposal_id, "challenge_created", payload.challenger, payload.model_dump())
+   |                                                                                                     ^^ E501
+80 |     db.commit()
+81 |     return dict(row)
+   |
+
+prototype/src/app/main.py:84:68: B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   |
+83 | @app.post("/adjudications")
+84 | def create_adjudication(payload: AdjudicationCreate, db: Session = Depends(get_db)):
+   |                                                                    ^^^^^^^^^^^^^^^ B008
+85 |     exists = db.execute(text("SELECT 1 FROM cdp_proposal WHERE id=:id"), {"id": payload.proposal_id}).first()
+86 |     if not exists:
+   |
+
+prototype/src/app/main.py:85:101: E501 Line too long (109 > 100)
+   |
+83 | @app.post("/adjudications")
+84 | def create_adjudication(payload: AdjudicationCreate, db: Session = Depends(get_db)):
+85 |     exists = db.execute(text("SELECT 1 FROM cdp_proposal WHERE id=:id"), {"id": payload.proposal_id}).first()
+   |                                                                                                     ^^^^^^^^^ E501
+86 |     if not exists:
+87 |         raise HTTPException(status_code=404, detail="Proposal not found")
+   |
+
+prototype/src/app/main.py:92:101: E501 Line too long (101 > 100)
+   |
+90 |             INSERT INTO cdp_adjudication (proposal_id, adjudicator, decision, rationale, conditions)
+91 |             VALUES (:proposal_id, :adjudicator, :decision, :rationale, CAST(:conditions AS jsonb))
+92 |             RETURNING id, proposal_id, adjudicator, decision, rationale, conditions::text, created_at
+   |                                                                                                     ^ E501
+93 |         """),
+94 |         {
+   |
+
+prototype/src/app/main.py:102:101: E501 Line too long (110 > 100)
+    |
+100 |         },
+101 |     ).mappings().one()
+102 |     db.execute(text("UPDATE cdp_proposal SET status='adjudicated' WHERE id=:id"), {"id": payload.proposal_id})
+    |                                                                                                     ^^^^^^^^^^ E501
+103 |     emit_event(db, payload.proposal_id, "adjudication_created", payload.adjudicator, payload.model_dump())
+104 |     db.commit()
+    |
+
+prototype/src/app/main.py:103:101: E501 Line too long (106 > 100)
+    |
+101 |     ).mappings().one()
+102 |     db.execute(text("UPDATE cdp_proposal SET status='adjudicated' WHERE id=:id"), {"id": payload.proposal_id})
+103 |     emit_event(db, payload.proposal_id, "adjudication_created", payload.adjudicator, payload.model_dump())
+    |                                                                                                     ^^^^^^ E501
+104 |     db.commit()
+105 |     return dict(row)
+    |
+
+prototype/src/app/main.py:108:68: B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+    |
+107 | @app.post("/legitimations")
+108 | def create_legitimation(payload: LegitimationCreate, db: Session = Depends(get_db)):
+    |                                                                    ^^^^^^^^^^^^^^^ B008
+109 |     exists = db.execute(text("SELECT 1 FROM cdp_proposal WHERE id=:id"), {"id": payload.proposal_id}).first()
+110 |     if not exists:
+    |
+
+prototype/src/app/main.py:109:101: E501 Line too long (109 > 100)
+    |
+107 | @app.post("/legitimations")
+108 | def create_legitimation(payload: LegitimationCreate, db: Session = Depends(get_db)):
+109 |     exists = db.execute(text("SELECT 1 FROM cdp_proposal WHERE id=:id"), {"id": payload.proposal_id}).first()
+    |                                                                                                     ^^^^^^^^^ E501
+110 |     if not exists:
+111 |         raise HTTPException(status_code=404, detail="Proposal not found")
+    |
+
+prototype/src/app/main.py:121:101: E501 Line too long (126 > 100)
+    |
+119 |     ).mappings().one()
+120 |     new_status = "legitimized" if payload.status == "approved" else "blocked"
+121 |     db.execute(text("UPDATE cdp_proposal SET status=:status WHERE id=:id"), {"status": new_status, "id": payload.proposal_id})
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^ E501
+122 |     emit_event(db, payload.proposal_id, "legitimation_created", payload.legitimizer, payload.model_dump())
+123 |     db.commit()
+    |
+
+prototype/src/app/main.py:122:101: E501 Line too long (106 > 100)
+    |
+120 |     new_status = "legitimized" if payload.status == "approved" else "blocked"
+121 |     db.execute(text("UPDATE cdp_proposal SET status=:status WHERE id=:id"), {"status": new_status, "id": payload.proposal_id})
+122 |     emit_event(db, payload.proposal_id, "legitimation_created", payload.legitimizer, payload.model_dump())
+    |                                                                                                     ^^^^^^ E501
+123 |     db.commit()
+124 |     return dict(row)
+    |
+
+prototype/src/app/main.py:127:62: B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+    |
+126 | @app.post("/executions")
+127 | def create_execution(payload: ExecutionCreate, db: Session = Depends(get_db)):
+    |                                                              ^^^^^^^^^^^^^^^ B008
+128 |     status = db.execute(text("SELECT status FROM cdp_proposal WHERE id=:id"), {"id": payload.proposal_id}).scalar_one_or_none()
+129 |     if status is None:
+    |
+
+prototype/src/app/main.py:128:101: E501 Line too long (127 > 100)
+    |
+126 | @app.post("/executions")
+127 | def create_execution(payload: ExecutionCreate, db: Session = Depends(get_db)):
+128 |     status = db.execute(text("SELECT status FROM cdp_proposal WHERE id=:id"), {"id": payload.proposal_id}).scalar_one_or_none()
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ E501
+129 |     if status is None:
+130 |         raise HTTPException(status_code=404, detail="Proposal not found")
+    |
+
+prototype/src/app/main.py:132:101: E501 Line too long (123 > 100)
+    |
+130 |         raise HTTPException(status_code=404, detail="Proposal not found")
+131 |     if status != "legitimized":
+132 |         raise HTTPException(status_code=409, detail=f"Proposal status is {status}; only legitimized proposals can execute")
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^ E501
+133 |     row = db.execute(
+134 |         text("""
+    |
+
+prototype/src/app/main.py:135:101: E501 Line too long (106 > 100)
+    |
+133 |     row = db.execute(
+134 |         text("""
+135 |             INSERT INTO cdp_execution (proposal_id, executor, execution_target, execution_payload, status)
+    |                                                                                                     ^^^^^^ E501
+136 |             VALUES (:proposal_id, :executor, :execution_target, CAST(:execution_payload AS jsonb), 'submitted')
+137 |             RETURNING id, proposal_id, executor, execution_target, execution_payload::text, status, created_at
+    |
+
+prototype/src/app/main.py:136:101: E501 Line too long (111 > 100)
+    |
+134 |         text("""
+135 |             INSERT INTO cdp_execution (proposal_id, executor, execution_target, execution_payload, status)
+136 |             VALUES (:proposal_id, :executor, :execution_target, CAST(:execution_payload AS jsonb), 'submitted')
+    |                                                                                                     ^^^^^^^^^^^ E501
+137 |             RETURNING id, proposal_id, executor, execution_target, execution_payload::text, status, created_at
+138 |         """),
+    |
+
+prototype/src/app/main.py:137:101: E501 Line too long (110 > 100)
+    |
+135 |             INSERT INTO cdp_execution (proposal_id, executor, execution_target, execution_payload, status)
+136 |             VALUES (:proposal_id, :executor, :execution_target, CAST(:execution_payload AS jsonb), 'submitted')
+137 |             RETURNING id, proposal_id, executor, execution_target, execution_payload::text, status, created_at
+    |                                                                                                     ^^^^^^^^^^ E501
+138 |         """),
+139 |         {
+    |
+
+prototype/src/app/main.py:144:101: E501 Line too long (107 > 100)
+    |
+142 |         },
+143 |     ).mappings().one()
+144 |     db.execute(text("UPDATE cdp_proposal SET status='executed' WHERE id=:id"), {"id": payload.proposal_id})
+    |                                                                                                     ^^^^^^^ E501
+145 |     emit_event(db, payload.proposal_id, "execution_created", payload.executor, payload.model_dump())
+146 |     db.commit()
+    |
+
+prototype/src/app/main.py:150:46: B008 Do not perform function call `Depends` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+    |
+149 | @app.get("/timeline/{proposal_id}")
+150 | def timeline(proposal_id: int, db: Session = Depends(get_db)):
+    |                                              ^^^^^^^^^^^^^^^ B008
+151 |     rows = db.execute(
+152 |         text("""
+    |
+
+prototype/src/app/schemas.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+  |
+1 | / from typing import Any, Optional
+2 | | from pydantic import BaseModel, Field
+3 | | 
+4 | | class ProposalCreate(BaseModel):
+  | |_^ I001
+5 |       title: str
+6 |       domain: str
+  |
+  = help: Organize imports
+
+prototype/src/app/schemas.py:1:25: F401 [*] `typing.Optional` imported but unused
+  |
+1 | from typing import Any, Optional
+  |                         ^^^^^^^^ F401
+2 | from pydantic import BaseModel, Field
+  |
+  = help: Remove unused import: `typing.Optional`
+
+prototype/src/worker/run.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+  |
+1 | / import json
+2 | | import logging
+3 | | import time
+4 | | from sqlalchemy import create_engine, text
+5 | | from src.app.config import settings
+6 | | 
+7 | | logging.basicConfig(level=settings.log_level)
+  | |_^ I001
+8 |   logger = logging.getLogger("cdp-worker")
+  |
+  = help: Organize imports
+
+prototype/src/worker/run.py:26:13: F841 Local variable `payload` is assigned to but never used
+   |
+25 |         for row in rows:
+26 |             payload = row["payload"] if isinstance(row["payload"], dict) else row["payload"]
+   |             ^^^^^^^ F841
+27 |             rationale = "Auto-approved because no challenge was present within current prototype workflow."
+28 |             conn.execute(
+   |
+   = help: Remove assignment to unused variable `payload`
+
+prototype/src/worker/run.py:27:101: E501 Line too long (107 > 100)
+   |
+25 |         for row in rows:
+26 |             payload = row["payload"] if isinstance(row["payload"], dict) else row["payload"]
+27 |             rationale = "Auto-approved because no challenge was present within current prototype workflow."
+   |                                                                                                     ^^^^^^^ E501
+28 |             conn.execute(
+29 |                 text("""
+   |
+
+prototype/src/worker/run.py:30:101: E501 Line too long (108 > 100)
+   |
+28 |             conn.execute(
+29 |                 text("""
+30 |                     INSERT INTO cdp_adjudication (proposal_id, adjudicator, decision, rationale, conditions)
+   |                                                                                                     ^^^^^^^^ E501
+31 |                     VALUES (:proposal_id, 'auto-judge', 'approve', :rationale, '{}'::jsonb)
+32 |                 """),
+   |
+
+prototype/src/worker/run.py:35:101: E501 Line too long (110 > 100)
+   |
+33 |                 {"proposal_id": row["id"], "rationale": rationale},
+34 |             )
+35 |             conn.execute(text("UPDATE cdp_proposal SET status='adjudicated' WHERE id=:id"), {"id": row["id"]})
+   |                                                                                                     ^^^^^^^^^^ E501
+36 |             conn.execute(
+37 |                 text("""
+   |
+
+prototype/src/worker/run.py:39:101: E501 Line too long (101 > 100)
+   |
+37 |                 text("""
+38 |                     INSERT INTO cdp_event (proposal_id, event_type, actor, body)
+39 |                     VALUES (:proposal_id, 'adjudication_created', 'auto-judge', CAST(:body AS jsonb))
+   |                                                                                                     ^ E501
+40 |                 """),
+41 |                 {"proposal_id": row["id"], "body": json.dumps({"decision": "approve", "rationale": rationale})},
+   |
+
+prototype/src/worker/run.py:41:101: E501 Line too long (112 > 100)
+   |
+39 |                     VALUES (:proposal_id, 'adjudication_created', 'auto-judge', CAST(:body AS jsonb))
+40 |                 """),
+41 |                 {"proposal_id": row["id"], "body": json.dumps({"decision": "approve", "rationale": rationale})},
+   |                                                                                                     ^^^^^^^^^^^^ E501
+42 |             )
+43 |             logger.info("Auto-adjudicated proposal_id=%s", row["id"])
+   |
+
+src/cdp_control_plane/models.py:19:25: UP017 [*] Use `datetime.UTC` alias
+   |
+18 | def utc_now() -> datetime:
+19 |     return datetime.now(timezone.utc)
+   |                         ^^^^^^^^^^^^ UP017
+   |
+   = help: Convert to `datetime.UTC` alias
+
+src/cdp_control_plane/models.py:29:16: UP007 [*] Use `X | Y` for type annotations
+   |
+27 |     actor_id: str
+28 |     proposal: str
+29 |     challenge: Optional[str] = None
+   |                ^^^^^^^^^^^^^ UP007
+30 |     adjudication: Optional[str] = None
+31 |     lineage_ref: Optional[UUID] = None
+   |
+   = help: Convert to `X | Y`
+
+src/cdp_control_plane/models.py:30:19: UP007 [*] Use `X | Y` for type annotations
+   |
+28 |     proposal: str
+29 |     challenge: Optional[str] = None
+30 |     adjudication: Optional[str] = None
+   |                   ^^^^^^^^^^^^^ UP007
+31 |     lineage_ref: Optional[UUID] = None
+32 |     record_hash: str = ""
+   |
+   = help: Convert to `X | Y`
+
+src/cdp_control_plane/models.py:31:18: UP007 [*] Use `X | Y` for type annotations
+   |
+29 |     challenge: Optional[str] = None
+30 |     adjudication: Optional[str] = None
+31 |     lineage_ref: Optional[UUID] = None
+   |                  ^^^^^^^^^^^^^^ UP007
+32 |     record_hash: str = ""
+   |
+   = help: Convert to `X | Y`
+
+src/cdp_control_plane/models.py:38:18: UP007 [*] Use `X | Y` for type annotations
+   |
+36 |     actor_id: str
+37 |     proposal: str
+38 |     lineage_ref: Optional[UUID] = None
+   |                  ^^^^^^^^^^^^^^ UP007
+   |
+   = help: Convert to `X | Y`
+
+tests/test_build_verification.py:218:101: E501 Line too long (106 > 100)
+    |
+216 |     if missing:
+217 |         pytest.skip(
+218 |             f"Skipping LocalStack S3 bucket check because expected buckets are missing: {sorted(missing)}"
+    |                                                                                                     ^^^^^^ E501
+219 |         )
+    |
+
+tests/test_build_verification.py:240:101: E501 Line too long (105 > 100)
+    |
+238 |     if missing:
+239 |         pytest.skip(
+240 |             f"Skipping LocalStack SQS queue check because expected queues are missing: {sorted(missing)}"
+    |                                                                                                     ^^^^^ E501
+241 |         )
+    |
+
+tests/test_build_verification.py:251:101: E501 Line too long (106 > 100)
+    |
+249 |         response = events.list_event_buses()
+250 |     except (BotoCoreError, ClientError) as exc:
+251 |         pytest.skip(f"Skipping LocalStack EventBridge bus check because LocalStack is unavailable: {exc}")
+    |                                                                                                     ^^^^^^ E501
+252 | 
+253 |     bus_names = {bus["Name"] for bus in response.get("EventBuses", [])}
+    |
+
+tests/test_build_verification.py:268:101: E501 Line too long (105 > 100)
+    |
+266 |         response = dynamodb.list_tables()
+267 |     except (BotoCoreError, ClientError) as exc:
+268 |         pytest.skip(f"Skipping LocalStack DynamoDB table check because LocalStack is unavailable: {exc}")
+    |                                                                                                     ^^^^^ E501
+269 | 
+270 |     table_names = set(response.get("TableNames", []))
+    |
+
+tests/test_build_verification.py:273:101: E501 Line too long (104 > 100)
+    |
+271 |     if "cdp-idempotency-local" not in table_names:
+272 |         pytest.skip(
+273 |             "Skipping LocalStack DynamoDB table check because the CDP idempotency table is not present."
+    |                                                                                                     ^^^^ E501
+274 |         )
+    |
+
+tests/test_db_ddl_runtime.py:8:20: F401 [*] `typing.Any` imported but unused
+   |
+ 6 | from collections import Counter
+ 7 | from pathlib import Path
+ 8 | from typing import Any
+   |                    ^^^ F401
+ 9 | 
+10 | try:
+   |
+   = help: Remove unused import: `typing.Any`
+
+tests/test_db_ddl_runtime.py:54:101: E501 Line too long (112 > 100)
+   |
+54 | def _extract_ddl_assets(sql_text: str) -> tuple[set[str], set[str], set[str], set[str], set[str], Counter[str]]:
+   |                                                                                                     ^^^^^^^^^^^^ E501
+55 |     schemas: set[str] = set()
+56 |     tables: set[str] = set()
+   |
+
+tests/test_db_ddl_runtime.py:93:101: E501 Line too long (118 > 100)
+   |
+91 |     for ddl_path in _read_ddl_files():
+92 |         sql_text = ddl_path.read_text(encoding="utf-8")
+93 |         ddl_schemas, ddl_tables, ddl_views, ddl_functions, ddl_extensions, ddl_inserts = _extract_ddl_assets(sql_text)
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^ E501
+94 |         schemas.update(ddl_schemas)
+95 |         tables.update(ddl_tables)
+   |
+
+tests/test_db_ddl_runtime.py:112:101: E501 Line too long (156 > 100)
+    |
+110 |     schema_name, proc_name = function_name.split(".")
+111 |     cursor.execute(
+112 |         "SELECT proname FROM pg_proc JOIN pg_namespace ON pg_proc.pronamespace = pg_namespace.oid WHERE pg_namespace.nspname = %s AND pg_proc.proname = %s",
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ E501
+113 |         (schema_name, proc_name),
+114 |     )
+    |
+
+tests/test_db_ddl_runtime.py:164:31: B007 Loop control variable `insert_count` not used within loop body
+    |
+162 |                     _assert_extension_exists(cursor, extension_name)
+163 | 
+164 |                 for relation, insert_count in inserts.items():
+    |                               ^^^^^^^^^^^^ B007
+165 |                     if relation in tables:
+166 |                         _assert_table_has_rows(cursor, relation)
+    |
+    = help: Rename unused `insert_count` to `_insert_count`
+
+tests/test_db_ddl_runtime.py:168:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    |
+166 |                         _assert_table_has_rows(cursor, relation)
+167 |     except AttributeError:
+168 |         raise unittest.SkipTest("psycopg or psycopg2 failed to import properly")
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ B904
+169 |     except psycopg.OperationalError as exc:
+170 |         raise AssertionError(
+    |
+
+tests/test_db_ddl_runtime.py:171:101: E501 Line too long (104 > 100)
+    |
+169 |     except psycopg.OperationalError as exc:
+170 |         raise AssertionError(
+171 |             "Could not connect to Postgres. Is the running database available at CDP_TEST_DATABASE_URL?"
+    |                                                                                                     ^^^^ E501
+172 |         ) from exc
+    |
+
+tests/test_nemawashi_workflow_rules_ddl.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+   |
+11 |   """
+12 |   
+13 | / from __future__ import annotations
+14 | | 
+15 | | import os
+16 | | import re
+17 | | import unittest
+18 | | from pathlib import Path
+19 | | from typing import Any
+20 | | 
+21 | | 
+22 | | REPO_ROOT = Path(__file__).resolve().parents[1]
+   | |_^ I001
+23 |   DDL_001 = REPO_ROOT / "db" / "ddl" / "001-decision-registry-kernel.sql"
+24 |   DDL_003 = REPO_ROOT / "db" / "ddl" / "003-nemawashi-workflow-rules.sql"
+   |
+   = help: Organize imports
+
+tests/test_nemawashi_workflow_rules_ddl.py:115:101: E501 Line too long (103 > 100)
+    |
+113 |             self.assertIsNone(
+114 |                 re.search(pattern, self.compact_sql),
+115 |                 f"003 DDL should not use config_lookup for governed workflow/rules storage: {pattern}",
+    |                                                                                                     ^^^ E501
+116 |             )
+    |
+
+tests/test_nemawashi_workflow_rules_ddl.py:250:101: E501 Line too long (106 > 100)
+    |
+248 |             return psycopg2.connect(database_url)
+249 |         except ImportError as exc:
+250 |             raise unittest.SkipTest("install psycopg or psycopg2 to run Postgres DDL smoke test") from exc
+    |                                                                                                     ^^^^^^ E501
+    |
+
+tests/test_self_canonicalizing_ingestion.py:24:1: UP035 [*] Import from `collections.abc` instead: `Callable`
+   |
+22 | from html import escape
+23 | from pathlib import Path
+24 | from typing import Callable
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ UP035
+25 | from xml.etree import ElementTree as ET
+   |
+   = help: Import from `collections.abc`
+
+tests/test_self_canonicalizing_ingestion.py:180:23: B905 [*] `zip()` without an explicit `strict=` parameter
+    |
+178 |                 f"row {source_index} has {len(row)} columns; expected {len(columns)}"
+179 |             )
+180 |         mapped = dict(zip(columns, [cell.strip() for cell in row]))
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ B905
+181 |         for optional in (
+182 |             "identifier_type_registry_name",
+    |
+    = help: Add explicit `strict=False`
+
+tests/test_self_canonicalizing_ingestion.py:304:101: E501 Line too long (113 > 100)
+    |
+302 |             raise ValueError(f"unknown parent decision: {registry_name}.{parent_decision_id}")
+303 | 
+304 |         assert_registered(identifier_index, "parent_relation_type", parent_relation_type, "parent_relation_type")
+    |                                                                                                     ^^^^^^^^^^^^^ E501
+305 |         assert_registered(identifier_index, "actor_type", str(row["subject_actor_type"]), "subject_actor_type")
+306 |         assert_registered_of_type(
+    |
+
+tests/test_self_canonicalizing_ingestion.py:305:101: E501 Line too long (111 > 100)
+    |
+304 |         assert_registered(identifier_index, "parent_relation_type", parent_relation_type, "parent_relation_type")
+305 |         assert_registered(identifier_index, "actor_type", str(row["subject_actor_type"]), "subject_actor_type")
+    |                                                                                                     ^^^^^^^^^^^ E501
+306 |         assert_registered_of_type(
+307 |             identifier_index,
+    |
+
+tests/test_self_canonicalizing_ingestion.py:314:101: E501 Line too long (107 > 100)
+    |
+312 |             "subject_actor_id",
+313 |         )
+314 |         assert_registered(identifier_index, "predicate_verb", str(row["predicate_verb"]), "predicate_verb")
+    |                                                                                                     ^^^^^^^ E501
+315 |         assert_registered(identifier_index, "object_type", str(row["object_type"]), "object_type")
+316 |         assert_registered_of_type(
+    |
+
+tests/test_self_canonicalizing_ingestion.py:361:101: E501 Line too long (104 > 100)
+    |
+359 |             )
+360 | 
+361 |         assert_registered(identifier_index, "source_system", str(row["source_system"]), "source_system")
+    |                                                                                                     ^^^^ E501
+    |
+
+tests/test_self_canonicalizing_ingestion.py:477:101: E501 Line too long (112 > 100)
+    |
+475 |             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+476 |             '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+477 |             '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    |                                                                                                     ^^^^^^^^^^^^ E501
+478 |             '<Default Extension="xml" ContentType="application/xml"/>'
+479 |             f'{"".join(content_overrides)}</Types>',
+    |
+
+tests/test_self_canonicalizing_ingestion.py:486:101: E501 Line too long (104 > 100)
+    |
+484 |             '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+485 |             '<Relationship Id="rId1" '
+486 |             'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" '
+    |                                                                                                     ^^^^ E501
+487 |             'Target="xl/workbook.xml"/></Relationships>',
+488 |         )
+    |
+
+tests/test_self_canonicalizing_ingestion.py:533:101: E501 Line too long (102 > 100)
+    |
+531 |                         row_values.append("")
+532 |                     text_el = cell_el.find(".//{*}t")
+533 |                     row_values[col_idx] = text_el.text if text_el is not None and text_el.text else ""
+    |                                                                                                     ^^ E501
+534 |                 rows.append(row_values)
+535 |             worksheets.append(rows)
+    |
+
+Found 69 errors.
+[*] 17 fixable with the `--fix` option (2 hidden fixes can be enabled with the `--unsafe-fixes` option).
+WARNING: ruff found lint issues, but continuing with pytest.
+Running pytest...
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-7.4.2, pluggy-1.6.0
+rootdir: /Users/andie/Documents/code/cdp
+plugins: anyio-4.12.1, asyncio-0.22.0, cov-4.1.0
+asyncio: mode=strict
+collected 29 items
+
+prototype/tests/test_smoke.py .                                          [  3%]
+tests/test_build_verification.py ....ssssss                              [ 37%]
+tests/test_db_ddl_runtime.py .                                           [ 41%]
+tests/test_nemawashi_workflow_rules_ddl.py ..........s                   [ 79%]
+tests/test_self_canonicalizing_ingestion.py ......                       [100%]
+
+======================== 22 passed, 7 skipped in 0.47s =========================
+Running smoke control-plane test...
+Checking health...
+Creating proposal...
+curl: (22) The requested URL returned error: 404
+WARNING: Smoke control-plane endpoint http://localhost:8000/proposals is unavailable or rejected the request. Skipping smoke test.

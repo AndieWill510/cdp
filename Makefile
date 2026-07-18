@@ -11,6 +11,7 @@ help:
 	@echo "  make up-build           Build and start the local stack"
 	@echo "  make down               Stop the local stack"
 	@echo "  make down-volumes       Stop the stack and remove local volumes"
+	@echo "  make reset-local        Reset the local stack (down-volumes + up-build)"
 	@echo "  make ps                 Show compose service status"
 	@echo "  make logs               Tail all logs"
 	@echo "  make logs-api           Tail API logs"
@@ -35,7 +36,9 @@ down:
 	docker compose -f $(COMPOSE_FILE) down
 
 down-volumes:
-	docker compose -f $(COMPOSE_FILE) down -v
+	docker compose -f $(COMPOSE_FILE) down -v --remove-orphans
+
+reset-local: down-volumes up-build
 
 ps:
 	docker compose -f $(COMPOSE_FILE) ps
