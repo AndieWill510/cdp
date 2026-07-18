@@ -43,3 +43,20 @@ Then use these sections:
 - Do not weaken governance or safety checks merely to make a task pass.
 - Require evidence: commands run, files changed, tests passed, failures, and unresolved uncertainty.
 - Do not duplicate standing rules from `AGENTS.md`; reference them.
+
+## Current Skills
+
+- `engineering/investigate-bug.md` — diagnose failures before patching.
+- `database/db-migration.md` — change PostgreSQL structure safely.
+- `testing/docker-test.md` — run the canonical local Docker verification loop.
+- `testing/regression-test.md` — prove a fix without hiding adjacent breakage.
+- `governance/review-skill.md` — review a skill using observed evidence.
+- `governance/propose-skill-change.md` — propose and validate a bounded procedural improvement.
+
+## Governed Evolution
+
+Skills may evolve from evidence gathered while they are used. They may not silently rewrite themselves.
+
+Use `prompts/improve-the-process.md` when a completed task exposes repeated procedural friction. That workflow requires review, a bounded proposal, regression validation, preserved dissent, and a stop for human approval when safety, permissions, evidence requirements, data retention, or contestability would change.
+
+A single run may perform at most one revision cycle. This prevents recursive optimization from outrunning understanding or oversight.
