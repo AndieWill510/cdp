@@ -1,0 +1,14 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-7.4.2, pluggy-1.6.0
+rootdir: /Users/andie/Documents/code/cdp
+plugins: anyio-4.12.1, asyncio-0.22.0, cov-4.1.0
+asyncio: mode=strict
+collected 29 items
+
+prototype/tests/test_smoke.py .                                          [  3%]
+tests/test_build_verification.py ....ssssss                              [ 37%]
+tests/test_db_ddl_runtime.py .                                           [ 41%]
+tests/test_nemawashi_workflow_rules_ddl.py ..........s                   [ 79%]
+tests/test_self_canonicalizing_ingestion.py ......                       [100%]
+
+======================== 22 passed, 7 skipped in 0.47s =========================
