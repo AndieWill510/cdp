@@ -19,7 +19,7 @@ help:
 	@echo "  make logs-localstack    Tail LocalStack logs"
 	@echo "  make smoke              Run shell-based local smoke tests"
 	@echo "  make test               Run pytest build verification tests"
-	@echo "  make codex-test         Build Docker, run the canonical suite, and verify Postgres"
+	@echo "  make codex-test         Build Docker, run the canonical suite, and verify Postgres + LocalStack"
 	@echo "  make verify-rfc-index   Verify RFC manifest and band-index integrity"
 	@echo "  make verify             Run RFC index + smoke + pytest verification"
 	@echo "  make shell-postgres     Open psql in the Postgres container"
