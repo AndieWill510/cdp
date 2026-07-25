@@ -1,5 +1,6 @@
 name: RFC Index Integrity
 
+# This workflow is intentionally small: it verifies the RFC map in the repository itself.
 on:
   push:
     paths:
