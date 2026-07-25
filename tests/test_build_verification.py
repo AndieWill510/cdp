@@ -20,9 +20,11 @@ from __future__ import annotations
 
 import json
 import os
+import stat
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import boto3
@@ -78,6 +80,19 @@ EXPECTED_SECRETS = {
     "/cdp/local/signing-key",
     "/cdp/local/database-password",
 }
+
+
+def test_localstack_bootstrap_script_is_executable() -> None:
+    """LocalStack READY scripts must be executable inside the container."""
+    bootstrap_script = (
+        Path(__file__).resolve().parents[1]
+        / "docker"
+        / "localstack"
+        / "init"
+        / "01-bootstrap-cdp.sh"
+    )
+
+    assert bootstrap_script.stat().st_mode & stat.S_IXUSR
 
 
 def fetch_json(url: str) -> dict[str, Any]:
@@ -196,10 +211,11 @@ def test_localstack_s3_buckets() -> None:
     try:
         response = s3.list_buckets()
     except (BotoCoreError, ClientError) as exc:
-        pytest.fail(f"Could not list LocalStack S3 buckets. Is LocalStack running? {exc}")
+        pytest.fail(f"Could not list LocalStack S3 buckets: {exc}")
 
     bucket_names = {bucket["Name"] for bucket in response.get("Buckets", [])}
-    assert EXPECTED_BUCKETS.issubset(bucket_names)
+    missing = EXPECTED_BUCKETS - bucket_names
+    assert not missing, f"Required LocalStack S3 buckets are missing: {sorted(missing)}"
 
 
 def test_localstack_sqs_queues() -> None:
@@ -209,11 +225,12 @@ def test_localstack_sqs_queues() -> None:
     try:
         response = sqs.list_queues()
     except (BotoCoreError, ClientError) as exc:
-        pytest.fail(f"Could not list LocalStack SQS queues. Is LocalStack running? {exc}")
+        pytest.fail(f"Could not list LocalStack SQS queues: {exc}")
 
     queue_urls = response.get("QueueUrls", [])
     queue_names = {queue_url.rsplit("/", maxsplit=1)[-1] for queue_url in queue_urls}
-    assert EXPECTED_QUEUES.issubset(queue_names)
+    missing = EXPECTED_QUEUES - queue_names
+    assert not missing, f"Required LocalStack SQS queues are missing: {sorted(missing)}"
 
 
 def test_localstack_eventbridge_bus() -> None:
@@ -223,10 +240,12 @@ def test_localstack_eventbridge_bus() -> None:
     try:
         response = events.list_event_buses()
     except (BotoCoreError, ClientError) as exc:
-        pytest.fail(f"Could not list LocalStack EventBridge buses. Is LocalStack running? {exc}")
+        pytest.fail(f"Could not list LocalStack EventBridge buses: {exc}")
 
     bus_names = {bus["Name"] for bus in response.get("EventBuses", [])}
-    assert "cdp-events-local" in bus_names
+    assert "cdp-events-local" in bus_names, (
+        "Required LocalStack EventBridge bus cdp-events-local is missing."
+    )
 
 
 def test_localstack_dynamodb_table() -> None:
@@ -236,9 +255,12 @@ def test_localstack_dynamodb_table() -> None:
     try:
         response = dynamodb.list_tables()
     except (BotoCoreError, ClientError) as exc:
-        pytest.fail(f"Could not list LocalStack DynamoDB tables. Is LocalStack running? {exc}")
+        pytest.fail(f"Could not list LocalStack DynamoDB tables: {exc}")
 
-    assert "cdp-idempotency-local" in set(response.get("TableNames", []))
+    table_names = set(response.get("TableNames", []))
+    assert "cdp-idempotency-local" in table_names, (
+        "Required LocalStack DynamoDB table cdp-idempotency-local is missing."
+    )
 
 
 def test_localstack_ssm_parameters() -> None:
@@ -249,8 +271,9 @@ def test_localstack_ssm_parameters() -> None:
         try:
             response = ssm.get_parameter(Name=parameter_name)
         except (BotoCoreError, ClientError) as exc:
-            pytest.fail(f"Missing or unreadable SSM parameter {parameter_name}: {exc}")
-
+            pytest.fail(
+                f"Required LocalStack SSM parameter {parameter_name} is missing or unreadable: {exc}"
+            )
         assert response["Parameter"]["Value"]
 
 
@@ -262,6 +285,7 @@ def test_localstack_secrets() -> None:
         try:
             response = secretsmanager.get_secret_value(SecretId=secret_name)
         except (BotoCoreError, ClientError) as exc:
-            pytest.fail(f"Missing or unreadable secret {secret_name}: {exc}")
-
+            pytest.fail(
+                f"Required LocalStack secret {secret_name} is missing or unreadable: {exc}"
+            )
         assert response["SecretString"]

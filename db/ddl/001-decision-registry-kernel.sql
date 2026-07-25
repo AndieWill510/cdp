@@ -428,24 +428,9 @@ CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
     source_system TEXT NOT NULL DEFAULT 'spreadsheet',
     source_ref TEXT,
 
-    row_hash TEXT GENERATED ALWAYS AS (
-        encode(
-            digest(
-                registry_name || '|' ||
-                decision_id || '|' ||
-                decision_class_id || '|' ||
-                coalesce(parent_decision_id, '') || '|' || parent_relation_type || '|' ||
-                antecedent_text || '|' ||
-                subject_actor_type || '|' || subject_actor_id || '|' ||
-                predicate_verb || '|' || object_type || '|' || object_id || '|' ||
-                permission_source_type || '|' || permission_source_id || '|' ||
-                human_required::TEXT || '|' || human_approver_id || '|' ||
-                source_system || '|' || created::TEXT,
-                'sha256'
-            ),
-            'hex'
-        )
-    ) STORED,
+    -- `row_hash` (computed integrity hash) is implemented via trigger
+    -- because generation expressions require strictly immutable functions.
+    row_hash TEXT,
 
     CONSTRAINT chk_decision_registry_registry_name_format
         CHECK (registry_name ~ '^[A-Za-z0-9_-]+$'),
@@ -532,6 +517,35 @@ CREATE TABLE IF NOT EXISTS cdp_core.decision_registry (
         REFERENCES cdp_core.decision_registry (registry_name, decision_id)
         DEFERRABLE INITIALLY DEFERRED
 );
+
+-- Compute `row_hash` via trigger to avoid immutable-function restrictions
+CREATE OR REPLACE FUNCTION cdp_core.compute_decision_registry_row_hash()
+RETURNS trigger AS $$
+BEGIN
+    NEW.row_hash := encode(
+        digest(
+            COALESCE(NEW.registry_name, '') || '|' ||
+            COALESCE(NEW.decision_id, '') || '|' ||
+            COALESCE(NEW.decision_class_id, '') || '|' ||
+            COALESCE(NEW.parent_decision_id, '') || '|' || COALESCE(NEW.parent_relation_type, '') || '|' ||
+            COALESCE(NEW.antecedent_text, '') || '|' ||
+            COALESCE(NEW.subject_actor_type, '') || '|' || COALESCE(NEW.subject_actor_id, '') || '|' ||
+            COALESCE(NEW.predicate_verb, '') || '|' || COALESCE(NEW.object_type, '') || '|' || COALESCE(NEW.object_id, '') || '|' ||
+            COALESCE(NEW.permission_source_type, '') || '|' || COALESCE(NEW.permission_source_id, '') || '|' ||
+            COALESCE(NEW.human_required::TEXT, '') || '|' || COALESCE(NEW.human_approver_id, '') || '|' ||
+            COALESCE(NEW.source_system, '') || '|' || COALESCE(NEW.created::TEXT, ''),
+            'sha256'
+        ),
+        'hex'
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_set_decision_registry_row_hash ON cdp_core.decision_registry;
+CREATE TRIGGER trg_set_decision_registry_row_hash
+BEFORE INSERT OR UPDATE ON cdp_core.decision_registry
+FOR EACH ROW EXECUTE FUNCTION cdp_core.compute_decision_registry_row_hash();
 
 COMMENT ON TABLE cdp_core.decision_registry IS
 'Normalized control-plane kernel: one row per material decision clause ingested into CDP v0.5.';

@@ -3,6 +3,10 @@
 -- Mounted by docker/docker-compose.yml into:
 --   /docker-entrypoint-initdb.d
 --
+-- PostgreSQL's native docker-entrypoint owns this top-level SQL file. It runs
+-- before 02_initialize_repository.sh, which owns repository-mounted domain DDL
+-- and optional seed data.
+--
 -- This script creates the first local schemas and extensions needed for a
 -- runnable CDP development database. It intentionally avoids creating the full
 -- domain model. Canonical tables should move into explicit migrations once the
@@ -62,6 +66,27 @@ CREATE TABLE IF NOT EXISTS cdp_projection.vector_smoke_test (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Repair duplicate bootstrap markers from earlier overlapping initialization
+-- ownership before enforcing the invariant that each smoke label is unique.
+WITH ranked_smoke_rows AS (
+    SELECT
+        id,
+        row_number() OVER (
+            PARTITION BY label
+            ORDER BY created_at, id
+        ) AS row_rank
+    FROM cdp_projection.vector_smoke_test
+)
+DELETE FROM cdp_projection.vector_smoke_test AS target
+USING ranked_smoke_rows AS ranked
+WHERE target.id = ranked.id
+  AND ranked.row_rank > 1;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_vector_smoke_test_label
+    ON cdp_projection.vector_smoke_test (label);
+
 INSERT INTO cdp_projection.vector_smoke_test (label, embedding)
 VALUES ('bootstrap', '[0.1,0.2,0.3]')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (label)
+DO UPDATE SET
+    embedding = EXCLUDED.embedding;

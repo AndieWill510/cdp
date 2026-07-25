@@ -30,13 +30,15 @@ create_bucket() {
 
 create_queue() {
   local queue_name="$1"
-  local redrive_policy="${2:-}"
+  local dead_letter_queue_arn="${2:-}"
 
   echo "Creating SQS queue: ${queue_name}"
-  if [[ -n "${redrive_policy}" ]]; then
+  if [[ -n "${dead_letter_queue_arn}" ]]; then
     awslocal_cmd sqs create-queue \
       --queue-name "${queue_name}" \
-      --attributes "${redrive_policy}" >/dev/null
+      --attributes \
+        "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"${dead_letter_queue_arn}\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"}" \
+      >/dev/null
   else
     awslocal_cmd sqs create-queue \
       --queue-name "${queue_name}" >/dev/null
@@ -76,13 +78,12 @@ create_queue "cdp-dead-letter-queue"
 
 DLQ_URL="$(awslocal_cmd sqs get-queue-url --queue-name cdp-dead-letter-queue --query QueueUrl --output text)"
 DLQ_ARN="$(awslocal_cmd sqs get-queue-attributes --queue-url "${DLQ_URL}" --attribute-names QueueArn --query 'Attributes.QueueArn' --output text)"
-REDRIVE_POLICY="RedrivePolicy={\"deadLetterTargetArn\":\"${DLQ_ARN}\",\"maxReceiveCount\":\"3\"}"
 
-create_queue "cdp-intake-queue" "${REDRIVE_POLICY}"
-create_queue "cdp-review-queue" "${REDRIVE_POLICY}"
-create_queue "cdp-execution-queue" "${REDRIVE_POLICY}"
-create_queue "cdp-appeal-queue" "${REDRIVE_POLICY}"
-create_queue "cdp-repair-queue" "${REDRIVE_POLICY}"
+create_queue "cdp-intake-queue" "${DLQ_ARN}"
+create_queue "cdp-review-queue" "${DLQ_ARN}"
+create_queue "cdp-execution-queue" "${DLQ_ARN}"
+create_queue "cdp-appeal-queue" "${DLQ_ARN}"
+create_queue "cdp-repair-queue" "${DLQ_ARN}"
 
 # EventBridge bus
 EVENT_BUS_NAME="cdp-events-local"
