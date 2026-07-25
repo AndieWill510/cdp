@@ -21,3 +21,6 @@ target
 #.idea/
 
 dev/
+
+# Ignore test output directory
+tests/out/

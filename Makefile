@@ -20,6 +20,7 @@ help:
 	@echo "  make smoke                           Run shell-based local smoke tests"
 	@echo "  make test                            Run pytest build verification tests"
 	@echo "  make codex-test                      Build Docker, run the canonical suite, and verify Postgres + LocalStack"
+	@echo "  make t                               Alias for codex-test"
 	@echo "  make repair-local-postgres-bootstrap Deduplicate and uniquely index the local bootstrap marker"
 	@echo "  make verify-rfc-index                Verify RFC manifest and band-index integrity"
 	@echo "  make verify                          Run RFC index + smoke + pytest verification"
@@ -65,6 +66,8 @@ test:
 
 codex-test:
 	bash scripts/codex_test_loop.sh
+
+t: codex-test
 
 repair-local-postgres-bootstrap:
 	docker compose -f $(COMPOSE_FILE) exec -T postgres \
