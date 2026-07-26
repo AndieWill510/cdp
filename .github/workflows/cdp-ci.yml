@@ -1,0 +1,189 @@
+name: CDP CI
+
+# Two-tier, cost-controlled CI for the canonical CDP stack (docker/docker-compose.yml).
+#
+# pr-guard: cheap, static-only, runs on every PR push. No Postgres service,
+# no Uvicorn, no Docker Compose.
+#
+# full-cdp-slice-tests: the real DB/service/API tests for the canonical
+# vertical slices (decision creation, challenge transition, challenge
+# adjudication, audit-event ordering). Runs only on push to main, manual
+# dispatch, or a PR labeled run-full-ci -- not on every PR push -- so rapid
+# iteration on a draft PR does not burn Actions minutes on the expensive
+# path. Always gated behind pr-guard passing first.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  pr-guard:
+    name: PR guard (static, no DB)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -e .
+
+      - name: Ruff lint
+        run: python -m ruff check cdp
+
+      - name: Static migration/DDL tests (no live Postgres)
+        run: |
+          python -m pytest \
+            tests/test_migration_004_decision_class_workflow_seed.py::Migration004StaticTests \
+            tests/test_migration_005_challenge_transition.py::Migration005StaticTests \
+            tests/test_migration_006_audit_event_ordering.py::Migration006StaticTests \
+            tests/test_migration_007_challenge_adjudication.py::Migration007StaticTests \
+            tests/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLStaticTests \
+            tests/test_postgres_init_contract.py::test_postgres_init_files_have_single_ordered_owner \
+            tests/test_postgres_init_contract.py::test_bootstrap_sql_enforces_idempotent_smoke_marker \
+            -v
+
+      - name: Dormant-stack guardrail (warning only, non-blocking)
+        continue-on-error: true
+        run: |
+          set +e
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.event.after }}"
+          else
+            echo "No base/head comparison available for this event; skipping dormant-stack check."
+            exit 0
+          fi
+
+          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- prototype/ src/cdp_control_plane/ scripts/init_db.sql 2>/dev/null)
+          if [ -n "$CHANGED" ]; then
+            echo "::warning::This change touches dormant-stack paths (prototype/, src/cdp_control_plane/, scripts/init_db.sql). These stacks are not canonical -- confirm this is intentional."
+            while IFS= read -r f; do
+              [ -n "$f" ] && echo "::warning file=$f::Dormant-stack path touched"
+            done <<< "$CHANGED"
+          else
+            echo "No dormant-stack paths touched."
+          fi
+
+  full-cdp-slice-tests:
+    name: Full CDP slice tests (Postgres/service/API)
+    needs: pr-guard
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-full-ci'))
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://cdp:cdp@localhost:5432/cdp
+      CDP_TEST_DATABASE_URL: postgresql://cdp:cdp@localhost:5432/cdp
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: cdp
+          POSTGRES_USER: cdp
+          POSTGRES_PASSWORD: cdp
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cdp -d cdp"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -e .
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Seed canonical schema
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docker/postgres/init/01-init-cdp.sql
+          for f in db/ddl/*.sql; do
+            echo "Applying $f"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      - name: Migration/DDL and service tests (require live Postgres)
+        run: |
+          python -m pytest \
+            tests/test_migration_004_decision_class_workflow_seed.py::Migration004PostgresSmokeTests \
+            tests/test_migration_005_challenge_transition.py::Migration005PostgresSmokeTests \
+            tests/test_migration_006_audit_event_ordering.py::Migration006PostgresSmokeTests \
+            tests/test_migration_007_challenge_adjudication.py::Migration007PostgresSmokeTests \
+            tests/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLPostgresSmokeTests \
+            tests/test_postgres_init_contract.py::test_postgres_bootstrap_runtime_marker_is_unique \
+            tests/test_db_ddl_runtime.py \
+            tests/test_decision_service.py \
+            tests/test_challenge_service.py \
+            tests/test_challenge_adjudication_service.py \
+            -v
+
+      - name: Start API server
+        run: |
+          nohup python -m uvicorn cdp.api.main:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
+          echo $! > uvicorn.pid
+
+      - name: Wait for API health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health >/dev/null 2>&1; then
+              echo "API is healthy."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not become healthy in time." >&2
+          echo "--- uvicorn.log ---" >&2
+          cat uvicorn.log >&2 || true
+          exit 1
+
+      - name: API round-trip tests
+        env:
+          CDP_TEST_API_URL: http://localhost:8000
+        run: |
+          python -m pytest \
+            tests/test_decision_api.py \
+            tests/test_challenge_api.py \
+            tests/test_challenge_adjudication_api.py \
+            -v
+
+      - name: Stop API server
+        if: always()
+        run: |
+          if [ -f uvicorn.pid ]; then
+            kill "$(cat uvicorn.pid)" 2>/dev/null || true
+            rm -f uvicorn.pid
+          fi

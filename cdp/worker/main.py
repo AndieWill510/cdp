@@ -34,7 +34,7 @@ class WorkerConfig:
     poll_interval_seconds: float
 
     @classmethod
-    def from_environment(cls) -> "WorkerConfig":
+    def from_environment(cls) -> WorkerConfig:
         """Build worker configuration from environment variables."""
         return cls(
             environment=os.getenv("CDP_ENV", "local"),
