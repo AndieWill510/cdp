@@ -21,10 +21,14 @@ from pydantic import BaseModel
 from cdp.core import db
 from cdp.core.repositories import decisions as decisions_repo
 from cdp.core.services import (
+    ChallengeInput,
+    ChallengeNotPermitted,
     DecisionClassNotConfigured,
     DecisionInput,
+    DecisionNotFound,
     WorkflowStageNotConfigured,
     create_decision_with_workflow,
+    raise_challenge_for_decision,
 )
 
 router = APIRouter(tags=["decisions"])
@@ -88,3 +92,38 @@ def get_decision(registry_name: str, decision_id: str) -> dict[str, Any]:
     if decision is None:
         raise HTTPException(status_code=404, detail="Decision not found")
     return decision
+
+
+class ChallengeCreateRequest(BaseModel):
+    raised_by_actor_id: str
+    challenge_text: str
+    challenge_type: str = "other"
+    metadata: dict[str, Any] | None = None
+
+
+@router.post("/decisions/{registry_name}/{decision_id}/challenges", status_code=201)
+def create_challenge(
+    registry_name: str, decision_id: str, request: ChallengeCreateRequest
+) -> dict[str, Any]:
+    challenge_input = ChallengeInput(
+        registry_name=registry_name,
+        decision_id=decision_id,
+        **request.model_dump(),
+    )
+    try:
+        return raise_challenge_for_decision(challenge_input)
+    except DecisionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Decision not found") from exc
+    except ChallengeNotPermitted as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (
+        psycopg.errors.ForeignKeyViolation,
+        psycopg.errors.RaiseException,
+        psycopg.errors.CheckViolation,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="The challenge references unregistered or invalid identifiers",
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(status_code=500, detail="Internal server error") from exc

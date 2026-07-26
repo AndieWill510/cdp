@@ -170,7 +170,7 @@ class CreateDecisionWithWorkflowTests(unittest.TestCase):
         decision_id = f"vslice-atomic-{uuid.uuid4().hex[:12]}"
         try:
             with mock.patch(
-                "cdp.core.services.workflows_repo.insert_initial_task",
+                "cdp.core.services.workflows_repo.insert_task",
                 side_effect=RuntimeError("forced task-creation failure"),
             ):
                 with self.assertRaises(RuntimeError):

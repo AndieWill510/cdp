@@ -84,7 +84,47 @@ def insert_workflow_instance(
     return row
 
 
-def insert_initial_task(
+def fetch_workflow_instance_for_decision(
+    cursor: psycopg.Cursor[DictRow], *, registry_name: str, decision_id: str
+) -> dict[str, Any] | None:
+    cursor.execute(
+        """
+        SELECT *
+        FROM cdp_core.workflow_instance
+        WHERE registry_name = %(registry_name)s
+          AND decision_id = %(decision_id)s
+        ORDER BY started_at DESC
+        LIMIT 1
+        """,
+        {"registry_name": registry_name, "decision_id": decision_id},
+    )
+    return cursor.fetchone()
+
+
+def mark_workflow_instance_blocked(
+    cursor: psycopg.Cursor[DictRow],
+    *,
+    workflow_instance_id: uuid.UUID,
+    blocked_reason: str,
+) -> dict[str, Any]:
+    cursor.execute(
+        """
+        UPDATE cdp_core.workflow_instance
+        SET blocked = true,
+            blocked_reason = %(blocked_reason)s,
+            workflow_status = 'blocked',
+            updated_at = now()
+        WHERE workflow_instance_id = %(workflow_instance_id)s
+        RETURNING *
+        """,
+        {"workflow_instance_id": workflow_instance_id, "blocked_reason": blocked_reason},
+    )
+    row = cursor.fetchone()
+    assert row is not None
+    return row
+
+
+def insert_task(
     cursor: psycopg.Cursor[DictRow],
     *,
     workflow_instance_id: uuid.UUID,
