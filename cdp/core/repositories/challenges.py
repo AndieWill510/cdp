@@ -66,3 +66,67 @@ def fetch_challenges_for_decision(
         {"registry_name": registry_name, "decision_id": decision_id},
     )
     return cursor.fetchall()
+
+
+def fetch_challenge(
+    cursor: psycopg.Cursor[DictRow], *, challenge_id: uuid.UUID
+) -> dict[str, Any] | None:
+    cursor.execute(
+        "SELECT * FROM cdp_core.challenge_record WHERE challenge_id = %(challenge_id)s",
+        {"challenge_id": challenge_id},
+    )
+    return cursor.fetchone()
+
+
+def update_challenge_status(
+    cursor: psycopg.Cursor[DictRow],
+    *,
+    challenge_id: uuid.UUID,
+    challenge_status: str,
+    set_resolved_at: bool = False,
+) -> dict[str, Any]:
+    cursor.execute(
+        """
+        UPDATE cdp_core.challenge_record
+        SET challenge_status = %(challenge_status)s,
+            resolved_at = CASE WHEN %(set_resolved_at)s THEN now() ELSE resolved_at END,
+            updated_at = now()
+        WHERE challenge_id = %(challenge_id)s
+        RETURNING *
+        """,
+        {
+            "challenge_id": challenge_id,
+            "challenge_status": challenge_status,
+            "set_resolved_at": set_resolved_at,
+        },
+    )
+    row = cursor.fetchone()
+    assert row is not None
+    return row
+
+
+def count_open_challenges_for_decision(
+    cursor: psycopg.Cursor[DictRow],
+    *,
+    registry_name: str,
+    decision_id: str,
+    exclude_challenge_id: uuid.UUID | None = None,
+) -> int:
+    cursor.execute(
+        """
+        SELECT count(*) AS n
+        FROM cdp_core.challenge_record
+        WHERE registry_name = %(registry_name)s
+          AND decision_id = %(decision_id)s
+          AND challenge_status IN ('raised', 'under_review')
+          AND (%(exclude_challenge_id)s IS NULL OR challenge_id != %(exclude_challenge_id)s)
+        """,
+        {
+            "registry_name": registry_name,
+            "decision_id": decision_id,
+            "exclude_challenge_id": exclude_challenge_id,
+        },
+    )
+    row = cursor.fetchone()
+    assert row is not None
+    return row["n"]

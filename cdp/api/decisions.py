@@ -12,7 +12,8 @@ table is the better fit.
 
 from __future__ import annotations
 
-from typing import Any
+import uuid
+from typing import Any, Literal
 
 import psycopg
 from fastapi import APIRouter, HTTPException
@@ -21,12 +22,16 @@ from pydantic import BaseModel
 from cdp.core import db
 from cdp.core.repositories import decisions as decisions_repo
 from cdp.core.services import (
+    AdjudicationInput,
     ChallengeInput,
+    ChallengeNotAdjudicable,
+    ChallengeNotFound,
     ChallengeNotPermitted,
     DecisionClassNotConfigured,
     DecisionInput,
     DecisionNotFound,
     WorkflowStageNotConfigured,
+    adjudicate_challenge,
     create_decision_with_workflow,
     raise_challenge_for_decision,
 )
@@ -124,6 +129,50 @@ def create_challenge(
         raise HTTPException(
             status_code=422,
             detail="The challenge references unregistered or invalid identifiers",
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
+class AdjudicationCreateRequest(BaseModel):
+    adjudicated_by_actor_id: str
+    outcome: Literal["sustained", "not_sustained", "deferred", "referred_to_repair"]
+    rationale: str
+
+
+@router.post(
+    "/decisions/{registry_name}/{decision_id}/challenges/{challenge_id}/adjudications",
+    status_code=201,
+)
+def create_adjudication(
+    registry_name: str,
+    decision_id: str,
+    challenge_id: uuid.UUID,
+    request: AdjudicationCreateRequest,
+) -> dict[str, Any]:
+    adjudication_input = AdjudicationInput(
+        registry_name=registry_name,
+        decision_id=decision_id,
+        challenge_id=challenge_id,
+        **request.model_dump(),
+    )
+    try:
+        return adjudicate_challenge(adjudication_input)
+    except DecisionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Decision not found") from exc
+    except ChallengeNotFound as exc:
+        raise HTTPException(status_code=404, detail="Challenge not found") from exc
+    except ChallengeNotAdjudicable as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (
+        ValueError,
+        psycopg.errors.ForeignKeyViolation,
+        psycopg.errors.RaiseException,
+        psycopg.errors.CheckViolation,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="The adjudication references unregistered or invalid identifiers",
         ) from exc
     except Exception as exc:  # pragma: no cover - defensive fallback
         raise HTTPException(status_code=500, detail="Internal server error") from exc

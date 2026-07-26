@@ -9,15 +9,25 @@ raise_challenge_for_decision is the second vertical slice: raise a governed
 challenge against an existing decision, block its workflow instance, and
 open an adjudication task, all inside one transaction with a matching audit
 trail.
+
+adjudicate_challenge is the third vertical slice: record a governed
+judgment over a single raised challenge, update its status, complete its
+adjudication task, and unblock the workflow instance when nothing else
+remains open, all inside one transaction with a matching audit trail. This
+is challenge-level adjudication only -- see the naming note in
+db/ddl/007-challenge-adjudication.sql for why it is deliberately not the
+broader, decision-level RFC-CDP-044 Adjudicate Protocol.
 """
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
 from cdp.core import db
+from cdp.core.repositories import adjudications as adjudications_repo
 from cdp.core.repositories import audit as audit_repo
 from cdp.core.repositories import challenges as challenges_repo
 from cdp.core.repositories import decisions as decisions_repo
@@ -29,6 +39,21 @@ from cdp.core.repositories import workflows as workflows_repo
 # workflow instances -- a transitional workflow-status gate, not a full
 # challenge-policy model.
 _TERMINAL_WORKFLOW_STATUSES = frozenset({"closed", "cancelled"})
+
+# A challenge may be adjudicated again only while it remains in one of
+# these statuses. Once it reaches a terminal status, further adjudication
+# attempts are rejected (409) rather than silently accepted.
+_TERMINAL_CHALLENGE_STATUSES = frozenset({"resolved", "dismissed", "withdrawn"})
+
+# Outcome -> resulting challenge_status. Mirrored by a DB-level CHECK
+# constraint on cdp_core.challenge_adjudication_record so the two cannot
+# drift apart.
+_OUTCOME_TO_CHALLENGE_STATUS = {
+    "sustained": "resolved",
+    "not_sustained": "dismissed",
+    "referred_to_repair": "resolved",
+    "deferred": "under_review",
+}
 
 
 class DecisionClassNotConfigured(Exception):
@@ -45,6 +70,14 @@ class DecisionNotFound(Exception):
 
 class ChallengeNotPermitted(Exception):
     """The decision's workflow cannot currently accept a challenge."""
+
+
+class ChallengeNotFound(Exception):
+    """No challenge exists for the given decision and challenge_id."""
+
+
+class ChallengeNotAdjudicable(Exception):
+    """The challenge has already reached a terminal status."""
 
 
 @dataclass(frozen=True)
@@ -319,5 +352,155 @@ def raise_challenge_for_decision(challenge_input: ChallengeInput) -> dict[str, A
     return {
         "challenge": challenge,
         "workflow_instance": updated_workflow_instance,
+        "task": task,
+    }
+
+
+@dataclass(frozen=True)
+class AdjudicationInput:
+    registry_name: str
+    decision_id: str
+    challenge_id: uuid.UUID
+    adjudicated_by_actor_id: str
+    outcome: str
+    rationale: str
+
+
+def adjudicate_challenge(adjudication_input: AdjudicationInput) -> dict[str, Any]:
+    """Record a judgment over a single raised challenge.
+
+    Everything below runs inside exactly one transaction. Any failure rolls
+    back all of it: the adjudication record, the challenge status change,
+    the task completion, and the workflow unblock.
+
+    A challenge may be adjudicated more than once only while it remains
+    non-terminal (challenge_status in ('raised', 'under_review')); a
+    'deferred' outcome preserves this adjudication and leaves the challenge
+    open for a later, final adjudication. The workflow instance is
+    unblocked only if no other challenge for the same decision is still
+    'raised' or 'under_review' -- this preserves the invariant that a
+    workflow stays blocked while any unresolved challenge remains. It is
+    not repeat-challenge policy: it does not reject, merge, dedupe, or
+    escalate repeat challenges.
+    """
+    with db.transaction() as cursor:
+        decision = decisions_repo.fetch_decision(
+            cursor,
+            registry_name=adjudication_input.registry_name,
+            decision_id=adjudication_input.decision_id,
+        )
+        if decision is None:
+            raise DecisionNotFound(
+                f"No decision {adjudication_input.registry_name}.{adjudication_input.decision_id}"
+            )
+
+        challenge = challenges_repo.fetch_challenge(
+            cursor, challenge_id=adjudication_input.challenge_id
+        )
+        if (
+            challenge is None
+            or challenge["registry_name"] != adjudication_input.registry_name
+            or challenge["decision_id"] != adjudication_input.decision_id
+        ):
+            raise ChallengeNotFound(
+                f"No challenge {adjudication_input.challenge_id} for decision "
+                f"{adjudication_input.registry_name}.{adjudication_input.decision_id}"
+            )
+        if challenge["challenge_status"] in _TERMINAL_CHALLENGE_STATUSES:
+            raise ChallengeNotAdjudicable(
+                f"Challenge {adjudication_input.challenge_id} is already "
+                f"{challenge['challenge_status']} and cannot be adjudicated again"
+            )
+
+        resulting_challenge_status = _OUTCOME_TO_CHALLENGE_STATUS.get(adjudication_input.outcome)
+        if resulting_challenge_status is None:
+            raise ValueError(
+                f"Unknown challenge adjudication outcome: {adjudication_input.outcome!r}"
+            )
+        set_resolved_at = resulting_challenge_status in ("resolved", "dismissed")
+
+        updated_challenge = challenges_repo.update_challenge_status(
+            cursor,
+            challenge_id=challenge["challenge_id"],
+            challenge_status=resulting_challenge_status,
+            set_resolved_at=set_resolved_at,
+        )
+
+        task = None
+        workflow_instance = None
+        if resulting_challenge_status != "under_review":
+            if challenge["created_task_id"] is not None:
+                task = workflows_repo.complete_task(cursor, task_id=challenge["created_task_id"])
+
+            remaining_open = challenges_repo.count_open_challenges_for_decision(
+                cursor,
+                registry_name=adjudication_input.registry_name,
+                decision_id=adjudication_input.decision_id,
+                exclude_challenge_id=challenge["challenge_id"],
+            )
+            if remaining_open == 0:
+                workflow_instance = workflows_repo.unblock_workflow_instance(
+                    cursor, workflow_instance_id=challenge["workflow_instance_id"]
+                )
+
+        adjudication = adjudications_repo.insert_adjudication(
+            cursor,
+            registry_name=adjudication_input.registry_name,
+            decision_id=adjudication_input.decision_id,
+            challenge_id=challenge["challenge_id"],
+            adjudicated_by_actor_id=adjudication_input.adjudicated_by_actor_id,
+            outcome=adjudication_input.outcome,
+            rationale=adjudication_input.rationale,
+            resulting_challenge_status=resulting_challenge_status,
+            adjudicated_task_id=task["task_id"] if task is not None else None,
+        )
+
+        base_payload = {
+            "registry_name": adjudication_input.registry_name,
+            "decision_id": adjudication_input.decision_id,
+            "challenge_id": str(challenge["challenge_id"]),
+            "adjudication_id": str(adjudication["adjudication_id"]),
+            "outcome": adjudication["outcome"],
+            "challenge_status": updated_challenge["challenge_status"],
+        }
+
+        # Audit narrative order is challenge.adjudicated -> workflow.transitioned
+        # -> task.completed (cause, then its consequences). For a 'deferred'
+        # outcome, only challenge.adjudicated is emitted -- nothing else changed.
+        audit_repo.append_event(
+            cursor,
+            event_type="challenge.adjudicated",
+            aggregate_type="challenge_adjudication",
+            aggregate_id=str(adjudication["adjudication_id"]),
+            payload=dict(base_payload),
+        )
+        if workflow_instance is not None:
+            audit_repo.append_event(
+                cursor,
+                event_type="workflow.transitioned",
+                aggregate_type="workflow_instance",
+                aggregate_id=str(challenge["workflow_instance_id"]),
+                payload={
+                    **base_payload,
+                    "workflow_status": workflow_instance["workflow_status"],
+                    "blocked": workflow_instance["blocked"],
+                },
+            )
+        if task is not None:
+            audit_repo.append_event(
+                cursor,
+                event_type="task.completed",
+                aggregate_type="workflow_task",
+                aggregate_id=str(task["task_id"]),
+                payload={
+                    **base_payload,
+                    "task_status": task["task_status"],
+                },
+            )
+
+    return {
+        "adjudication": adjudication,
+        "challenge": updated_challenge,
+        "workflow_instance": workflow_instance,
         "task": task,
     }
