@@ -154,7 +154,7 @@ class CreateDecisionWithWorkflowTests(unittest.TestCase):
                 cursor.execute(
                     "SELECT event_type FROM cdp_audit.event_log "
                     "WHERE payload ->> 'registry_name' = %s AND payload ->> 'decision_id' = %s "
-                    "ORDER BY created_at",
+                    "ORDER BY event_sequence",
                     (REGISTRY_NAME, decision_id),
                 )
                 event_types = [row["event_type"] for row in cursor.fetchall()]

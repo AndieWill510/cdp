@@ -124,6 +124,51 @@ def mark_workflow_instance_blocked(
     return row
 
 
+def unblock_workflow_instance(
+    cursor: psycopg.Cursor[DictRow], *, workflow_instance_id: uuid.UUID
+) -> dict[str, Any]:
+    """Clear blocked/blocked_reason and reset workflow_status to 'active'.
+
+    workflow_instance does not currently record its pre-blocked status, so
+    resetting to 'active' is a known simplification, not full status-history
+    tracking.
+    """
+    cursor.execute(
+        """
+        UPDATE cdp_core.workflow_instance
+        SET blocked = false,
+            blocked_reason = NULL,
+            workflow_status = 'active',
+            updated_at = now()
+        WHERE workflow_instance_id = %(workflow_instance_id)s
+        RETURNING *
+        """,
+        {"workflow_instance_id": workflow_instance_id},
+    )
+    row = cursor.fetchone()
+    assert row is not None
+    return row
+
+
+def complete_task(
+    cursor: psycopg.Cursor[DictRow], *, task_id: uuid.UUID, task_status: str = "completed"
+) -> dict[str, Any]:
+    cursor.execute(
+        """
+        UPDATE cdp_core.workflow_task
+        SET task_status = %(task_status)s,
+            completed_at = now(),
+            updated_at = now()
+        WHERE task_id = %(task_id)s
+        RETURNING *
+        """,
+        {"task_id": task_id, "task_status": task_status},
+    )
+    row = cursor.fetchone()
+    assert row is not None
+    return row
+
+
 def insert_task(
     cursor: psycopg.Cursor[DictRow],
     *,
