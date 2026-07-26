@@ -4,6 +4,11 @@ create_decision_with_workflow is the smallest executable decision vertical
 slice: create a decision, start its configured workflow, and open the
 initial blocking review task, all inside one transaction with a matching
 audit trail.
+
+raise_challenge_for_decision is the second vertical slice: raise a governed
+challenge against an existing decision, block its workflow instance, and
+open an adjudication task, all inside one transaction with a matching audit
+trail.
 """
 
 from __future__ import annotations
@@ -14,8 +19,16 @@ from typing import Any
 
 from cdp.core import db
 from cdp.core.repositories import audit as audit_repo
+from cdp.core.repositories import challenges as challenges_repo
 from cdp.core.repositories import decisions as decisions_repo
 from cdp.core.repositories import workflows as workflows_repo
+
+# No workflow_stage or rule_definition yet gates challenges through an
+# explicit challenge stage/transition (see db/ddl/005-challenge-transition.sql).
+# Until that exists, challengeability is permitted only for non-terminal
+# workflow instances -- a transitional workflow-status gate, not a full
+# challenge-policy model.
+_TERMINAL_WORKFLOW_STATUSES = frozenset({"closed", "cancelled"})
 
 
 class DecisionClassNotConfigured(Exception):
@@ -24,6 +37,14 @@ class DecisionClassNotConfigured(Exception):
 
 class WorkflowStageNotConfigured(Exception):
     """The resolved workflow has no stage_order = 1 stage."""
+
+
+class DecisionNotFound(Exception):
+    """No decision exists for the given registry_name/decision_id."""
+
+
+class ChallengeNotPermitted(Exception):
+    """The decision's workflow cannot currently accept a challenge."""
 
 
 @dataclass(frozen=True)
@@ -110,7 +131,7 @@ def create_decision_with_workflow(decision_input: DecisionInput) -> dict[str, An
             lifecycle_stage=first_stage["lifecycle_stage"],
         )
 
-        task = workflows_repo.insert_initial_task(
+        task = workflows_repo.insert_task(
             cursor,
             workflow_instance_id=workflow_instance["workflow_instance_id"],
             registry_name=decision_input.registry_name,
@@ -163,5 +184,140 @@ def create_decision_with_workflow(decision_input: DecisionInput) -> dict[str, An
     return {
         "decision": decision,
         "workflow_instance": workflow_instance,
+        "task": task,
+    }
+
+
+@dataclass(frozen=True)
+class ChallengeInput:
+    registry_name: str
+    decision_id: str
+    raised_by_actor_id: str
+    challenge_text: str
+    challenge_type: str = "other"
+    metadata: dict[str, Any] | None = None
+
+
+def raise_challenge_for_decision(challenge_input: ChallengeInput) -> dict[str, Any]:
+    """Raise a challenge against an existing decision.
+
+    Everything below runs inside exactly one transaction. Any failure -
+    including a missing decision or a workflow that can no longer accept a
+    challenge - rolls back all of it: the challenge record, the workflow
+    instance update, the task, and the audit events.
+
+    Challengeability is currently gated only by workflow_instance.workflow_status
+    (see _TERMINAL_WORKFLOW_STATUSES): a transitional workflow-status gate
+    used until an explicit challenge stage/rule exists, not a full
+    challenge-policy model.
+    """
+    with db.transaction() as cursor:
+        decision = decisions_repo.fetch_decision(
+            cursor,
+            registry_name=challenge_input.registry_name,
+            decision_id=challenge_input.decision_id,
+        )
+        if decision is None:
+            raise DecisionNotFound(
+                f"No decision {challenge_input.registry_name}.{challenge_input.decision_id}"
+            )
+
+        workflow_instance = workflows_repo.fetch_workflow_instance_for_decision(
+            cursor,
+            registry_name=challenge_input.registry_name,
+            decision_id=challenge_input.decision_id,
+        )
+        if workflow_instance is None:
+            raise ChallengeNotPermitted(
+                "No workflow instance is configured for decision "
+                f"{challenge_input.registry_name}.{challenge_input.decision_id}"
+            )
+        if workflow_instance["workflow_status"] in _TERMINAL_WORKFLOW_STATUSES:
+            raise ChallengeNotPermitted(
+                f"Workflow for decision {challenge_input.registry_name}."
+                f"{challenge_input.decision_id} is {workflow_instance['workflow_status']} "
+                "and can no longer accept a challenge"
+            )
+
+        updated_workflow_instance = workflows_repo.mark_workflow_instance_blocked(
+            cursor,
+            workflow_instance_id=workflow_instance["workflow_instance_id"],
+            blocked_reason=(
+                f"Challenge raised by {challenge_input.raised_by_actor_id}; "
+                "pending adjudication"
+            ),
+        )
+
+        task = workflows_repo.insert_task(
+            cursor,
+            workflow_instance_id=workflow_instance["workflow_instance_id"],
+            registry_name=challenge_input.registry_name,
+            decision_id=challenge_input.decision_id,
+            task_type="adjudicate_challenge",
+            assigned_role="adjudicator",
+            blocking=True,
+        )
+
+        challenge = challenges_repo.insert_challenge(
+            cursor,
+            registry_name=challenge_input.registry_name,
+            decision_id=challenge_input.decision_id,
+            workflow_instance_id=workflow_instance["workflow_instance_id"],
+            raised_by_actor_id=challenge_input.raised_by_actor_id,
+            challenge_type=challenge_input.challenge_type,
+            challenge_text=challenge_input.challenge_text,
+            created_task_id=task["task_id"],
+            metadata=challenge_input.metadata,
+        )
+
+        # Audit narrative order is challenge.raised -> workflow.transitioned ->
+        # task.created (cause, then its consequences), independent of the
+        # repository write order above, which inserts the task before the
+        # challenge record so challenge_record.created_task_id has a real
+        # value to reference.
+        audit_repo.append_event(
+            cursor,
+            event_type="challenge.raised",
+            aggregate_type="challenge",
+            aggregate_id=str(challenge["challenge_id"]),
+            payload={
+                "registry_name": challenge_input.registry_name,
+                "decision_id": challenge_input.decision_id,
+                "raised_by_actor_id": challenge_input.raised_by_actor_id,
+                "challenge_type": challenge["challenge_type"],
+                "created_task_id": str(task["task_id"]),
+            },
+        )
+        audit_repo.append_event(
+            cursor,
+            event_type="workflow.transitioned",
+            aggregate_type="workflow_instance",
+            aggregate_id=str(workflow_instance["workflow_instance_id"]),
+            payload={
+                "registry_name": challenge_input.registry_name,
+                "decision_id": challenge_input.decision_id,
+                "workflow_status": updated_workflow_instance["workflow_status"],
+                "blocked": updated_workflow_instance["blocked"],
+                "blocked_reason": updated_workflow_instance["blocked_reason"],
+            },
+        )
+        audit_repo.append_event(
+            cursor,
+            event_type="task.created",
+            aggregate_type="workflow_task",
+            aggregate_id=str(task["task_id"]),
+            payload={
+                "registry_name": challenge_input.registry_name,
+                "decision_id": challenge_input.decision_id,
+                "workflow_instance_id": str(workflow_instance["workflow_instance_id"]),
+                "task_type": task["task_type"],
+                "assigned_role": task["assigned_role"],
+                "blocking": task["blocking"],
+            },
+        )
+
+    return {
+        "challenge": challenge,
+        "workflow_instance": updated_workflow_instance,
         "task": task,
     }
