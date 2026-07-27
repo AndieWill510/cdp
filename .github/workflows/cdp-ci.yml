@@ -52,6 +52,7 @@ jobs:
             tests/test_migration_005_challenge_transition.py::Migration005StaticTests \
             tests/test_migration_006_audit_event_ordering.py::Migration006StaticTests \
             tests/test_migration_007_challenge_adjudication.py::Migration007StaticTests \
+            tests/test_migration_008_execution_authorization.py::Migration008StaticTests \
             tests/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLStaticTests \
             tests/test_postgres_init_contract.py::test_postgres_init_files_have_single_ordered_owner \
             tests/test_postgres_init_contract.py::test_bootstrap_sql_enforces_idempotent_smoke_marker \
@@ -143,12 +144,14 @@ jobs:
             tests/test_migration_005_challenge_transition.py::Migration005PostgresSmokeTests \
             tests/test_migration_006_audit_event_ordering.py::Migration006PostgresSmokeTests \
             tests/test_migration_007_challenge_adjudication.py::Migration007PostgresSmokeTests \
+            tests/test_migration_008_execution_authorization.py::Migration008PostgresSmokeTests \
             tests/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLPostgresSmokeTests \
             tests/test_postgres_init_contract.py::test_postgres_bootstrap_runtime_marker_is_unique \
             tests/test_db_ddl_runtime.py \
             tests/test_decision_service.py \
             tests/test_challenge_service.py \
             tests/test_challenge_adjudication_service.py \
+            tests/test_execution_authorization_service.py \
             -v
 
       - name: Start API server
@@ -178,6 +181,7 @@ jobs:
             tests/test_decision_api.py \
             tests/test_challenge_api.py \
             tests/test_challenge_adjudication_api.py \
+            tests/test_execution_authorization_api.py \
             -v
 
       - name: Stop API server
