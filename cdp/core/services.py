@@ -17,6 +17,15 @@ remains open, all inside one transaction with a matching audit trail. This
 is challenge-level adjudication only -- see the naming note in
 db/ddl/007-challenge-adjudication.sql for why it is deliberately not the
 broader, decision-level RFC-CDP-044 Adjudicate Protocol.
+
+authorize_execution is the fourth vertical slice: authorize a decision to
+proceed to execution once no blocking challenge work remains open,
+completing the decision's original review task and advancing its workflow
+instance, all inside one transaction with a matching audit trail. See the
+naming note in db/ddl/008-execution-authorization.sql for why this is
+deliberately not called "legitimation" -- it is an authorization gate, not
+a declaration of final legitimacy, and it does not implement execution
+itself.
 """
 
 from __future__ import annotations
@@ -31,6 +40,7 @@ from cdp.core.repositories import adjudications as adjudications_repo
 from cdp.core.repositories import audit as audit_repo
 from cdp.core.repositories import challenges as challenges_repo
 from cdp.core.repositories import decisions as decisions_repo
+from cdp.core.repositories import execution_authorizations as execution_authorizations_repo
 from cdp.core.repositories import workflows as workflows_repo
 
 # No workflow_stage or rule_definition yet gates challenges through an
@@ -78,6 +88,14 @@ class ChallengeNotFound(Exception):
 
 class ChallengeNotAdjudicable(Exception):
     """The challenge has already reached a terminal status."""
+
+
+class ExecutionAuthorizationNotPermitted(Exception):
+    """The decision cannot currently receive execution authorization."""
+
+
+class ExecutionAlreadyAuthorized(Exception):
+    """The decision already has an execution authorization record."""
 
 
 @dataclass(frozen=True)
@@ -503,4 +521,168 @@ def adjudicate_challenge(adjudication_input: AdjudicationInput) -> dict[str, Any
         "challenge": updated_challenge,
         "workflow_instance": workflow_instance,
         "task": task,
+    }
+
+
+@dataclass(frozen=True)
+class ExecutionAuthorizationInput:
+    registry_name: str
+    decision_id: str
+    authorized_by_actor_id: str
+    rationale: str
+
+
+def authorize_execution(authorization_input: ExecutionAuthorizationInput) -> dict[str, Any]:
+    """Authorize a decision to proceed to execution.
+
+    Everything below runs inside exactly one transaction. Any failure rolls
+    back all of it: the authorization record, the completed review task,
+    the workflow-status update, and the audit events.
+
+    This does not implement execution itself, and it is not a declaration
+    that a decision is finally/procedurally legitimate -- it only means the
+    decision may proceed under the current workflow conditions. It does not
+    create a task; it completes the decision's existing open
+    review_decision task from create_decision_with_workflow. A decision may
+    receive execution authorization only when no other challenge on it is
+    still 'raised' or 'under_review' and no 'adjudicate_challenge' task
+    remains open -- this gate must never be bypassed.
+
+    Authorization is a one-time terminal gate-pass per decision, not a
+    repeatable judgment like adjudication. A second attempt is rejected as
+    ExecutionAlreadyAuthorized -- checked immediately after confirming the
+    decision exists, before any eligibility check -- so a repeat call fails
+    because the decision is already authorized, not because a downstream
+    side effect (like the review task now being completed) happens to make
+    it look ineligible. That keeps the failure reason truthful even if
+    workflow-task behavior changes later. uq_execution_authorization_decision
+    remains the DB-level backstop against a concurrent race between two
+    requests that both pass this check before either commits.
+    """
+    with db.transaction() as cursor:
+        decision = decisions_repo.fetch_decision(
+            cursor,
+            registry_name=authorization_input.registry_name,
+            decision_id=authorization_input.decision_id,
+        )
+        if decision is None:
+            raise DecisionNotFound(
+                f"No decision {authorization_input.registry_name}.{authorization_input.decision_id}"
+            )
+
+        existing_authorization = execution_authorizations_repo.fetch_authorization_for_decision(
+            cursor,
+            registry_name=authorization_input.registry_name,
+            decision_id=authorization_input.decision_id,
+        )
+        if existing_authorization is not None:
+            raise ExecutionAlreadyAuthorized(
+                f"Decision {authorization_input.registry_name}.{authorization_input.decision_id} "
+                "already has an execution authorization"
+            )
+
+        workflow_instance = workflows_repo.fetch_workflow_instance_for_decision(
+            cursor,
+            registry_name=authorization_input.registry_name,
+            decision_id=authorization_input.decision_id,
+        )
+        if workflow_instance is None:
+            raise ExecutionAuthorizationNotPermitted(
+                "No workflow instance is configured for decision "
+                f"{authorization_input.registry_name}.{authorization_input.decision_id}"
+            )
+
+        open_challenge_count = challenges_repo.count_open_challenges_for_decision(
+            cursor,
+            registry_name=authorization_input.registry_name,
+            decision_id=authorization_input.decision_id,
+        )
+        if open_challenge_count > 0:
+            raise ExecutionAuthorizationNotPermitted(
+                f"{open_challenge_count} blocking challenge(s) remain open for decision "
+                f"{authorization_input.registry_name}.{authorization_input.decision_id}"
+            )
+
+        open_adjudication_task_count = workflows_repo.count_open_tasks_by_type(
+            cursor,
+            registry_name=authorization_input.registry_name,
+            decision_id=authorization_input.decision_id,
+            task_type="adjudicate_challenge",
+        )
+        if open_adjudication_task_count > 0:
+            raise ExecutionAuthorizationNotPermitted(
+                f"{open_adjudication_task_count} open adjudicate_challenge task(s) remain for "
+                f"decision {authorization_input.registry_name}.{authorization_input.decision_id}"
+            )
+
+        review_task = workflows_repo.fetch_open_task_by_type(
+            cursor,
+            registry_name=authorization_input.registry_name,
+            decision_id=authorization_input.decision_id,
+            task_type="review_decision",
+        )
+        if review_task is None:
+            raise ExecutionAuthorizationNotPermitted(
+                "No open review_decision task exists for decision "
+                f"{authorization_input.registry_name}.{authorization_input.decision_id} to complete"
+            )
+
+        authorization = execution_authorizations_repo.insert_authorization(
+            cursor,
+            registry_name=authorization_input.registry_name,
+            decision_id=authorization_input.decision_id,
+            workflow_instance_id=workflow_instance["workflow_instance_id"],
+            authorized_by_actor_id=authorization_input.authorized_by_actor_id,
+            rationale=authorization_input.rationale,
+            completed_task_id=review_task["task_id"],
+        )
+
+        updated_workflow_instance = workflows_repo.mark_workflow_instance_advanced(
+            cursor, workflow_instance_id=workflow_instance["workflow_instance_id"]
+        )
+
+        completed_task = workflows_repo.complete_task(cursor, task_id=review_task["task_id"])
+
+        base_payload = {
+            "registry_name": authorization_input.registry_name,
+            "decision_id": authorization_input.decision_id,
+            "authorization_id": str(authorization["authorization_id"]),
+            "workflow_instance_id": str(workflow_instance["workflow_instance_id"]),
+            "completed_task_id": str(completed_task["task_id"]),
+        }
+
+        # Audit narrative order is execution.authorized -> workflow.transitioned
+        # -> task.completed (cause, then its consequences).
+        audit_repo.append_event(
+            cursor,
+            event_type="execution.authorized",
+            aggregate_type="execution_authorization",
+            aggregate_id=str(authorization["authorization_id"]),
+            payload=dict(base_payload),
+        )
+        audit_repo.append_event(
+            cursor,
+            event_type="workflow.transitioned",
+            aggregate_type="workflow_instance",
+            aggregate_id=str(workflow_instance["workflow_instance_id"]),
+            payload={
+                **base_payload,
+                "workflow_status": updated_workflow_instance["workflow_status"],
+            },
+        )
+        audit_repo.append_event(
+            cursor,
+            event_type="task.completed",
+            aggregate_type="workflow_task",
+            aggregate_id=str(completed_task["task_id"]),
+            payload={
+                **base_payload,
+                "task_status": completed_task["task_status"],
+            },
+        )
+
+    return {
+        "authorization": authorization,
+        "workflow_instance": updated_workflow_instance,
+        "completed_task": completed_task,
     }

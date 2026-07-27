@@ -119,7 +119,10 @@ def count_open_challenges_for_decision(
         WHERE registry_name = %(registry_name)s
           AND decision_id = %(decision_id)s
           AND challenge_status IN ('raised', 'under_review')
-          AND (%(exclude_challenge_id)s IS NULL OR challenge_id != %(exclude_challenge_id)s)
+          AND (
+            %(exclude_challenge_id)s::uuid IS NULL
+            OR challenge_id != %(exclude_challenge_id)s::uuid
+          )
         """,
         {
             "registry_name": registry_name,

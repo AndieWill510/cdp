@@ -30,8 +30,12 @@ from cdp.core.services import (
     DecisionClassNotConfigured,
     DecisionInput,
     DecisionNotFound,
+    ExecutionAlreadyAuthorized,
+    ExecutionAuthorizationInput,
+    ExecutionAuthorizationNotPermitted,
     WorkflowStageNotConfigured,
     adjudicate_challenge,
+    authorize_execution,
     create_decision_with_workflow,
     raise_challenge_for_decision,
 )
@@ -129,6 +133,49 @@ def create_challenge(
         raise HTTPException(
             status_code=422,
             detail="The challenge references unregistered or invalid identifiers",
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
+class ExecutionAuthorizationCreateRequest(BaseModel):
+    authorized_by_actor_id: str
+    rationale: str
+
+
+@router.post(
+    "/decisions/{registry_name}/{decision_id}/execution-authorizations",
+    status_code=201,
+)
+def create_execution_authorization(
+    registry_name: str, decision_id: str, request: ExecutionAuthorizationCreateRequest
+) -> dict[str, Any]:
+    authorization_input = ExecutionAuthorizationInput(
+        registry_name=registry_name,
+        decision_id=decision_id,
+        **request.model_dump(),
+    )
+    try:
+        return authorize_execution(authorization_input)
+    except DecisionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Decision not found") from exc
+    except ExecutionAlreadyAuthorized as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ExecutionAuthorizationNotPermitted as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except psycopg.errors.UniqueViolation as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="This decision has already received execution authorization",
+        ) from exc
+    except (
+        psycopg.errors.ForeignKeyViolation,
+        psycopg.errors.RaiseException,
+        psycopg.errors.CheckViolation,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="The authorization references unregistered or invalid identifiers",
         ) from exc
     except Exception as exc:  # pragma: no cover - defensive fallback
         raise HTTPException(status_code=500, detail="Internal server error") from exc

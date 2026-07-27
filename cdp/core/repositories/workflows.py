@@ -150,6 +150,62 @@ def unblock_workflow_instance(
     return row
 
 
+def mark_workflow_instance_advanced(
+    cursor: psycopg.Cursor[DictRow], *, workflow_instance_id: uuid.UUID
+) -> dict[str, Any]:
+    cursor.execute(
+        """
+        UPDATE cdp_core.workflow_instance
+        SET workflow_status = 'advanced',
+            updated_at = now()
+        WHERE workflow_instance_id = %(workflow_instance_id)s
+        RETURNING *
+        """,
+        {"workflow_instance_id": workflow_instance_id},
+    )
+    row = cursor.fetchone()
+    assert row is not None
+    return row
+
+
+def fetch_open_task_by_type(
+    cursor: psycopg.Cursor[DictRow], *, registry_name: str, decision_id: str, task_type: str
+) -> dict[str, Any] | None:
+    cursor.execute(
+        """
+        SELECT *
+        FROM cdp_core.workflow_task
+        WHERE registry_name = %(registry_name)s
+          AND decision_id = %(decision_id)s
+          AND task_type = %(task_type)s
+          AND task_status NOT IN ('completed', 'cancelled', 'waived')
+        ORDER BY created_at
+        LIMIT 1
+        """,
+        {"registry_name": registry_name, "decision_id": decision_id, "task_type": task_type},
+    )
+    return cursor.fetchone()
+
+
+def count_open_tasks_by_type(
+    cursor: psycopg.Cursor[DictRow], *, registry_name: str, decision_id: str, task_type: str
+) -> int:
+    cursor.execute(
+        """
+        SELECT count(*) AS n
+        FROM cdp_core.workflow_task
+        WHERE registry_name = %(registry_name)s
+          AND decision_id = %(decision_id)s
+          AND task_type = %(task_type)s
+          AND task_status NOT IN ('completed', 'cancelled', 'waived')
+        """,
+        {"registry_name": registry_name, "decision_id": decision_id, "task_type": task_type},
+    )
+    row = cursor.fetchone()
+    assert row is not None
+    return row["n"]
+
+
 def complete_task(
     cursor: psycopg.Cursor[DictRow], *, task_id: uuid.UUID, task_status: str = "completed"
 ) -> dict[str, Any]:
