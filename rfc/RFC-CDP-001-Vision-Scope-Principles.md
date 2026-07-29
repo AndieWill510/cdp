@@ -9,7 +9,7 @@ Date: July 29, 2026
 
 The Constitutional Decision Plane (CDP) defines an open constitutional protocol suite for legitimate decisions, bounded execution, covenantal human-AI participation, auditable record, learning, repair, reparations, rematriation-capable return, rollback, compensation, and remedy.
 
-CDP rests on a single constitutional root: consequence-bearing relationships create answerability. Power becomes answerable to another actor whenever it enters a relationship capable of bearing consequence for that actor, whether or not any institution has recognized the relationship. CDP does not create answerability. CDP recognizes, protects, tests, records, and operationalizes it through governed procedure.
+CDP rests on a single constitutional root: consequence-bearing relationships create answerability. Power becomes answerable to another actor whenever it enters a relationship that bears, or can reasonably be expected to bear, material consequence for that actor, whether or not any institution has recognized the relationship. CDP does not create answerability. CDP recognizes, protects, tests, records, and operationalizes it through governed procedure.
 
 CDP enforces deterministic governance over non-deterministic inputs by requiring structured, adversarial, attributable, authority-aware, standing-aware, repair-aware, sovereignty-aware, and auditable decision processes.
 
@@ -54,13 +54,13 @@ Current systems often:
 - downgrade sovereignty claims to preference or sentiment;
 - treat silence, delay, non-response, partial remedy, or incomplete record as closure.
 
-These failures are not merely technical. They are constitutional failures in how power is proposed, challenged, tested, authorized, executed, stopped, reversed, compensated, remembered, learned from, and repaired. At root, each failure treats institutional procedure as the source of answerability rather than as its recognition, as though power became answerable only once a process said so, rather than from the moment it entered a relationship capable of bearing consequence for another actor.
+These failures are not merely technical. They are constitutional failures in how power is proposed, challenged, tested, authorized, executed, stopped, reversed, compensated, remembered, learned from, and repaired. At root, each failure treats institutional procedure as the source of answerability rather than as its recognition, as though power became answerable only once a process said so, rather than from the moment it entered a relationship bearing material consequence for another actor.
 
 ## 3. Vision
 
 CDP establishes a constitutional system for decisions in which:
 
-- power becomes answerable the moment it enters a relationship capable of bearing consequence for another actor, independent of institutional recognition;
+- power becomes answerable the moment it enters a relationship bearing, or reasonably expected to bear, material consequence for another actor, independent of institutional recognition;
 - decisions are first-class governed objects;
 - every mutating act is attributable;
 - dissent is mandatory and structured;
@@ -122,6 +122,8 @@ CDP MAY help structure repair, reparations, compensation, remedy, and rematriati
 ### 5.1 Answerability Before Legitimacy
 
 Power becomes answerable whenever it enters a consequence-bearing relationship.
+
+A relationship is consequence-bearing when it bears, or can reasonably be expected to bear, material consequence for another actor. This is a threshold, not a formality: it excludes hypothetical, speculative, or infinitely remote effects, and it MUST be tested rather than assumed from either direction. Whether a given relationship clears that threshold is itself a claim that can be examined and contested; it is not settled merely by assertion, and it is not settled merely by institutional silence either.
 
 Answerability exists independently of institutional recognition.
 
@@ -334,4 +336,4 @@ CDP is not:
 
 CDP is an open constitutional protocol suite for legitimate decisions, bounded execution, covenantal participation, durable record, learning, repair, reparations, rematriation-capable return, compensation, and remedy.
 
-It governs acts, not thoughts. It standardizes process, not ideology. Power becomes answerable the moment it enters a relationship capable of bearing consequence for another actor; CDP recognizes and protects that answerability rather than creating it. It protects standing as the procedural recognition of answerability, preserves dissent, authority, memory, harm, remedy, return obligations, sovereignty claims, and repair so that power can be made legible, legitimate, contestable, accountable, correctable, and capable of returning what should not have been taken.
+It governs acts, not thoughts. It standardizes process, not ideology. Power becomes answerable the moment it enters a relationship bearing material consequence for another actor; CDP recognizes and protects that answerability rather than creating it. It protects standing as the procedural recognition of answerability, preserves dissent, authority, memory, harm, remedy, return obligations, sovereignty claims, and repair so that power can be made legible, legitimate, contestable, accountable, correctable, and capable of returning what should not have been taken.

@@ -1,7 +1,7 @@
 # RFC-CDP-033 — Standing and Recusal Model
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.5  
+Status: Draft v0.6  
 Series: Constitutional Decision Plane (CDP)  
 Date: July 29, 2026  
 Depends On: RFC-CDP-001, RFC-CDP-025, RFC-CDP-030, RFC-CDP-031, RFC-CDP-032, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074, RFC-CDP-075  
@@ -331,7 +331,11 @@ CDP resolves this regress by rejecting its premise. Standing is not, at root, gr
 
 CDP recognizes and protects standing. CDP does not grant it into existence.
 
-The regress stops here because recognition is not creation. A recognizer needs no prior grant of authority to recognize a fact about a relationship; it needs only to identify that relationship reliably and protect it from erasure. If CDP cannot guarantee recognition and protection of standing for affected parties, evidence custodians, and record-keepers, it has no legitimate claim to govern consequential decisions. Recognition of these standing types is therefore a precondition of CDP's own legitimacy, even though the underlying answerability relationships are not outputs of CDP at all.
+The regress stops here because recognition is not creation, but that does not make recognition ambient or ungoverned. Recognition does not manufacture the underlying relationship; it identifies one that already holds. A *binding* CDP recognition — the determination that fixes Standing as enforceable at a given decision stage — is not self-executing merely because someone perceives or asserts a relationship. It requires valid procedural authority, competence, independence, and record, exercised by an actor or process authorized under this RFC to make that determination.
+
+The regress about who authorizes the granter does not reappear here, because the thing being authorized is the act of recognizing an already-existing fact, not the act of creating a right. That distinction matters operationally: a recognition can still be performed by the wrong actor, without required independence, or without record, and when it is, the recognition itself is invalid and contestable under Section 11.7 — even though the underlying relationship is untouched by that failure. Anyone may perceive or assert that a consequence-bearing relationship exists. Only an actor or process with recognized procedural authority under this RFC may bind CDP to that determination.
+
+If CDP cannot guarantee properly authorized recognition and protection of standing for affected parties, evidence custodians, and record-keepers, it has no legitimate claim to govern consequential decisions. Recognition of these standing types is therefore a precondition of CDP's own legitimacy, even though the underlying answerability relationships are not outputs of CDP at all.
 
 ---
 
@@ -339,7 +343,14 @@ The regress stops here because recognition is not creation. A recognizer needs n
 
 CDP treats Standing as three separate questions, not one.
 
-**Existence** asks whether a consequence-bearing relationship makes an actor answerable to, or answerable for, a decision. Existence is a fact about the relationship. It does not depend on CDP, on any actor's approval, or on institutional process.
+**Existence** asks whether a consequence-bearing relationship makes an actor answerable to, or answerable for, a decision. Existence is a fact about the relationship, not a fact settled by institutional process. It does not depend on CDP, on any actor's approval, or on institutional process. But a *claim* that existence obtains is not thereby true merely for being asserted: claims about existence remain contestable through evidence and adjudication under the Answerability Test in Section 11.3. Non-recognition MUST NOT be treated as proof that no relationship exists, and, symmetrically, a sustained claim MUST NOT be treated as proof that recognition is what brought the relationship into being. Reality does not depend on procedure. Claims about reality still require testing, and CDP's role is to test them, not to place them beyond examination in either direction.
+
+CDP distinguishes two relationships that "existence" can otherwise blur together:
+
+- **Answerable to** identifies a party to whom an owed answer runs — typically an affected party, an evidence custodian whose material is at stake, or a record-keeper whose record is implicated. Being answerable to an actor is what grounds that actor's own Standing to participate and demand an answer.
+- **Answerable for** identifies an actor who holds custodial, official, or agent responsibility for producing, executing, or accounting for a governed act — typically a custodian, officeholder, or delegated agent. Being answerable for a decision grounds duties and record obligations; it does not by itself confer the participation rights that Standing recognizes in the actor to whom the answer is owed.
+
+An actor may be answerable for a decision without being answerable to it in the sense that grounds Affected-Party Standing, and vice versa. The Standing Type Taxonomy in Section 11.4 keeps these separate: Affected-Party Standing arises substantially from being answerable to; Evidence-Custodian and Record-Keeper Standing arise substantially from being answerable for.
 
 **Recognition** asks whether CDP has procedurally acknowledged that existing relationship as Standing at a given decision stage. Recognition is what CDP does. It can be granted promptly, delayed, wrongly withheld, or denied outright — and a wrongful denial of recognition is itself a governance breach, even though it cannot erase the underlying existence it fails to recognize.
 
@@ -359,7 +370,9 @@ CDP resolves contested Standing questions by applying the Answerability Test:
 4. What answer is constitutionally owed?
 5. What evidence narrows or defeats the claim?
 
-Questions 1 through 3 establish existence: whether an answerability relationship is present at all. Question 4 establishes scope: what recognition of that relationship obligates CDP and the acting party to provide. Question 5 is where a claim may be narrowed, deferred, or defeated on the merits — existence is not adjudicated there.
+Questions 1 through 3 identify the *claimed basis* for existence: what is happening, what consequence attaches, and what relationship is asserted to create answerability. Question 4 is compound: it asks what answer is owed, who owes it, to whom, under what authority source — policy, delegation, treaty, law, community authority, or RFC — and within what response window. An implementation MUST be able to answer all parts of question 4 before treating it as settled, and SHOULD align that determination with the authority basis required by `RFC-CDP-032-Authority-and-Delegation-Model.md` and the sovereignty and institutional-response requirements of `RFC-CDP-074-Sovereignty-Claims-and-Authority-Pluralism.md`.
+
+Question 5 tests the claim itself. It may confirm, narrow, defer, or reject the asserted existence or scope: evidence may show that the alleged consequence is too remote, that the actor is not in fact within the relationship claimed, that a claimed custodial relationship does not exist, or that the dispute concerns scope rather than Standing itself. Evidence cannot extinguish a real relationship, and no answer to question 5 is a declaration that institutional recognition creates or extinguishes the underlying reality Section 11.2 describes. But evidence can defeat the *claim* that a relationship exists in a given case. Rejection of a claim under question 5 is a finding about whether this claim correctly describes an existing relationship; it is not a finding that no such relationship could exist, and it does not immunize the determination from later correction if the evidence was wrong.
 
 A Standing determination MUST be able to show its work against these five questions when Standing is contested.
 
@@ -393,7 +406,9 @@ Arises from role responsibility for maintaining the decision record, an answerab
 
 #### Delegated Standing
 
-Unlike Constitutional Standing, Delegated Standing is genuinely granted: it is created by an authority act rather than recognized from a pre-existing relationship. It is granted by an actor or institution with recognized authority, traceable to either Constitutional Standing or an institutionally recognized authority defined in `RFC-CDP-032-Authority-and-Delegation-Model.md`.
+Unlike Constitutional Standing, Delegated Standing is genuinely granted: the governed *capacity to exercise participation rights* is created by an authority act, traceable to either Constitutional Standing or an institutionally recognized authority defined in `RFC-CDP-032-Authority-and-Delegation-Model.md`.
+
+Delegation creates a capacity to represent or participate on another basis. It does not manufacture the consequence-bearing relationship from which the underlying answerability arises. An affected party appointing an advocate creates representative authority derived from the affected party's own Standing; it does not create new Standing independent of that relationship. Delegated Standing is therefore doubly grounded: the delegation act is genuinely granted, while the answerability it represents may itself be Constitutional, Repair, or Appeal Standing that CDP only recognizes. A delegate's Standing MUST be traceable to the relationship it represents; a delegation record that cannot be traced back to a recognized or genuinely granted basis is invalid.
 
 Time-bounded and revocable.
 
@@ -453,7 +468,7 @@ Standing contestability is tiered:
 
 **Constitutional standing**
 
-The existence of the underlying answerability relationship cannot be contested through this process. A contest here is a contest over recognition and scope, not over whether the relationship exists. Scope and stage may be challenged.
+The underlying answerability relationship's existence does not depend on institutional recognition and is not created or extinguished by CDP's determination. That independence is not immunity from examination. A *claim* that such a relationship exists remains contestable through evidence and adjudication under the Answerability Test in Section 11.3, on the same terms as any other application of that test. Non-recognition MUST NOT be treated as proof that no relationship exists. Scope and stage may also be challenged.
 
 **Delegated standing**
 
@@ -537,6 +552,15 @@ Promoted into this draft:
 - automatic Breach Record generation when Constitutional Standing recognition is denied;
 - Standing Persistence as a two-layer governed artifact plus enforcement projection model.
 
+Promoted into Draft v0.6, following review that found the v0.5 recognition model over-corrected in places:
+
+- binding CDP recognition requires valid procedural authority, competence, independence, and record; recognition is not creation, but it is not ambient or self-executing either;
+- claims that an answerability relationship exists remain contestable through the Answerability Test; non-recognition is not proof of non-existence, and a sustained claim is not proof that recognition created the relationship;
+- the distinction between being answerable *to* an actor (grounding participation rights) and answerable *for* a decision (grounding custodial or official duties);
+- Question 4 of the Answerability Test expanded to require an identified obligor, recipient, authority source, and response window;
+- Question 5 clarified to test the claim of existence, not to place existence beyond examination;
+- Delegated Standing clarified as a genuinely granted capacity to represent or participate, distinct from the underlying answerability relationship it represents, which delegation does not manufacture.
+
 Not yet resolved:
 
 - whether the schema belongs here or in a separate schema RFC;
@@ -553,7 +577,7 @@ Standing determines who may participate.
 
 Recusal determines when participation must be limited.
 
-Standing is the procedural recognition of an answerability relationship that CDP does not create. Existence, recognition, and scope are separate questions, and the Answerability Test is how CDP tells them apart when Standing is contested.
+Standing is the procedural recognition of an answerability relationship that CDP does not create. Existence, recognition, and scope are separate questions, and the Answerability Test is how CDP tells them apart when Standing is contested. Recognition is not creation, but recognition is not ambient either: only an actor or process with authority under this RFC can bind CDP to a determination, and that determination remains open to correction, not immune from it.
 
 Authority capture through participation is a structural governance failure.
 
