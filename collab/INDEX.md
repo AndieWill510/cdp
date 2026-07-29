@@ -2,6 +2,21 @@
 
 This index tracks active and completed collaboration sessions.
 
+## Relationship to the Implementation Session Track
+
+The sessions below (001–019) are RFC design, deliberation, and
+adjudication sessions. There is a separate, differently-shaped
+**implementation / vertical-slice track** — `docs/session-0NN-*.md`,
+starting at session 020 — that checkpoints executable CDP code rather
+than RFC drafts. It is indexed at `docs/SESSION-INDEX.md`, not here.
+
+Do not add implementation/vertical-slice sessions (020 onward) as rows in
+the tables below: their fields (Moderator, Canon Target, promotion status)
+describe RFC adjudication and would misdescribe implementation work. This
+distinction was made explicit during Session 026 after an instruction to
+add that session here was recognized as structurally wrong — see
+`docs/SESSION-INDEX.md` and `docs/session-026-execution-record.md`.
+
 ## Active Sessions
 
 | Session | Topic | Status | Moderator | Canon Target |
