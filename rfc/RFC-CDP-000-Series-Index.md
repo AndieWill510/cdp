@@ -81,6 +81,8 @@ Detailed promotion and adjudication history lives in:
 
 Git history remains the complete source record for earlier forms of this RFC.
 
+The answerability constitutional correction is fully integrated into RFC-CDP-001, RFC-CDP-033, and RFC-CDP-045. An earlier standalone proposal, `RFC-CDP-003-Answerability-Principle.md`, and its related staging documents were superseded and removed to preserve a single constitutional source of truth; see the "Session 026 answerability convergence" entry in the adjudication ledger for the full account.
+
 ---
 
 ## 3. Folder policy
