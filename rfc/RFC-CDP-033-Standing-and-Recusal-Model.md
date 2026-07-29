@@ -1,17 +1,19 @@
 # RFC-CDP-033 — Standing and Recusal Model
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.4  
+Status: Draft v0.5  
 Series: Constitutional Decision Plane (CDP)  
-Date: May 23, 2026  
-Depends On: RFC-CDP-025, RFC-CDP-030, RFC-CDP-031, RFC-CDP-032, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074, RFC-CDP-075  
+Date: July 29, 2026  
+Depends On: RFC-CDP-001, RFC-CDP-025, RFC-CDP-030, RFC-CDP-031, RFC-CDP-032, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074, RFC-CDP-075  
 Related: RFC-CDP-040, RFC-CDP-041, RFC-CDP-045, RFC-CDP-050, RFC-CDP-052, RFC-CDP-060, RFC-CDP-062
 
 ## Abstract
 
 This RFC defines **Standing** and **Recusal** as first-class governance concepts in the Constitutional Decision Plane (CDP).
 
-Standing determines whether an actor has the recognized right or responsibility to participate in a specific CDP decision stage.
+Standing exists because some consequence-bearing relationships make the exercise of power answerable to another actor. That answerability is not created by CDP. CDP recognizes and protects it through governed procedure, under the root principle established in `RFC-CDP-001-Vision-Scope-Principles.md` Section 5.1.
+
+Standing determines whether an actor has the recognized right or responsibility to participate in a specific CDP decision stage. Standing is therefore the procedural recognition of an answerability relationship, not the origin of one.
 
 Recusal determines when that standing must be suspended, limited, or transformed because of conflict, capture risk, proposer status, role conflict, or compromised independence.
 
@@ -36,6 +38,8 @@ Standing is not attestation.
 Standing is not general authority.
 
 Standing is contextual participation right and responsibility.
+
+Standing also names three distinct questions that this RFC treats separately: whether an answerability relationship exists, whether CDP has procedurally recognized it, and how far that recognition scopes participation. Section 11 develops this distinction and its consequences for the constitutional root of Standing.
 
 ---
 
@@ -285,8 +289,8 @@ standing_record:
   recusal_required: <boolean>
   recusal_scope: <none|partial|full>
   recusal_basis: <string|null>
-  standing_granted_by: <actor_id>
-  standing_granted_at: <timestamp>
+  standing_recognized_by: <actor_id>
+  standing_recognized_at: <timestamp>
   standing_contestable_until: <timestamp>
   contested: <boolean>
   contest_record_id: <uuid|null>
@@ -317,63 +321,89 @@ Standing contests SHOULD be recorded and linked to the relevant decision envelop
 
 ---
 
-## 11. Standing Types and Constitutional Root
+## 11. Standing, Answerability, and the Constitutional Root
 
-### 11.1 The Constitutional Root Problem
+### 11.1 The Constitutional Root
 
-Standing requires a granter. But who grants standing to the standing-granter?
+Standing requires a grounding. If standing were merely granted, CDP would face an infinite regress: who grants standing to the standing-granter?
 
-CDP resolves this by establishing that some standing types are **constitutional** — granted by the CDP framework itself as a precondition of legitimate governance, not by any actor within the system.
+CDP resolves this regress by rejecting its premise. Standing is not, at root, granted at all. It arises whenever a consequence-bearing relationship makes the exercise of power answerable to another actor. That relationship exists prior to, and independent of, any institutional act of recognition — including CDP's own.
 
-Constitutional standing requires no granter.
+CDP recognizes and protects standing. CDP does not grant it into existence.
 
-It is axiomatic within CDP.
-
-If CDP cannot guarantee standing to affected parties, evidence custodians, and record-keepers, it has no legitimate claim to govern consequential decisions. The constitutional standing types are therefore preconditions of CDP's own legitimacy, not outputs of it.
-
-The regress stops here.
+The regress stops here because recognition is not creation. A recognizer needs no prior grant of authority to recognize a fact about a relationship; it needs only to identify that relationship reliably and protect it from erasure. If CDP cannot guarantee recognition and protection of standing for affected parties, evidence custodians, and record-keepers, it has no legitimate claim to govern consequential decisions. Recognition of these standing types is therefore a precondition of CDP's own legitimacy, even though the underlying answerability relationships are not outputs of CDP at all.
 
 ---
 
-### 11.2 Standing Type Taxonomy
+### 11.2 Existence, Recognition, and Scope
+
+CDP treats Standing as three separate questions, not one.
+
+**Existence** asks whether a consequence-bearing relationship makes an actor answerable to, or answerable for, a decision. Existence is a fact about the relationship. It does not depend on CDP, on any actor's approval, or on institutional process.
+
+**Recognition** asks whether CDP has procedurally acknowledged that existing relationship as Standing at a given decision stage. Recognition is what CDP does. It can be granted promptly, delayed, wrongly withheld, or denied outright — and a wrongful denial of recognition is itself a governance breach, even though it cannot erase the underlying existence it fails to recognize.
+
+**Scope** asks how far recognized Standing extends: which stage, which decision, which role, and under what recusal conditions. Scope is bounded, contestable, and stage-specific, even where existence and recognition are not in question.
+
+A Standing determination is invalid if it treats scope as though it settled existence, or treats non-recognition as though it settled non-existence.
+
+---
+
+### 11.3 The Answerability Test
+
+CDP resolves contested Standing questions by applying the Answerability Test:
+
+1. What governed act is occurring?
+2. What consequence exists or may exist?
+3. What relationship creates answerability?
+4. What answer is constitutionally owed?
+5. What evidence narrows or defeats the claim?
+
+Questions 1 through 3 establish existence: whether an answerability relationship is present at all. Question 4 establishes scope: what recognition of that relationship obligates CDP and the acting party to provide. Question 5 is where a claim may be narrowed, deferred, or defeated on the merits — existence is not adjudicated there.
+
+A Standing determination MUST be able to show its work against these five questions when Standing is contested.
+
+---
+
+### 11.4 Standing Type Taxonomy
 
 CDP recognizes the following standing types:
 
 #### Constitutional Standing
 
-Granted by the CDP framework itself.
+Recognized and protected by the CDP framework as a precondition of legitimate governance.
 
 Cannot be revoked by any actor.
 
-Requires no granter within the system.
+Requires no granter within the system, because it is not granted. It is recognized from an answerability relationship that already exists.
 
 Subtypes:
 
 **Affected-Party Standing**
 
-Arises when a decision may materially affect an actor. The claim of potential impact is sufficient for preliminary standing, subject to scope challenge. No actor may deny affected-party standing on the grounds that impact has not yet been proven.
+Arises when a decision may materially affect an actor, which makes the decision answerable to that actor. The claim of potential impact is sufficient for preliminary standing, subject to scope challenge. No actor may deny affected-party standing on the grounds that impact has not yet been proven.
 
 **Evidence-Custodian Standing**
 
-Arises from custody of decision-relevant records, evidence, or data. Bounded to stages where that evidence is relevant.
+Arises from custody of decision-relevant records, evidence, or data, which makes the decision answerable to the custodian's ability to verify it. Bounded to stages where that evidence is relevant.
 
 **Record-Keeper Standing**
 
-Arises from role responsibility for maintaining the decision record. Unconditional within the Record stage.
+Arises from role responsibility for maintaining the decision record, an answerability relationship to the integrity of that record. Unconditional within the Record stage.
 
 #### Delegated Standing
 
-Granted by an actor or institution with recognized authority, traceable to either constitutional standing or an institutionally recognized authority defined in `RFC-CDP-032-Authority-and-Delegation-Model.md`.
+Unlike Constitutional Standing, Delegated Standing is genuinely granted: it is created by an authority act rather than recognized from a pre-existing relationship. It is granted by an actor or institution with recognized authority, traceable to either Constitutional Standing or an institutionally recognized authority defined in `RFC-CDP-032-Authority-and-Delegation-Model.md`.
 
 Time-bounded and revocable.
 
 #### Emergency Standing
 
-Arises temporarily when normal standing determination is impractical under declared emergency conditions.
+Arises temporarily when normal standing determination is impractical under declared emergency conditions. CDP recognizes it provisionally, pending post-hoc review.
 
 Requires: explicit rationale, time boundary, post-hoc review, and record.
 
-Must not become a mechanism for bypassing constitutional standing under urgency.
+Must not become a mechanism for bypassing recognition of Constitutional Standing under urgency.
 
 Detailed emergency conditions are governed by `RFC-CDP-052-Emergency-Override-and-Kill-Switch.md`.
 
@@ -387,25 +417,29 @@ Arises when a completed decision is formally contested. Governed by `RFC-CDP-070
 
 ---
 
-### 11.3 Standing Grant Authority
+### 11.5 Standing Recognition Authority
 
-| Standing Type | Granted By |
+| Standing Type | Recognized or Granted By |
 |---|---|
-| Constitutional (all subtypes) | CDP framework |
-| Delegated | Recognized actor or institution |
-| Emergency | CDP framework conditionally; requires human authorization |
-| Repair | CDP framework upon breach recognition |
-| Appeal | CDP framework upon contestation |
+| Constitutional (all subtypes) | Recognized by the CDP framework; not granted |
+| Delegated | Granted by a recognized actor or institution |
+| Emergency | Recognized by the CDP framework conditionally; requires human authorization |
+| Repair | Recognized by the CDP framework upon breach recognition |
+| Appeal | Recognized by the CDP framework upon contestation |
+
+Constitutional Standing is recognized, not granted: the underlying answerability relationship precedes CDP and CDP cannot revoke what it did not create. Delegated Standing is genuinely granted: the authority itself is brought into being by an authorizing act and can be revoked as that act permits. Emergency, Repair, and Appeal Standing are recognized by CDP as procedural responses to conditions — emergency, breach, contestation — that themselves reveal or renew an answerability relationship requiring urgent or renewed procedural attention.
 
 ---
 
-### 11.4 Constitutional Standing Protection
+### 11.6 Constitutional Standing Protection
 
-Denial of constitutional standing is a governance breach.
+Denial of recognition for Constitutional Standing is a governance breach.
 
-Any attempt by an actor to prevent an affected party, evidence custodian, or record-keeper from exercising their constitutional standing is subject to the CDP Repair plane.
+Because Constitutional Standing recognizes rather than creates an answerability relationship, denying recognition does not extinguish that relationship. It compounds the original answerability with a second, independent breach: the failure to recognize it.
 
-Denial of constitutional standing MUST automatically generate a Breach Record under `RFC-CDP-072-Breach-Record-and-Repair-Agenda-Schema.md`. This MUST NOT require action by the affected party.
+Any attempt by an actor to prevent an affected party, evidence custodian, or record-keeper from exercising their Constitutional Standing is subject to the CDP Repair plane.
+
+Denial of Constitutional Standing MUST automatically generate a Breach Record under `RFC-CDP-072-Breach-Record-and-Repair-Agenda-Schema.md`. This MUST NOT require action by the affected party.
 
 The record of the denial MUST be preserved.
 
@@ -413,13 +447,13 @@ The affected party MUST be informed of their right to appeal.
 
 ---
 
-### 11.5 Contestability Boundaries
+### 11.7 Contestability Boundaries
 
 Standing contestability is tiered:
 
 **Constitutional standing**
 
-Cannot be contested as to existence. Scope and stage may be challenged.
+The existence of the underlying answerability relationship cannot be contested through this process. A contest here is a contest over recognition and scope, not over whether the relationship exists. Scope and stage may be challenged.
 
 **Delegated standing**
 
@@ -487,7 +521,7 @@ Implementations SHOULD consider:
 
 ## 14. Status of This Draft
 
-This RFC was created from Session 002 of the CDP collaboration process and updated in Sessions 005 and 009.
+This RFC was created from Session 002 of the CDP collaboration process, updated in Sessions 005 and 009, and re-grounded in the answerability-based constitutional root established by `RFC-CDP-001-Vision-Scope-Principles.md` Section 5.1.
 
 Promoted into this draft:
 
@@ -496,9 +530,11 @@ Promoted into this draft:
 - the relationship between Standing, Recusal, Identity, Attestation, and Authority;
 - the need for AI Functional Standing without legal personhood claims;
 - a seed Standing Record schema;
-- the standing type taxonomy and constitutional root model;
-- constitutional standing protection as a Repair-plane-triggering governance breach;
-- automatic Breach Record generation when constitutional standing is denied;
+- the standing type taxonomy, re-grounded so Constitutional Standing is recognized rather than granted;
+- the distinction between existence, recognition, and scope of Standing;
+- the Answerability Test as the normative method for resolving contested Standing;
+- Constitutional Standing protection as a Repair-plane-triggering governance breach;
+- automatic Breach Record generation when Constitutional Standing recognition is denied;
 - Standing Persistence as a two-layer governed artifact plus enforcement projection model.
 
 Not yet resolved:
@@ -507,7 +543,6 @@ Not yet resolved:
 - how risk classes determine recusal depth;
 - how this model updates lifecycle protocol RFCs;
 - how Functional Standing relates to `RFC-CDP-062-HITL-AIITL-Role-Boundaries.md`;
-- whether `RFC-CDP-001-Vision-Scope-Principles.md` sufficiently supports constitutional standing as axiomatic;
 - how implementation profiles enforce projection atomicity.
 
 ---
@@ -518,9 +553,11 @@ Standing determines who may participate.
 
 Recusal determines when participation must be limited.
 
+Standing is the procedural recognition of an answerability relationship that CDP does not create. Existence, recognition, and scope are separate questions, and the Answerability Test is how CDP tells them apart when Standing is contested.
+
 Authority capture through participation is a structural governance failure.
 
-Legitimacy by infinite delegation is a constitutional-root failure.
+Legitimacy by infinite delegation is a constitutional-root failure. CDP resolves it by recognizing standing rather than originating it, so the regress has nothing left to ask.
 
 Standing as unenforceable record is a persistence failure.
 
