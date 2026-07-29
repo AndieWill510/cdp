@@ -13,6 +13,7 @@ table is the better fit.
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Any, Literal
 
 import psycopg
@@ -29,15 +30,20 @@ from cdp.core.services import (
     ChallengeNotPermitted,
     DecisionClassNotConfigured,
     DecisionInput,
+    DecisionNotAuthorizedForExecution,
     DecisionNotFound,
     ExecutionAlreadyAuthorized,
+    ExecutionAlreadySucceeded,
     ExecutionAuthorizationInput,
     ExecutionAuthorizationNotPermitted,
+    ExecutionNotPermitted,
+    ExecutionRecordInput,
     WorkflowStageNotConfigured,
     adjudicate_challenge,
     authorize_execution,
     create_decision_with_workflow,
     raise_challenge_for_decision,
+    record_execution_attempt,
 )
 
 router = APIRouter(tags=["decisions"])
@@ -176,6 +182,55 @@ def create_execution_authorization(
         raise HTTPException(
             status_code=422,
             detail="The authorization references unregistered or invalid identifiers",
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
+class ExecutionRecordCreateRequest(BaseModel):
+    executed_by_actor_id: str
+    execution_status: Literal["succeeded", "failed", "partial"]
+    result_summary: str
+    attempted_at: datetime
+    completed_at: datetime
+
+
+@router.post(
+    "/decisions/{registry_name}/{decision_id}/execution-records",
+    status_code=201,
+)
+def create_execution_record(
+    registry_name: str, decision_id: str, request: ExecutionRecordCreateRequest
+) -> dict[str, Any]:
+    execution_input = ExecutionRecordInput(
+        registry_name=registry_name,
+        decision_id=decision_id,
+        **request.model_dump(),
+    )
+    try:
+        return record_execution_attempt(execution_input)
+    except DecisionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Decision not found") from exc
+    except DecisionNotAuthorizedForExecution as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ExecutionNotPermitted as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ExecutionAlreadySucceeded as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except psycopg.errors.UniqueViolation as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="This authorization already has a succeeded execution record",
+        ) from exc
+    except (
+        ValueError,
+        psycopg.errors.ForeignKeyViolation,
+        psycopg.errors.RaiseException,
+        psycopg.errors.CheckViolation,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="The execution record references unregistered or invalid identifiers",
         ) from exc
     except Exception as exc:  # pragma: no cover - defensive fallback
         raise HTTPException(status_code=500, detail="Internal server error") from exc

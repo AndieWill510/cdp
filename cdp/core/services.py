@@ -26,6 +26,15 @@ naming note in db/ddl/008-execution-authorization.sql for why this is
 deliberately not called "legitimation" -- it is an authorization gate, not
 a declaration of final legitimacy, and it does not implement execution
 itself.
+
+record_execution_attempt is the fifth vertical slice: record one completed
+execution attempt (succeeded, failed, or partial) against an authorized
+decision, all inside one transaction with a matching audit trail. It
+records an external act; it does not perform or orchestrate execution.
+Critically, it never writes to cdp_core.workflow_instance on any outcome --
+see the constitutional-invariant note in db/ddl/009-execution-record.sql:
+repair is mandatory on every outcome, not conditional on failure, so
+execution must not close the workflow or advance it toward learning.
 """
 
 from __future__ import annotations
@@ -41,6 +50,7 @@ from cdp.core.repositories import audit as audit_repo
 from cdp.core.repositories import challenges as challenges_repo
 from cdp.core.repositories import decisions as decisions_repo
 from cdp.core.repositories import execution_authorizations as execution_authorizations_repo
+from cdp.core.repositories import execution_records as execution_records_repo
 from cdp.core.repositories import workflows as workflows_repo
 
 # No workflow_stage or rule_definition yet gates challenges through an
@@ -96,6 +106,25 @@ class ExecutionAuthorizationNotPermitted(Exception):
 
 class ExecutionAlreadyAuthorized(Exception):
     """The decision already has an execution authorization record."""
+
+
+class DecisionNotAuthorizedForExecution(Exception):
+    """The decision has no execution authorization record yet."""
+
+
+class ExecutionNotPermitted(Exception):
+    """The decision's workflow cannot currently accept an execution record."""
+
+
+class ExecutionAlreadySucceeded(Exception):
+    """This authorization already has a succeeded execution record."""
+
+
+# A workflow that has been (re-)blocked by a new challenge raised after
+# authorization, or that is already closed/cancelled, cannot accept an
+# execution record -- authorization eligibility is not assumed to still
+# hold just because an authorization row exists.
+_INELIGIBLE_FOR_EXECUTION_WORKFLOW_STATUSES = frozenset({"blocked", "closed", "cancelled"})
 
 
 @dataclass(frozen=True)
@@ -685,4 +714,121 @@ def authorize_execution(authorization_input: ExecutionAuthorizationInput) -> dic
         "authorization": authorization,
         "workflow_instance": updated_workflow_instance,
         "completed_task": completed_task,
+    }
+
+
+@dataclass(frozen=True)
+class ExecutionRecordInput:
+    registry_name: str
+    decision_id: str
+    executed_by_actor_id: str
+    execution_status: str
+    result_summary: str
+    attempted_at: datetime
+    completed_at: datetime
+
+
+def record_execution_attempt(execution_input: ExecutionRecordInput) -> dict[str, Any]:
+    """Record one completed execution attempt against an authorized decision.
+
+    Everything below runs inside exactly one transaction. Any failure rolls
+    back all of it: the execution record and the audit event.
+
+    This records an external act; it does not perform or orchestrate
+    execution. attempted_at/completed_at describe when that external act
+    happened, not when this service ran. Retries are expected: multiple
+    execution records may exist for the same authorization (a failed or
+    partial attempt does not block a further attempt), but at most one may
+    be 'succeeded' -- enforced here and backed by a DB-level partial unique
+    index so a concurrent race cannot create two.
+
+    This never writes to cdp_core.workflow_instance, on any outcome. CDP's
+    governing invariant is that repair is mandatory, not conditional on
+    failure or detected harm: execution succeeding does not close the
+    workflow or exempt the decision from reparative obligation, so nothing
+    here may advance the workflow toward closure or learning. That is left
+    for a future, mandatory repair slice to act on.
+    """
+    with db.transaction() as cursor:
+        decision = decisions_repo.fetch_decision(
+            cursor,
+            registry_name=execution_input.registry_name,
+            decision_id=execution_input.decision_id,
+        )
+        if decision is None:
+            raise DecisionNotFound(
+                f"No decision {execution_input.registry_name}.{execution_input.decision_id}"
+            )
+
+        authorization = execution_authorizations_repo.fetch_authorization_for_decision(
+            cursor,
+            registry_name=execution_input.registry_name,
+            decision_id=execution_input.decision_id,
+        )
+        if authorization is None:
+            raise DecisionNotAuthorizedForExecution(
+                f"Decision {execution_input.registry_name}.{execution_input.decision_id} "
+                "has no execution authorization"
+            )
+
+        workflow_instance = workflows_repo.fetch_workflow_instance_for_decision(
+            cursor,
+            registry_name=execution_input.registry_name,
+            decision_id=execution_input.decision_id,
+        )
+        if workflow_instance is None:
+            raise ExecutionNotPermitted(
+                "No workflow instance is configured for decision "
+                f"{execution_input.registry_name}.{execution_input.decision_id}"
+            )
+        if workflow_instance["workflow_status"] in _INELIGIBLE_FOR_EXECUTION_WORKFLOW_STATUSES:
+            raise ExecutionNotPermitted(
+                f"Workflow for decision {execution_input.registry_name}."
+                f"{execution_input.decision_id} is {workflow_instance['workflow_status']} "
+                "and cannot currently accept an execution record"
+            )
+
+        if execution_input.completed_at < execution_input.attempted_at:
+            raise ValueError("completed_at must not be before attempted_at")
+
+        if execution_input.execution_status == "succeeded":
+            existing_success = execution_records_repo.fetch_succeeded_execution_for_authorization(
+                cursor, authorization_id=authorization["authorization_id"]
+            )
+            if existing_success is not None:
+                raise ExecutionAlreadySucceeded(
+                    f"Decision {execution_input.registry_name}.{execution_input.decision_id} "
+                    "already has a succeeded execution record"
+                )
+
+        execution_record = execution_records_repo.insert_execution_record(
+            cursor,
+            registry_name=execution_input.registry_name,
+            decision_id=execution_input.decision_id,
+            authorization_id=authorization["authorization_id"],
+            workflow_instance_id=workflow_instance["workflow_instance_id"],
+            executed_by_actor_id=execution_input.executed_by_actor_id,
+            execution_status=execution_input.execution_status,
+            result_summary=execution_input.result_summary,
+            attempted_at=execution_input.attempted_at,
+            completed_at=execution_input.completed_at,
+        )
+
+        audit_repo.append_event(
+            cursor,
+            event_type="execution.recorded",
+            aggregate_type="execution_record",
+            aggregate_id=str(execution_record["execution_id"]),
+            payload={
+                "registry_name": execution_input.registry_name,
+                "decision_id": execution_input.decision_id,
+                "execution_id": str(execution_record["execution_id"]),
+                "authorization_id": str(authorization["authorization_id"]),
+                "execution_status": execution_record["execution_status"],
+            },
+        )
+
+    return {
+        "execution_record": execution_record,
+        "workflow_instance": workflow_instance,
     }

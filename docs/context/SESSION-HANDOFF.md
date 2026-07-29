@@ -35,6 +35,32 @@ This applies to G, C, Andie, and future CDP collaborators. No model should rely 
 
 If any file in this path is missing, that is context-plane debt and should be repaired before starting major new RFC work.
 
+## 2A. Two Session Tracks
+
+CDP has two separate, differently-shaped session tracks that happen to
+share one continuous number sequence across the repo's history. Do not
+conflate them.
+
+- **RFC design/adjudication track** — `collab/sessions/001`–`019`,
+  indexed at `collab/INDEX.md`. Fields: Moderator, Canon Target,
+  promotion status (`closed-promoted`, `awaiting-response`, etc.). This is
+  the track the rest of this file (and the orientation path above)
+  describes.
+- **Implementation / vertical-slice track** — `docs/session-020` onward,
+  indexed at `docs/SESSION-INDEX.md`. These checkpoint executable CDP
+  code (`cdp/`, `db/ddl/`, `tests/`, CI) rather than RFC drafts, and do not
+  use Moderator/Canon Target/promotion-status fields. Not every session in
+  this track has a dedicated doc file — sessions 022, 023, and 025 were
+  merged with real implementation but no `docs/session-0NN-*.md` was ever
+  written for them; `docs/SESSION-INDEX.md` records that gap rather than
+  backfilling it.
+
+A receiving model checking "is there a session file for this" should check
+both indexes, not just `collab/INDEX.md`. This distinction was made
+explicit during Session 026 (`docs/session-026-execution-record.md`) after
+an instruction to add that implementation session to `collab/INDEX.md`'s
+RFC-adjudication table was recognized as structurally wrong mid-session.
+
 ## 3. Handoff Minimum
 
 Every handoff should include:
