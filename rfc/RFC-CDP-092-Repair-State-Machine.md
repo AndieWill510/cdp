@@ -1,17 +1,21 @@
 # RFC-CDP-092 — Repair State Machine
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.1  
+Status: Draft v0.2  
 Series: Constitutional Decision Plane (CDP)  
-Date: May 3, 2026  
-Depends On: RFC-CDP-001, RFC-CDP-010, RFC-CDP-032, RFC-CDP-047, RFC-CDP-048, RFC-CDP-061, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074  
+Date: July 29, 2026  
+Depends On: RFC-CDP-001, RFC-CDP-010, RFC-CDP-032, RFC-CDP-033, RFC-CDP-045, RFC-CDP-047, RFC-CDP-048, RFC-CDP-061, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074  
 Updates: RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074
 
 ## Abstract
 
-This RFC defines the Repair State Machine for the Constitutional Decision Plane (CDP).
+Repair exists because governance exercises power over relationships.
 
-The Repair State Machine governs the lifecycle of Breach Records, Repair Agendas, Repair Points, Institutional Responses, Repair Commitments, Completion Evidence, Affected-Party Review, Dissent, and Sovereignty Claims.
+Procedure determines whether power was exercised according to constitutional process. Constitutional legitimacy, under `RFC-CDP-045-Legitimize-Protocol.md`, determines whether the answerability created by that exercise of power was preserved rather than erased, ignored, or institutionally denied. Repair determines whether the relationships affected by that exercise of power remain capable of continuing.
+
+These are distinct constitutional questions. A procedurally flawless, constitutionally legitimate decision may nevertheless leave trust damaged, dignity diminished, grief unanswered, cooperation impaired, or answerability incomplete. Repair exists because governance concerns relationships, not merely decisions.
+
+This RFC defines the Repair State Machine for the Constitutional Decision Plane (CDP): the lifecycle of Breach Records, Repair Agendas, Repair Points, Institutional Responses, Repair Commitments, Completion Evidence, Affected-Party Review, Dissent, and Sovereignty Claims.
 
 Repair is not an ordinary decision lifecycle. It may begin before a Decision, interrupt a Decision, block execution, reopen closure, preserve unresolved authority conflict, and require learning even when no final agreement is reached.
 
@@ -41,6 +45,42 @@ A repair process MUST preserve breach, claim, response, commitment, evidence, af
 
 Repair MUST NOT be marked complete merely because a responding institution says it is complete.
 
+### 2.1 Repair Follows Relationship, Not Error
+
+Repair is not triggered solely by procedural failure, under the constitutional principle established in `RFC-CDP-001-Vision-Scope-Principles.md` Section 5.13.
+
+Repair is required whenever the exercise of governed power leaves a material answerability relationship unresolved, impaired, denied, or incapable of healthy continuation. That relationship may be strained by a decision that broke no rule at all: a correctly authorized, fully legitimate act can still leave the parties to it unable to continue in right relationship.
+
+Procedural correctness neither guarantees nor eliminates the need for Repair. A decision MAY be procedurally correct, constitutionally legitimate, and still require Repair.
+
+### 2.2 The Governing Question of Repair
+
+Each stage of the CDP lifecycle answers a distinct constitutional question. Propose asks what should we do. Challenge asks what might be wrong. Test asks whether it holds. Adjudicate asks what the decision is. Legitimize asks whether we may act. Execute asks whether we acted. Record asks what happened.
+
+Repair asks a different question: what remains between us?
+
+Repair is not primarily asking who was right, who won, or who is at fault. Those questions may be answered along the way, as evidence within a breach record or a factor in an institutional response. But they are not what Repair exists to resolve. Repair asks what remains between the parties after power has been exercised, and whether that remainder can be carried forward, restored, or honestly closed.
+
+### 2.3 Relationship to Procedural and Constitutional Legitimacy
+
+`RFC-CDP-045-Legitimize-Protocol.md` distinguishes procedural legitimacy from constitutional legitimacy. This RFC adds a third, independent constitutional question:
+
+- **Procedural legitimacy** asks: was governance conducted correctly?
+- **Constitutional legitimacy** asks: was answerability preserved?
+- **Repair** asks: have the affected relationships been restored, renewed, or responsibly transformed after the exercise of power?
+
+These questions are sequential in that Repair ordinarily follows Legitimize and Execute in time. They are independent in that none of them answers the others. A decision MAY be procedurally correct. A decision MAY be constitutionally legitimate. Repair MAY nevertheless still be required.
+
+Implementations MUST NOT infer that successful completion of Legitimize or Execute implies completion of Repair. `constitutional_legitimacy_status: preserved` under RFC-CDP-045 means material answerability claims were not erased, ignored, or institutionally denied during governance; it does not certify that the relationships those claims arose from are now capable of continuing. That determination belongs to Repair alone, and only the states and closure rules defined later in this RFC may make it.
+
+### 2.4 Constitutional Purpose of Repair
+
+The purpose of Repair is not to erase disagreement, manufacture reconciliation, or require continued relationship.
+
+Its purpose is to ensure that answerability remains possible after power has been exercised, and that relationships are given a governed opportunity either to continue with restored integrity or to conclude with truthfulness, dignity, and an accurate record.
+
+Governance succeeds not merely when every decision is procedurally correct, but when every exercise of power leaves relationships capable of continuing.
+
 ---
 
 ## 3. Relationship to Existing RFCs
@@ -68,6 +108,18 @@ This RFC defines how review and anti-erasure outcomes affect repair state.
 RFC-CDP-074 defines sovereignty claims, authority conflicts, and closure/execution blocking.
 
 This RFC defines state transitions when sovereignty claims are asserted, contested, unresolved, or superseded.
+
+### 3.5 RFC-CDP-033 Standing and Recusal Model
+
+RFC-CDP-033 defines Standing as the procedural recognition of an answerability relationship that CDP does not create.
+
+This RFC governs what happens when that relationship is left unresolved, impaired, denied, or incapable of healthy continuation after governed power has been exercised. Standing determines who may participate in that process; it does not determine whether the process is owed in the first place. Section 2.1 does.
+
+### 3.6 RFC-CDP-045 Legitimize Protocol
+
+RFC-CDP-045 distinguishes procedural legitimacy from constitutional legitimacy and defines the Answerability Gate that evaluates the latter.
+
+This RFC does not re-adjudicate that determination. It picks up where RFC-CDP-045 leaves off: `constitutional_legitimacy_status: preserved` or `blocked` describes whether governance addressed answerability during the decision. It does not describe whether the relationships affected by the decision are now capable of continuing. Section 2.3 defines that boundary precisely.
 
 ---
 
@@ -409,3 +461,5 @@ Repair may be submitted, preserved, reviewed, contested, blocked, committed, evi
 A repair state machine prevents institutions from treating repair as a comment, a checkbox, a public-relations response, or an internal closure decision.
 
 Unresolved is not closed. Deferred is not repaired. Failed is not forgotten.
+
+Repair does not exist because procedure failed. It exists because governance exercises power over relationships, and a procedurally correct, constitutionally legitimate exercise of power can still leave a relationship unable to continue. Repair asks what remains between the parties, and gives that remainder a governed path to restoration or to a truthful, dignified close.
