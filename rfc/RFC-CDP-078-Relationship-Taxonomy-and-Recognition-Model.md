@@ -1,9 +1,10 @@
 # RFC-CDP-078 — Relationship Taxonomy and Recognition Model
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.1  
+Status: Draft v0.2  
 Series: Constitutional Decision Plane (CDP)  
 Date: July 30, 2026  
+Updates: RFC-CDP-078 v0.1  
 Depends On: RFC-CDP-001, RFC-CDP-032, RFC-CDP-033, RFC-CDP-045, RFC-CDP-074, RFC-CDP-092  
 Related: RFC-CDP-070, RFC-CDP-071, RFC-CDP-073
 
@@ -53,6 +54,8 @@ A **Relationship Type** is the socially, legally, culturally, or ceremonially re
 
 CDP does not create relationship types. It recognizes a claimed or evidenced classification and preserves it as a fact relevant to answerability and repair, on the same terms established for standing in `RFC-CDP-033`: existence does not depend on recognition, and recognition does not manufacture what it recognizes.
 
+Relationship Type is a constitutional fact about the relationship. A Relationship Type Claim, and the recognition status attached to it, is a constitutional *record* — what CDP presently knows, has been told, or has procedurally recognized. The two MUST NOT be conflated. A claim can be wrong. A recognition can be withheld, delayed, or denied. Neither of those failures changes what the relationship actually was.
+
 ---
 
 ## 4. Relationship to Existing RFCs
@@ -89,21 +92,22 @@ The following taxonomy is illustrative and non-exhaustive. Implementations, comm
 | `employment` | Duties are bounded by role, term, and applicable labor law or agreement. |
 | `kinship` | Duties arise from family, lineage, or community relation and are not ordinarily created or dissolved by institutional process. |
 | `treaty` | Duties arise from a negotiated instrument between peoples, nations, or sovereign parties. |
-| `indigenous_sovereignty` | Authority and duty arise from a people's own governance, law, or ceremony, not from the responding institution. Governed jointly with `RFC-CDP-074`. |
+| `indigenous_sovereignty` | Records that the relationship is governed by or implicates Indigenous sovereignty. This value is a routing marker only; it is not a classification of the sovereignty itself. `RFC-CDP-074` exclusively governs the sovereignty claim, its authority, and its meaning. |
 | `contractual` | Duties are bounded by the terms of an agreement between parties presumed to bargain at arm's length. |
 | `educational` | Duties arise from a teaching, mentoring, or institutional-learning relationship. |
 | `therapeutic` | Duties arise from a care, healing, or clinical relationship and MAY carry heightened confidentiality and non-abandonment expectations. |
 | `friendship` | Duties are informal and self-defined by the parties; CDP records the claim without imposing external duty content. |
 | `governance` | Duties arise from a governing or governed relationship between an authority and those subject to or represented by it. |
 | `guardianship` | Duties arise from responsibility for a dependent party's welfare and ordinarily survive the specific decision or proceeding. |
-| `other` | A claimed type not enumerated above. `disposition_rationale`-equivalent description SHOULD be provided. |
+| `other` | A claimed type not enumerated above. A `type_description` SHOULD be provided. |
 | `unclassified` | No relationship type has yet been claimed or assessed. |
 
 Normative constraints on the taxonomy:
 
-- Multiple relationship types MAY apply simultaneously to the same parties (an employment relationship that is also fiduciary, for example).
+- Multiple relationship types MAY apply simultaneously to the same parties (an employment relationship that is also fiduciary, for example). Section 7 requires each to carry its own recognition status rather than sharing one status across the whole claim.
 - A relationship type MAY change over time and MAY itself be contested.
 - CDP MUST NOT treat this table as defining the substantive content of any relationship type. The table names illustrative duty character for routing purposes only; it does not supply the law, custom, ceremony, or agreement that actually governs the relationship.
+- `indigenous_sovereignty` in particular MUST NOT be read as CDP's classification of a sovereignty claim. It only marks that a claim under `RFC-CDP-074` is implicated; that RFC's status values, not this taxonomy, govern the claim's substance.
 
 ---
 
@@ -117,28 +121,36 @@ CDP treats Relationship Type as three separate questions, mirroring the existenc
 
 **Recognition** asks whether CDP has procedurally acknowledged a claimed relationship type for the purpose of routing answerability and repair questions. Recognition is what CDP does. It can be granted promptly, delayed, wrongly withheld, or denied outright, and a wrongful denial of recognition does not erase the underlying relationship it fails to recognize.
 
-Non-recognition MUST NOT be treated as proof that no relationship of the claimed type exists. A sustained claim MUST NOT be treated as proof that CDP's recognition created the relationship.
+Denial is a distinct, governed determination, not a synonym for silence or contest. Section 7 requires it to be representable in its own right — with its own authority basis, rationale, and review path — precisely so that a relationship type CDP wrongly refuses to recognize does not collapse into the same record state as one nobody has yet raised a question about.
+
+Non-recognition MUST NOT be treated as proof that no relationship of the claimed type exists. A sustained claim MUST NOT be treated as proof that CDP's recognition created the relationship. Absence of contest MUST NOT be treated as recognition; Section 10 governs that boundary.
 
 ---
 
 ## 7. Relationship Type Claim Object
 
-A Relationship Type Claim SHOULD be represented as a structured object:
+A Relationship Type Claim SHOULD be represented as a structured object. Because multiple relationship types MAY apply simultaneously (Section 5), and each MAY reach a different recognition outcome, recognition is tracked per asserted type, not once for the whole claim:
 
 ```json
 {
   "relationship_type_claim_id": "rtc_20260730_001",
-  "claimed_types": ["fiduciary", "kinship"],
   "claimant_ref": "actor_or_party_ref",
   "counterparty_refs": ["actor_or_party_ref"],
-  "basis": ["law", "custom", "ceremony", "agreement", "self_identification", "community_authority", "other"],
   "claim_text": "string",
   "evidence_refs": [],
   "restricted_evidence_refs": [],
-  "recognition_status": "asserted | acknowledged | recognized | contested | disputed | unresolved | superseded",
-  "contest_refs": [],
+  "type_assertions": [
+    {
+      "relationship_type": "employment",
+      "type_description": "string|null",
+      "basis": ["law", "custom", "ceremony", "agreement", "self_identification", "community_authority", "other"],
+      "recognition_status": "asserted",
+      "contest_refs": [],
+      "denial": null,
+      "sovereignty_claim_ref": null
+    }
+  ],
   "authority_basis_ref": "ref|null",
-  "sovereignty_claim_ref": "ref|null",
   "record_controls": {
     "access_level": "public | restricted | confidential | community_controlled",
     "redaction_required": false,
@@ -149,13 +161,46 @@ A Relationship Type Claim SHOULD be represented as a structured object:
 }
 ```
 
-`claimed_types` MUST include at least one value from Section 5 or `other`.
+### 7.1 Type Assertions
 
-`recognition_status: asserted` means the claim has been submitted or recorded. It does not mean CDP or the responding institution has accepted, resolved, or adjudicated the claim.
+`type_assertions` MUST contain at least one entry. Each entry MUST carry a `relationship_type` drawn from Section 5, or `other` with a `type_description` provided, and its own `recognition_status`.
 
-`recognition_status: recognized` means the claim has been procedurally acknowledged as a basis for routing answerability and repair questions under this RFC. It MUST NOT be read as a determination that the claim is legally, factually, or culturally conclusive beyond that routing purpose.
+`recognition_status` MUST be one of:
 
-`sovereignty_claim_ref` MAY be null. When non-null, it MUST point to a Sovereignty Claim under `RFC-CDP-074`, and that claim's status governs wherever the two conflict.
+- `asserted` — the assertion has been submitted or recorded. It does not mean CDP or the responding institution has accepted, resolved, or adjudicated it.
+- `acknowledged` — receipt is recorded. Acknowledgment is not agreement.
+- `provisionally_recognized` — the assertion may be used for routing answerability and repair questions pending fuller review, on the terms Section 10 defines.
+- `recognized` — the assertion has been procedurally acknowledged as a basis for routing. It MUST NOT be read as a determination that the assertion is legally, factually, or culturally conclusive beyond that routing purpose.
+- `contested` — a party has raised a live contest as to this specific assertion. `contested` describes the existence of an active contest; it is not itself an outcome, and it MUST resolve to one of `recognized`, `recognition_withheld`, `denied`, or `unresolved`.
+- `recognition_withheld` — recognition has not been extended and is deferred or paused pending further evidence or process, without an affirmative governed denial.
+- `denied` — a governed recognition determination has affirmatively refused recognition. `denied` MUST carry a `denial` object under Section 7.2. `denied` MUST NOT be inferred from silence, delay, or the mere existence of a contest.
+- `unresolved` — neither recognition nor denial has been reached and the assertion remains materially open.
+- `superseded` — a later assertion or agreement replaces this one.
+- `withdrawn` — the claimant has withdrawn this assertion. Withdrawal describes the assertion, not the underlying relationship, and does not by itself resolve whatever answerability question the relationship independently raises.
+
+### 7.2 Denial Requirements
+
+When `recognition_status` is `denied`, the type assertion MUST carry a `denial` object:
+
+```json
+{
+  "denied_by": "actor_or_authority_ref",
+  "authority_basis_ref": "ref",
+  "rationale": "string",
+  "review_ref": "ref|null",
+  "denied_at": "timestamp"
+}
+```
+
+A denial MUST preserve the underlying assertion unchanged. Denial removes recognition; it does not remove the record of what was claimed, who claimed it, or on what basis.
+
+A responding institution MUST NOT be the sole reviewer of its own denial where the assertion is sovereignty-adjacent under `RFC-CDP-074` or affected-party-adjacent under `RFC-CDP-073`.
+
+### 7.3 Claim-Level and Assertion-Level Fields
+
+`claimant_ref`, `counterparty_refs`, `claim_text`, `evidence_refs`, and `restricted_evidence_refs` describe the claim as a whole and apply across all of its type assertions.
+
+`sovereignty_claim_ref`, when non-null on a given type assertion, MUST point to a Sovereignty Claim under `RFC-CDP-074`, and that claim's status governs wherever the two conflict. It SHOULD be set on the `indigenous_sovereignty` assertion when present, and MAY be set on others where a sovereignty claim is otherwise implicated.
 
 `restricted_evidence_refs` MUST be handled under the security and cultural-handling requirements of Section 12.
 
@@ -165,7 +210,7 @@ A Relationship Type Claim SHOULD be represented as a structured object:
 
 Relationship Type informs, without substituting for, the constitutional determinations governed elsewhere:
 
-- It informs question 4 of the Answerability Test (`RFC-CDP-033` Section 11.3) by supplying context about the ordinary duties of the claimed relationship type. It does not answer question 4 by itself; the test's five questions still apply in full.
+- It informs question 4 of the Answerability Test (`RFC-CDP-033` Section 11.3) by supplying context about the ordinary duties of the claimed relationship type. It does not answer question 4 by itself; the test's five questions still apply in full. A type assertion informing this determination SHOULD carry `recognition_status: recognized` or `provisionally_recognized`; a `denied` or `withdrawn` assertion MUST NOT be used to supply that context.
 - It informs which Relationship Disposition values (`RFC-CDP-092` Section 13.1) are coherent outcomes. A relationship type whose duty character does not ordinarily conclude MAY still receive a disposition of `CONCLUDED` or `SEPARATED_WITH_OBLIGATIONS`, but a `RESTORED` or `CONTINUING_WITH_RESERVATIONS` disposition SHOULD be considered before treating the relationship as concludable on ordinary contractual terms.
 - It MAY inform the authority basis considered under `RFC-CDP-032`, but it MUST NOT be treated as itself granting or extinguishing authority.
 
@@ -191,11 +236,13 @@ CDP MAY help structure and route relationship type claims. CDP MUST NOT claim ow
 
 ## 10. Contestability
 
-A Relationship Type Claim MUST be contestable by any party with recognized standing to the decision, breach, or repair process it is attached to, on the same contestability terms as the answerability claims it informs.
+A Relationship Type Claim, and each of its type assertions, MUST be contestable by any party with recognized standing to the decision, breach, or repair process it is attached to, on the same contestability terms as the answerability claims it informs.
 
 A contest MAY address the claimed type, the claimed basis, or the scope of duty implied by the type. A contest MUST NOT be resolved by the responding institution acting as sole adjudicator where the claim is sovereignty-adjacent under `RFC-CDP-074` or affected-party-adjacent under `RFC-CDP-073`.
 
-An uncontested Relationship Type Claim becomes stable for the decision or repair item it is attached to. It remains subject to later contest through appeal or repair channels and MUST NOT be treated as permanently foreclosed.
+Absence of contest MAY permit a type assertion to remain `provisionally_recognized` for routing, subject to applicable notice, review, and authority requirements. Absence of contest MUST NOT be treated as concurrence, recognition, waiver, or proof of the claimed type. A party may fail to contest an assertion for reasons that have nothing to do with its correctness: absence, incapacity, intimidation, inaccessible process, lack of notice, or refusal to accept CDP's jurisdiction over the question at all. None of those reasons make the assertion true, and none of them entitle it to move to `recognized` on silence alone.
+
+A contested or previously uncontested assertion remains subject to later contest through appeal or repair channels and MUST NOT be treated as permanently foreclosed.
 
 ---
 
@@ -212,7 +259,9 @@ AIITL MUST NOT:
 - determine, assign, or resolve a contested relationship type;
 - infer a ceremonial, kinship, or indigenous-sovereignty relationship type from public records alone;
 - treat absence of institutional recognition as evidence against a claimed type;
-- treat its own summary of a relationship as a substitute for the claimant's or community's own account.
+- treat its own summary of a relationship as a substitute for the claimant's or community's own account;
+- set, clear, or move a `recognition_status`, including moving an assertion into or out of `denied`;
+- treat an uncontested assertion as though it were recognized.
 
 ---
 
@@ -238,14 +287,14 @@ A record can be auditable without being universally public.
 
 A minimal CDP implementation SHOULD support:
 
-- a Relationship Type Claim record;
-- `claimed_types` drawn from Section 5 or `other`;
-- `recognition_status`;
-- contestability;
+- a Relationship Type Claim record with one or more type assertions;
+- `relationship_type` per assertion, drawn from Section 5 or `other`;
+- `recognition_status` per assertion, including a distinct `denied` state with its required denial fields;
+- contestability per assertion;
 - a reference from the relevant standing, legitimacy, or repair record to the applicable Relationship Type Claim;
 - record controls sufficient to withhold restricted or ceremonial evidence from public view.
 
-A minimal implementation MUST NOT infer a Relationship Type from institutional convenience, from the absence of a contest, or from the presence of a contract document alone.
+A minimal implementation MUST NOT infer a Relationship Type from institutional convenience, from the absence of a contest, or from the presence of a contract document alone. It MUST NOT collapse `denied` into `contested` or `unresolved`, and it MUST NOT allow `provisionally_recognized` to silently become `recognized` merely because time has passed without a contest.
 
 ---
 
@@ -256,3 +305,5 @@ Standing asks who may participate. Authority asks what an actor may do. Sovereig
 Relationship Type asks a different, prior question: what kind of relationship this was.
 
 CDP does not invent what a family, a treaty, a fiduciary duty, or a covenant of guardianship means. It recognizes the claim, preserves it, routes it to the questions that already govern answerability and repair, and refuses to let institutional convenience flatten one kind of relationship into another.
+
+What the relationship was is a fact. What CDP has been told, and what it has recognized or denied, is a record. Silence keeps that record incomplete. It does not complete it.
