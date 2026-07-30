@@ -12,7 +12,7 @@
 | `073` | [Affected-Party Review and Anti-Erasure](../RFC-CDP-073-Affected-Party-Review-and-Anti-Erasure.md) | `Draft` |
 | `074` | [Sovereignty Claims and Authority Pluralism](../RFC-CDP-074-Sovereignty-Claims-and-Authority-Pluralism.md) | `Draft` |
 | `075` | Rematriation and Land/Resource Return Protocol | `Reserved` |
-| `078` | [Relationship Taxonomy and Recognition Model](../RFC-CDP-078-Relationship-Taxonomy-and-Recognition-Model.md) | `Draft v0.3` |
+| `078` | [Relationship Taxonomy and Recognition Model](../RFC-CDP-078-Relationship-Taxonomy-and-Recognition-Model.md) | `Draft v0.4` |
 
 Sovereignty is not reduced to ordinary stakeholder standing or participation-integrity scoring.
 

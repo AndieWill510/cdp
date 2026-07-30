@@ -1,10 +1,10 @@
 # RFC-CDP-078 — Relationship Taxonomy and Recognition Model
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.3  
+Status: Draft v0.4  
 Series: Constitutional Decision Plane (CDP)  
 Date: July 30, 2026  
-Updates: RFC-CDP-078 v0.2  
+Updates: RFC-CDP-078 v0.3  
 Depends On: RFC-CDP-001, RFC-CDP-032, RFC-CDP-033, RFC-CDP-045, RFC-CDP-074, RFC-CDP-092  
 Related: RFC-CDP-070, RFC-CDP-071, RFC-CDP-073
 
@@ -243,6 +243,8 @@ A dispute, contest, denial, or unresolved status concerning Relationship Type MU
 This is deliberate. A respondent facing a claim of harm can always argue that the relationship was not really fiduciary, not really a guardianship, not really what the claimant says it was — Section 10 preserves that argument in full. What it MUST NOT do is convert a dispute about the claimant's account of a relationship's character into a reason to delay answering for the underlying conduct. Taxonomy litigation (Section 2.1) MUST NOT become a substitute for, or a precondition of, answering for what was done.
 
 An implementation that pauses Legitimize, blocks Execute, or defers a Repair determination pending resolution of a Relationship Type Claim, when no other RFC's own conditions independently require that pause, is non-compliant with this RFC.
+
+Not stopping is not enough by itself. No participant may obtain a procedural advantage solely because a Relationship Type Claim remains contested, denied, or unresolved. The non-suspension rule prevents governance from stopping while a claim is unsettled; this rule prevents governance from continuing in a way that quietly favors whichever party benefits from the claim staying unsettled — most often the party disputing it.
 
 ### 8.3 How Relationship Type Informs Answerability and Repair
 
