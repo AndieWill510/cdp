@@ -1,7 +1,7 @@
 # RFC-CDP-001 — Vision, Scope, and Principles
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.7  
+Status: Draft v0.8  
 Series: Constitutional Decision Plane (CDP)  
 Date: July 29, 2026
 
@@ -213,7 +213,15 @@ CDP MUST preserve the shape, numbering, provenance, authority claims, and dissen
 
 CDP MUST NOT collapse repair demands into generic sentiment analysis, ordinary stakeholder feedback, decorative governance language, public-relations response, or institutional convenience.
 
-### 5.13 Repair, Reparations, and Rematriation Before Closure
+### 5.13 Repair Follows Relationship, Not Error
+
+Repair is not triggered solely by procedural failure.
+
+Repair is required whenever the exercise of governed power leaves a material answerability relationship unresolved, impaired, denied, or incapable of healthy continuation.
+
+Procedural correctness neither guarantees nor eliminates the need for Repair. A decision MAY be procedurally correct, constitutionally legitimate, and still require Repair.
+
+### 5.14 Repair, Reparations, and Rematriation Before Closure
 
 CDP MUST preserve historic breach, affected-party claims, repair agendas, dissent, institutional responses, commitments, remedy proposals, resource authorizations, completion evidence, residual harm, and sufficiency review.
 
@@ -221,23 +229,23 @@ Where repair requires return of land, resources, records, access, authority, jur
 
 A system MUST NOT treat silence, delay, non-response, partial summary, partial remedy, resource denial, incomplete evidence, or institutional self-approval as repair.
 
-### 5.14 Sovereignty and Authority Pluralism
+### 5.15 Sovereignty and Authority Pluralism
 
 Some authority does not originate inside the institution using CDP.
 
 CDP MUST preserve sovereignty claims as authority claims, not stakeholder preferences. CDP may structure, route, record, challenge, and preserve such claims. CDP MUST NOT claim to own, extinguish, simulate, or finally adjudicate sovereign authority unless such authority has been explicitly delegated through a legitimate process.
 
-### 5.15 Provenance and Lineage
+### 5.16 Provenance and Lineage
 
 All decisions MUST carry origin, history, and causal chain.
 
-### 5.16 Auditability
+### 5.17 Auditability
 
 All mutating acts MUST be inspectable and replayable.
 
 A record can be auditable without being universally public. Access controls, redaction, affected-party review, and culturally appropriate handling MAY be required.
 
-### 5.17 Learning Closure
+### 5.18 Learning Closure
 
 Completed decisions MUST produce learning artifacts.
 
@@ -301,6 +309,7 @@ The following MUST hold:
 - recognized standing is protected;
 - denial of recognized standing is recordable, appealable, and repairable;
 - legitimacy precedes execution;
+- procedural correctness and constitutional legitimacy neither guarantee nor eliminate the need for repair;
 - execution remains bounded by current authority;
 - authority is scoped, recorded, and revocable under policy;
 - active blocking challenges prevent ordinary execution unless an emergency override path is explicitly authorized and recorded;
