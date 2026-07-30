@@ -11,7 +11,7 @@
 | `042` | [Challenge Protocol](../RFC-CDP-042-Challenge-Protocol.md) | `Draft v0.4` |
 | `043` | [Test Protocol](../RFC-CDP-043-Test-Protocol.md) | `Draft` |
 | `044` | [Adjudicate Protocol](../RFC-CDP-044-Adjudicate-Protocol.md) | `Draft` |
-| `045` | [Legitimize Protocol](../RFC-CDP-045-Legitimize-Protocol.md) | `Draft v0.5` |
+| `045` | [Legitimize Protocol](../RFC-CDP-045-Legitimize-Protocol.md) | `Draft v0.7` |
 | `046` | [Execute Protocol](../RFC-CDP-046-Execute-Protocol.md) | `Draft` |
 | `047` | [Record Protocol](../RFC-CDP-047-Record-Protocol.md) | `Draft` |
 | `048` | [Learn Protocol](../RFC-CDP-048-Learn-Protocol.md) | `Draft` |

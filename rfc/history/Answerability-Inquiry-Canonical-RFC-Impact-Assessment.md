@@ -1,9 +1,11 @@
 # Impact of the Answerability Inquiry on Canonical CDP RFCs
 
-**Status:** Working document  
+**Status:** Archived — informational only; superseded by the answerability integration in RFC-CDP-001 §5.1, RFC-CDP-033 §11, and RFC-CDP-045 §7  
 **Authority:** Informational only  
 **Repository basis:** Canonical RFC inventory in `rfc/` on `main`  
 **Purpose:** Determine which existing RFCs require amendment, clarification, or no immediate change in light of the ConstantC answerability inquiry.
+
+**Archival note:** This document was the planning basis for a staged amendment package (`rfcs/Answerability-Constitutional-Spine-Amendments.md`, now removed) that was produced independently of, and concurrently with, the answerability integration landed via PR #28. The amendment order it recommends in Section 4 — RFC-CDP-033 first, then RFC-CDP-001, then RFC-CDP-045 — was, in fact, the order followed by the integration that shipped. It is preserved here under `rfc/history/` as a design-history record, not as authoritative or actionable guidance. See `rfc/history/RFC-CORPUS-ADJUDICATION-HISTORY.md` for the adjudication entry recording this convergence.
 
 ---
 
