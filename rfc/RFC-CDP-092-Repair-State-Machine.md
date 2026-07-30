@@ -1,9 +1,9 @@
 # RFC-CDP-092 — Repair State Machine
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.2  
+Status: Draft v0.3  
 Series: Constitutional Decision Plane (CDP)  
-Date: July 29, 2026  
+Date: July 30, 2026  
 Depends On: RFC-CDP-001, RFC-CDP-010, RFC-CDP-032, RFC-CDP-033, RFC-CDP-045, RFC-CDP-047, RFC-CDP-048, RFC-CDP-061, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074  
 Updates: RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074
 
@@ -41,9 +41,11 @@ This RFC answers:
 
 Repair is a lifecycle, not a note field.
 
-A repair process MUST preserve breach, claim, response, commitment, evidence, affected-party review, dissent, authority conflict, and learning state.
+A repair process MUST preserve breach, claim, response, commitment, evidence, affected-party review, dissent, authority conflict, relationship disposition, and learning state.
 
 Repair MUST NOT be marked complete merely because a responding institution says it is complete.
+
+The state of the Repair process and the resulting state of the affected relationship are distinct determinations. Section 13 defines the latter as a Relationship Disposition, recorded separately from `current_state`.
 
 ### 2.1 Repair Follows Relationship, Not Error
 
@@ -67,7 +69,7 @@ Repair is not primarily asking who was right, who won, or who is at fault. Those
 
 - **Procedural legitimacy** asks: was governance conducted correctly?
 - **Constitutional legitimacy** asks: was answerability preserved?
-- **Repair** asks: have the affected relationships been restored, renewed, or responsibly transformed after the exercise of power?
+- **Repair** asks: have the affected relationships been restored, renewed, or responsibly transformed after the exercise of power? Section 13 records this answer as a Relationship Disposition, distinct from the process states defined in Sections 5 through 11.
 
 These questions are sequential in that Repair ordinarily follows Legitimize and Execute in time. They are independent in that none of them answers the others. A decision MAY be procedurally correct. A decision MAY be constitutionally legitimate. Repair MAY nevertheless still be required.
 
@@ -138,10 +140,11 @@ DISCOVERED
   → EVIDENCE_SUBMITTED
   → AFFECTED_PARTY_REVIEW
   → CLOSED
-  → LEARNED
 ```
 
 However, repair is non-linear. It may enter contested, blocked, failed, unresolved, reopened, or superseded states.
+
+Learning is recorded against whichever terminal or durable state the repair item reaches; it is not a further stage in this lifecycle. Section 16 defines learning as an event recorded on the repair object, not a transition of `current_state`. Section 13 similarly records the disposition of the affected relationship without changing `current_state`.
 
 ---
 
@@ -175,7 +178,8 @@ Repair implementations SHOULD support the following states.
 | `REOPENED` | A closed or deferred repair item has been reopened. |
 | `SUPERSEDED` | A later agreement, agenda, record, or process supersedes this repair item. |
 | `WITHDRAWN` | An authorized claimant withdraws the claim or point. |
-| `LEARNED` | Learning artifacts have been produced. |
+
+Learning is not a canonical repair state. Producing learning artifacts does not transition `current_state`; it sets `learning_recorded` and `learning_refs` on the Repair State object defined in Section 12, and is triggered under Section 16.
 
 ---
 
@@ -190,7 +194,6 @@ CLOSED
 CLOSED_WITH_RESERVATIONS
 SUPERSEDED
 WITHDRAWN
-LEARNED
 ```
 
 ### 6.2 Non-Terminal Durable States
@@ -241,13 +244,11 @@ Implementations SHOULD enforce the following transition guidance.
 | `AFFECTED_PARTY_REVIEW` | `CONTESTED` | Review contests target. |
 | `AFFECTED_PARTY_REVIEW` | `CLOSED_WITH_RESERVATIONS` | Review permits closure with reservations. |
 | `AFFECTED_PARTY_REVIEW` | `CLOSED` | Review supports closure or policy permits closure. |
-| `CLOSED` | `LEARNED` | Learning artifacts are generated. |
-| `CLOSED_WITH_RESERVATIONS` | `LEARNED` | Learning artifacts preserve reservations. |
-| `FAILED` | `LEARNED` | Failure produces learning. |
-| `UNRESOLVED` | `LEARNED` | Unresolved status produces learning without closure. |
 | `CLOSED` | `REOPENED` | New evidence, review, dissent, or authority conflict reopens. |
 | `CLOSED_WITH_RESERVATIONS` | `REOPENED` | Reservations mature into new contestation. |
 | `REOPENED` | `UNDER_REVIEW` | Review resumes. |
+
+`CLOSED`, `CLOSED_WITH_RESERVATIONS`, `FAILED`, and `UNRESOLVED` each MAY produce learning artifacts. Doing so sets `learning_recorded` and `learning_refs` under Section 12; it is not a transition to a further state, and `current_state` remains whichever of these four values applied.
 
 ---
 
@@ -283,9 +284,12 @@ Closure SHOULD require:
 - sovereignty claim disposition recorded when applicable;
 - dissent preserved;
 - anti-erasure violations resolved or carried as reservations;
+- Relationship Disposition recorded under Section 13;
 - learning path defined.
 
 Closure MUST NOT erase dissent, reservations, unresolved authority claims, breach history, or repair history.
+
+Closure MUST NOT be read as establishing a `RESTORED` or `RENEWED` Relationship Disposition. The two are recorded and required independently.
 
 ---
 
@@ -346,14 +350,96 @@ A Repair State object SHOULD be represented as:
   "dissent_refs": [],
   "evidence_refs": [],
   "record_refs": [],
+  "relationship_disposition_ref": "ref|null",
+  "learning_recorded": false,
+  "learning_refs": [],
   "updated_by": "actor_or_system_ref",
   "updated_at": "timestamp"
 }
 ```
 
+`relationship_disposition_ref` MAY be null before a disposition is determined. When non-null, it MUST point to a valid Relationship Disposition object as defined in Section 13.
+
+`learning_recorded` MUST be `false` until learning artifacts have been produced for the current terminal or durable state. Setting it `true` MUST NOT change `current_state`.
+
+`learning_refs` MAY be empty. When non-empty, each reference MUST point to a learning artifact produced under Section 16.
+
 ---
 
-## 13. State Transition Record
+## 13. Relationship Disposition
+
+Repair closure and relationship restoration are distinct determinations. Implementations MUST NOT infer reconciliation, renewed consent, restored trust, or continued relationship from `CLOSED` or `CLOSED_WITH_RESERVATIONS`.
+
+The Repair State Machine defined in Sections 5 through 11 tracks the state of the Repair *process*: whether it is closed, closed with reservations, failed, unresolved, or otherwise procedurally situated. It does not, by itself, describe what happened to the relationship that made Repair necessary. This section defines that as a separate, required determination.
+
+### 13.1 Relationship Disposition Values
+
+A Relationship Disposition MUST be one of:
+
+| Disposition | Meaning |
+|---|---|
+| `RESTORED` | The relationship continues on substantially its original terms; trust, consent, and cooperation are reestablished. |
+| `RENEWED` | The relationship continues, refreshed by explicit agreement, after a lapse or breach. |
+| `TRANSFORMED` | The relationship continues, but on materially changed terms, roles, or conditions. |
+| `CONCLUDED` | The relationship ends by mutual or authorized agreement, truthfully and with dignity, without implying restored trust. |
+| `CONTINUING_WITH_RESERVATIONS` | The relationship continues, but material reservations, dissent, or unresolved concerns remain on record. |
+| `SEPARATED_WITH_OBLIGATIONS` | The relationship ends, but outstanding answerability, remedy, or accountability obligations survive the separation. |
+| `UNRESOLVED` | Neither continuation nor conclusion has been determined; the disposition remains open. |
+| `NOT_DETERMINED` | No disposition has yet been assessed. |
+
+Implementation profiles MAY refine these values but MUST NOT collapse them into a single "resolved" or "closed" flag.
+
+### 13.2 Normative Rules
+
+The following distinctions MUST be preserved:
+
+- Repair MAY complete without reconciliation.
+- A relationship MAY continue in a changed form.
+- A relationship MAY conclude truthfully and with dignity without implying fault, defeat, or restored trust.
+- Separation MUST NOT be treated as discharging outstanding answerability obligations arising from the same conduct.
+- An affected party MAY decline renewed relationship without thereby causing Repair to fail.
+- Process closure MUST NOT be treated as proof that trust, consent, or relationship has been restored.
+
+### 13.3 Withdrawal Does Not Discharge Answerability
+
+`WITHDRAWN` describes the claim, not the underlying relationship or its obligations.
+
+Withdrawal of a claim by an authorized claimant does not automatically extinguish institutional, constitutional, public, or independently held answerability obligations arising from the same conduct. A Relationship Disposition MUST still be recorded for a withdrawn repair item where such obligations remain material. `WITHDRAWN` process state and `SEPARATED_WITH_OBLIGATIONS` or `UNRESOLVED` disposition MAY coexist.
+
+### 13.4 Relationship Disposition Object
+
+A Relationship Disposition SHOULD be represented as a governed object associated with, but distinct from, the Repair State object:
+
+```json
+{
+  "relationship_disposition_id": "rd_20260503_001",
+  "repair_state_id": "rs_20260503_001",
+  "relationship_disposition": "TRANSFORMED",
+  "disposition_rationale": "string",
+  "continuing_obligations": [],
+  "affected_party_position_refs": [],
+  "determined_by": "authority_or_process_ref",
+  "recorded_at": "timestamp"
+}
+```
+
+`relationship_disposition` MUST be one of the values in Section 13.1.
+
+`continuing_obligations` MAY be empty. An empty list is a positive claim that no continuing obligation survives the disposition; it MUST be attested, not assumed.
+
+`affected_party_position_refs` SHOULD reference the affected party's own recorded position on the disposition, including a position of continued disagreement, non-consent, or refusal. Recording a Relationship Disposition MUST NOT require affected-party agreement with that disposition; it MUST require that the affected party's position, if recorded, is not silently overwritten by it.
+
+`determined_by` MUST reference the authority or process responsible for the determination. A responding institution MUST NOT be the sole determiner of a `RESTORED` or `RENEWED` disposition where affected-party review is required under Section 9 or `RFC-CDP-073-Affected-Party-Review-and-Anti-Erasure.md`.
+
+### 13.5 Relationship to Closure
+
+A Relationship Disposition SHOULD be recorded no later than the repair item's transition to a terminal state under Section 6.1.
+
+Closure under Section 9 MUST NOT require a `RESTORED` or `RENEWED` disposition. Closure MAY occur with any disposition value, including `CONCLUDED`, `SEPARATED_WITH_OBLIGATIONS`, or `UNRESOLVED`, provided the applicable closure requirements in Section 9 are otherwise met.
+
+---
+
+## 14. State Transition Record
 
 Every material state transition SHOULD produce a transition record.
 
@@ -375,7 +461,7 @@ Every material state transition SHOULD produce a transition record.
 
 ---
 
-## 14. AIITL Repair State Duties
+## 15. AIITL Repair State Duties
 
 AIITL MAY surface possible state errors.
 
@@ -389,7 +475,8 @@ AIITL MAY identify:
 - unresolved authority conflict;
 - anti-erasure violation;
 - stale closure;
-- likely need to reopen.
+- likely need to reopen;
+- a recorded Relationship Disposition inconsistent with the affected party's recorded position or with the underlying evidence.
 
 AIITL MUST NOT:
 
@@ -398,11 +485,13 @@ AIITL MUST NOT:
 - waive sovereignty claims;
 - determine final repair sufficiency;
 - erase dissent;
-- treat institutional response as completion.
+- treat institutional response as completion;
+- determine or assert a Relationship Disposition;
+- treat process closure as evidence of a `RESTORED` or `RENEWED` disposition.
 
 ---
 
-## 15. Learning Hooks
+## 16. Learning Hooks
 
 The Repair State Machine SHOULD trigger Learn when:
 
@@ -415,6 +504,8 @@ The Repair State Machine SHOULD trigger Learn when:
 - anti-erasure violation occurs;
 - affected-party review contests closure;
 - completion evidence is repeatedly insufficient.
+
+Triggering Learn sets `learning_recorded: true` and appends to `learning_refs` on the Repair State object defined in Section 12. It MUST NOT change `current_state`. A repair item that closed, failed, or remained unresolved continues to expose that same `current_state` after learning artifacts are produced; the object does not become harder to query for its disposition merely because it has also been learned from.
 
 Learning artifacts MAY include:
 
@@ -432,7 +523,7 @@ Learning MUST NOT erase the repair record.
 
 ---
 
-## 16. Minimal Compliance
+## 17. Minimal Compliance
 
 A minimal CDP implementation SHOULD support:
 
@@ -445,21 +536,26 @@ A minimal CDP implementation SHOULD support:
 - authority-conflict state;
 - closure and closure-with-reservations;
 - reopening;
-- learning hook;
+- learning hook that does not overwrite `current_state`;
+- Relationship Disposition, recorded separately from `current_state`;
 - forbidden transition checks.
 
 A minimal implementation MUST NOT allow repair to close solely because an institution has responded.
 
+A minimal implementation MUST NOT infer a Relationship Disposition from `current_state` or from the presence of learning artifacts.
+
 ---
 
-## 17. Summary
+## 18. Summary
 
 Repair has state.
 
-Repair may be submitted, preserved, reviewed, contested, blocked, committed, evidenced, reviewed again, closed, reopened, unresolved, failed, superseded, or learned from.
+Repair may be submitted, preserved, reviewed, contested, blocked, committed, evidenced, reviewed again, closed, reopened, unresolved, failed, or superseded. It may also be learned from, without that learning changing which of these states it is in.
 
 A repair state machine prevents institutions from treating repair as a comment, a checkbox, a public-relations response, or an internal closure decision.
 
 Unresolved is not closed. Deferred is not repaired. Failed is not forgotten.
+
+Closed is not restored. A Repair process may reach its most final process state while the relationship it concerns remains transformed, concluded, separated with obligations outstanding, or simply unresolved. That is not a defect in the process. It is the reason Section 13 records the relationship's disposition as its own determination, never inferred from `current_state`, never discharged by withdrawal, and never owed to the responding institution alone to decide.
 
 Repair does not exist because procedure failed. It exists because governance exercises power over relationships, and a procedurally correct, constitutionally legitimate exercise of power can still leave a relationship unable to continue. Repair asks what remains between the parties, and gives that remainder a governed path to restoration or to a truthful, dignified close.

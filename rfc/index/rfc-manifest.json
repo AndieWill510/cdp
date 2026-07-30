@@ -46,7 +46,7 @@
     {"number":"082","title":"Event Stream and Subscription API","file":"RFC-CDP-082-Event-Stream-and-Subscription-API.md","status":"Reserved","band":"080-089"},
     {"number":"090","title":"Governance State Machine","file":"RFC-CDP-090-Governance-State-Machine.md","status":"Draft","band":"090-099"},
     {"number":"091","title":"Execution State Machine","file":"RFC-CDP-091-Execution-State-Machine.md","status":"Draft","band":"090-099"},
-    {"number":"092","title":"Repair State Machine","file":"RFC-CDP-092-Repair-State-Machine.md","status":"Draft v0.2","band":"090-099"},
+    {"number":"092","title":"Repair State Machine","file":"RFC-CDP-092-Repair-State-Machine.md","status":"Draft v0.3","band":"090-099"},
     {"number":"093","title":"Covenant State Machine","file":"RFC-CDP-093-Covenant-State-Machine.md","status":"Draft","band":"090-099"}
   ]
 }
