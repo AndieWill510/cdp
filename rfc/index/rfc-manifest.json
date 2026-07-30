@@ -41,6 +41,7 @@
     {"number":"073","title":"Affected-Party Review and Anti-Erasure","file":"RFC-CDP-073-Affected-Party-Review-and-Anti-Erasure.md","status":"Draft","band":"070-079"},
     {"number":"074","title":"Sovereignty Claims and Authority Pluralism","file":"RFC-CDP-074-Sovereignty-Claims-and-Authority-Pluralism.md","status":"Draft","band":"070-079"},
     {"number":"075","title":"Rematriation and Land/Resource Return Protocol","file":"RFC-CDP-075-Rematriation-and-Land-Resource-Return-Protocol.md","status":"Reserved","band":"070-079"},
+    {"number":"078","title":"Relationship Taxonomy and Recognition Model","file":"RFC-CDP-078-Relationship-Taxonomy-and-Recognition-Model.md","status":"Draft v0.1","band":"070-079"},
     {"number":"080","title":"Governance API","file":"RFC-CDP-080-Governance-API.md","status":"Draft","band":"080-089"},
     {"number":"081","title":"Deliberation API","file":"RFC-CDP-081-Deliberation-API.md","status":"Draft","band":"080-089"},
     {"number":"082","title":"Event Stream and Subscription API","file":"RFC-CDP-082-Event-Stream-and-Subscription-API.md","status":"Reserved","band":"080-089"},
