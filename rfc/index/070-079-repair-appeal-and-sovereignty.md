@@ -12,10 +12,10 @@
 | `073` | [Affected-Party Review and Anti-Erasure](../RFC-CDP-073-Affected-Party-Review-and-Anti-Erasure.md) | `Draft` |
 | `074` | [Sovereignty Claims and Authority Pluralism](../RFC-CDP-074-Sovereignty-Claims-and-Authority-Pluralism.md) | `Draft` |
 | `075` | Rematriation and Land/Resource Return Protocol | `Reserved` |
-| `078` | [Relationship Taxonomy and Recognition Model](../RFC-CDP-078-Relationship-Taxonomy-and-Recognition-Model.md) | `Draft v0.2` |
+| `078` | [Relationship Taxonomy and Recognition Model](../RFC-CDP-078-Relationship-Taxonomy-and-Recognition-Model.md) | `Draft v0.3` |
 
 Sovereignty is not reduced to ordinary stakeholder standing or participation-integrity scoring.
 
-Relationship Type (RFC-CDP-078) is a separate constitutional fact from Standing, Authority, Sovereignty, and Repair Disposition; it informs those determinations without substituting for any of them.
+Relationship Type (RFC-CDP-078) is a separate constitutional fact from Standing, Authority, Sovereignty, and Repair Disposition; it informs those determinations without gating any of them. Answerability remains the sole gateway.
 
 This file is navigation, not protocol authority. Corpus drift is verified through `scripts/verify_rfc_index.py`.
