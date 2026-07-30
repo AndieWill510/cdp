@@ -27,6 +27,7 @@ A constitutional protocol suite must remember its own structure without making o
 | Verify corpus state | `rfc/index/rfc-manifest.json` | `scripts/verify_rfc_index.py` |
 | Review promotion history | this RFC | `rfc/history/RFC-CORPUS-ADJUDICATION-HISTORY.md` |
 | Join active collaboration | `collab/INDEX.md` | active session files |
+| See how a governance event executes end to end | `architecture/001-canonical-governance-workflow.md` | the RFC for whatever stage you are implementing |
 
 The shortest useful route to current RFC state is:
 
