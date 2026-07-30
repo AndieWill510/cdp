@@ -25,6 +25,8 @@ It makes decisions:
 - replayable
 - legitimate
 
+**Building CDP? Start at [`architecture/001-canonical-governance-workflow.md`](architecture/001-canonical-governance-workflow.md).** It is the canonical end-to-end execution narrative — how a governance event actually runs, stage by stage, with exact artifacts and RFC citations. RFCs govern; that document composes; your implementation conforms. See [`architecture/README.md`](architecture/README.md) for how the two relate.
+
 ---
 
 ## Why This Exists

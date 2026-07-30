@@ -5,7 +5,8 @@ Status: Draft v0.1
 Date: July 30, 2026  
 Scope: Cross-RFC orchestration narrative. Not a constitutional RFC. Introduces no new constitutional primitives.  
 Elaborates: `rfc/RFC-CDP-010-Reference-Architecture.md`, `rfc/RFC-CDP-011-Architecture-Diagrams.md`  
-Narrates: `rfc/RFC-CDP-001` through `rfc/RFC-CDP-093` (full citation index in §7)
+Narrates: `rfc/RFC-CDP-001` through `rfc/RFC-CDP-093` (full citation table in §6)  
+Index: [`architecture/README.md`](./README.md)
 
 ## Relationship to the RFC corpus
 
@@ -15,7 +16,7 @@ This document is not an RFC. It does not live in `rfc/` and is not tracked by `s
 
 This document adopts the same posture, one level down. It elaborates RFC-CDP-010 §6's plane-level flows into a single, concrete, cross-RFC event walkthrough — naming the actual governed records, exact state values, and specific RFC sections a decision touches as it moves from a request arriving to a decision closing. **Where this document and any canonical RFC conflict, the RFC controls.** This document is a map. The RFCs are the territory.
 
-If you are new to CDP, read in this order: `README.md` → `rfc/RFC-CDP-000-Series-Index.md` → `rfc/RFC-CDP-010-Reference-Architecture.md` → this document → the individual RFC for whatever stage you are implementing.
+If you are new to CDP, read in this order: `README.md` → `rfc/RFC-CDP-000-Series-Index.md` → `rfc/RFC-CDP-010-Reference-Architecture.md` → this document → the individual RFC for whatever stage you are implementing. `architecture/README.md` indexes every document in this directory and its status.
 
 ---
 
@@ -252,7 +253,7 @@ Legitimacy authorizes *consideration* for execution. It does not authorize execu
 
 **Emergency Override / Kill Switch** (`RFC-CDP-052`) is the exceptional path, not a bypass lane: an Emergency Override object (`mode`: `bypass | defer | accelerate | escalate | authorize_once | limited_window | pause | halt | quarantine | terminate`) requires basis, scope, validity window, and is subject to mandatory Post-Hoc Review (`pending → under_review → ratified | ratified_with_reservations | condemned | repair_required | policy_update_required`). It MUST NOT be invoked for convenience, deadline pressure, institutional embarrassment, or avoidance of challenge/dissent/affected-party review (§5). A Kill Switch (`target_type`, `action`, `scope.blast_radius`) can pause, halt, quarantine, or terminate at any point, including in response to runaway agentic behavior.
 
-Underlying all three is `RFC-CDP-091` (Execution State Machine): `AUTHORIZED → DISPATCHED → IN_PROGRESS → COMPLETED | FAILED | PAUSED | RETRYING | ROLLED_BACK | TERMINATED`. Entry requires a valid legitimacy artifact and all policy-required preconditions.
+Underlying all three, in principle, is `RFC-CDP-091` (Execution State Machine): `AUTHORIZED → DISPATCHED → IN_PROGRESS → COMPLETED | FAILED | PAUSED | RETRYING | ROLLED_BACK | TERMINATED`. Entry requires a valid legitimacy artifact and all policy-required preconditions. **This vocabulary has not been reconciled with `RFC-CDP-046`/`047`/`090`'s `EXECUTING → EXECUTED` vocabulary, and none of `050`-`054` map to either — see Gap 1 in §9.**
 
 ### 4.9 Execute
 
@@ -351,7 +352,7 @@ The envelope-level `lifecycle_stage` and `status` enums (`RFC-CDP-023` §4) are 
 | `test` | 043 | `UNDER_DELIBERATION ↔ UNDER_TEST` (iterative) | Sufficient test evidence attached |
 | — | 044 | `UNDER_DELIBERATION\|UNDER_TEST → ADJUDICATED → PROPOSED\|ESCALATED` | Disposition recorded |
 | `legitimize` | 045 | `adjudicated → legitimized \| legitimacy_denied \| escalated`, orthogonal `constitutional_legitimacy_status: preserved\|blocked\|escalated` | `status: granted` AND `constitutional_legitimacy_status: preserved` (§5.1.1 table below) |
-| `execute` | 046, 091 | `LEGITIMIZED → EXECUTING → EXECUTED \| FAILED \| ROLLED_BACK` (091: `AUTHORIZED → DISPATCHED → IN_PROGRESS → COMPLETED\|FAILED\|PAUSED\|RETRYING\|ROLLED_BACK\|TERMINATED`) | Presence Grant + execution conditions satisfied |
+| `execute` | 046, 090, 091\* | `LEGITIMIZED → EXECUTING → EXECUTED \| FAILED \| ROLLED_BACK` (046/047/090 vocabulary; 091 uses an unreconciled parallel vocabulary — see Gap 1, §9) | Presence Grant + execution conditions satisfied |
 | `record` | 047 | `EXECUTED\|REJECTED\|FAILED\|ROLLED_BACK → RECORDED` | Governed record persisted |
 | `learn` | 048 | `RECORDED → LEARNED` | Learning artifact produced (not necessarily ratified) |
 
@@ -457,7 +458,13 @@ Blocking conditions, consolidated by where they actually stop the spine:
 
 Per the governing instruction for this document: these are named, not solved here. Each is a real, verifiable gap in the current corpus, surfaced by trying to narrate it end to end — not a matter of taste.
 
-**Gap 1 — RFC-CDP-091 is not a declared dependency of the execution-safety band it underlies.** `RFC-CDP-050` through `054` all cite `RFC-CDP-046` (Execute Protocol) in their dependency headers, but none of them cites `RFC-CDP-091` (Execution State Machine) by number, even though `091`'s abstract states are exactly what those four RFCs add mechanism around (`AUTHORIZED → DISPATCHED → IN_PROGRESS → ...`). The relationship is topical, not declared. This document had to infer the connection rather than cite it.
+**Gap 1 — RFC-CDP-091 uses execution-state vocabulary that has never been reconciled with RFC-CDP-046/047/090, and RFC-CDP-050-054 anchor to neither.** This was initially logged as a missing dependency citation; direct comparison shows it is a real semantic divergence, not a traceability gap.
+
+`RFC-CDP-046` (Execute), `RFC-CDP-047` (Record), and `RFC-CDP-090` (Governance State Machine) are mutually consistent: all three use `LEGITIMIZED → EXECUTING → EXECUTED | FAILED | ROLLED_BACK`. `RFC-CDP-091` (Execution State Machine) independently defines `AUTHORIZED → DISPATCHED → IN_PROGRESS → COMPLETED | PAUSED | FAILED | RETRYING | ROLLED_BACK | TERMINATED` for what is described as the same territory ("what happens after legitimacy"). The same milestone — successful execution — is named `EXECUTED` in three RFCs and `COMPLETED` in the fourth. `RFC-CDP-091` also introduces four states (`AUTHORIZED`, `DISPATCHED`, `IN_PROGRESS`, `PAUSED`, `RETRYING`, `TERMINATED`) with no counterpart in `046`/`047`/`090` at all.
+
+Separately, none of `RFC-CDP-050` through `054` reuse either vocabulary. Each defines its own independent status enum for its own concern (maturity level, presence-grant lifecycle, override/kill-switch status, a 17-value rollback status, a ten-stage compensation lifecycle) with no formal state mapping back to either `091`'s or `046`/`090`'s execution states. `RFC-CDP-052`'s kill-switch actions (`pause | halt | quarantine | terminate`) overlap conceptually with `091`'s `PAUSED`/`TERMINATED` states without using matching terms or citing `091`.
+
+Because three RFCs already agree with each other and only `091` diverges, and because `091` is the one that additionally introduces unreconciled intermediate states, this reads as a case for **RFC amendment to `RFC-CDP-091`** (aligning it to the `EXECUTING`/`EXECUTED` vocabulary already shared by `046`, `047`, and `090`, and clarifying how its intermediate states map onto that vocabulary) rather than a simple dependency-metadata fix. This document does not attempt that reconciliation; per the instruction governing this document, the divergence is named here and raised for constitutional review, not repaired in place.
 
 **Gap 2 — RFC-CDP-090 has not kept pace with its siblings.** It has no `Depends On`/`Updates` header at all (unusual for this corpus), and it does not incorporate the reopening semantics `RFC-CDP-077` §15 adds — those transitions are added to `RFC-CDP-092` (Repair State Machine) only. `RFC-CDP-090` remains the base governance state machine (`DRAFT, PROPOSED, ... LEARNED`) but is silent on reopening, maturity gates, presence grants, or emergency override, all of which now materially affect whether a decision can be represented as `EXECUTED`.
 
@@ -484,7 +491,7 @@ Full detail: `RFC-CDP-025`. Summary for this document's purposes: six core table
 New work should attach to this structure, not restructure it:
 
 - **New lifecycle stage RFCs** belong in the `040-049` band and must update `RFC-CDP-023`'s `stage_record_refs` and `lifecycle_stage` enum, following the pattern `RFC-CDP-024` set (gate, not stage; explicit envelope binding section).
-- **New execution-safety mechanisms** belong in `050-059`, must cite `RFC-CDP-091` explicitly (see Gap 1), and must define their own status enum plus a closure/blocking-condition list, following `RFC-CDP-052`'s pattern.
+- **New execution-safety mechanisms** belong in `050-059`, must map their status vocabulary explicitly onto the `EXECUTING`/`EXECUTED` vocabulary shared by `046`/`047`/`090` (not `091`'s unreconciled vocabulary — see Gap 1), and must define their own status enum plus a closure/blocking-condition list, following `RFC-CDP-052`'s pattern.
 - **New repair mechanisms** belong in `070-079`, must be consumed by `RFC-CDP-092`'s state machine rather than defining a competing one, and must respect `RFC-CDP-078`'s non-suspension rule if they touch Relationship Type in any way.
 - **New covenant mechanisms** belong in `060-069` and must be formalized into `RFC-CDP-093`'s state machine, following the `060 → 093` pattern.
 - **New state machines** belong in `090-099` and must declare, not merely imply, their dependency on the protocol RFCs they formalize (see Gap 1 and Gap 2 for what happens when this is skipped).
@@ -492,7 +499,29 @@ New work should attach to this structure, not restructure it:
 
 ---
 
-## 13. Non-Goals
+## 13. Conformance
+
+**RFCs govern. Architecture documents compose. Implementations conform.**
+
+An implementation conforms to this document only insofar as it conforms to the RFCs this document narrates. This document confers no independent conformance authority of its own — conformance is always conformance *to the governing RFCs*, made legible through the ordering, artifacts, and transitions collected here.
+
+A conforming implementation:
+
+- preserves the canonical ordering in §2 — Relationship Type never gates Standing, Answerability, Legitimacy, or Repair (`RFC-CDP-078` §8.2); procedural completion never stands in for constitutional legitimacy (`RFC-CDP-045`); execution never proceeds on legitimacy alone without separately satisfied presence and maturity conditions (`RFC-CDP-046`, `050`, `051`);
+- preserves the invariants each governing RFC states at the point this document cites it — silence is not consent (`RFC-CDP-070` §7, `RFC-CDP-076` §6), constitutional standing cannot be revoked (`RFC-CDP-033`), learning does not change process state (`RFC-CDP-092` §16);
+- produces the required artifacts named in §6 at the stage named in §6, as a governed record in the form the cited RFC's schema requires — not a narrative summary standing in for one;
+- implements the transition semantics in §5 — internal representation, storage, and queueing MAY vary; a transition an RFC marks forbidden MUST NOT occur regardless of internal representation;
+- honors every non-suspension and non-gating rule this document names, not only the one in §2 — these recur throughout the corpus (`RFC-CDP-070`: silence does not close an appeal; `RFC-CDP-076`: completion is not efficacy; `RFC-CDP-078`: Relationship Type is not a gateway) and each is load-bearing wherever it appears, not decorative.
+
+A conforming implementation MAY: vary its technology stack, storage engine, queueing system, or API shape; combine RFC-specified objects into fewer physical tables where `RFC-CDP-025` permits; stage `RFC-CDP-050`'s maturity levels more coarsely for a smaller deployment; omit the Repair plane's machinery entirely where a deployment context has no repair-eligible decisions — provided that omission is itself recorded, not silently assumed.
+
+A conforming implementation MUST NOT: claim compliance with a stage while skipping the blocking conditions §8 lists for it; represent a decision as `legitimized` without both `status: granted` and `constitutional_legitimacy_status: preserved` (`RFC-CDP-045` §11.1); treat any of the five gaps in §9 as license to invent a resolution unilaterally. Where a gap exists, an implementation should adopt a documented, explicit interpretation and flag it — not resolve it silently and represent the result as settled.
+
+Conformance to this document is necessary, not sufficient. It establishes that an implementation has not reinvented governance the corpus already specifies. It does not establish that the implementation is complete, secure, correct, or legitimate under `RFC-CDP-045`'s own terms — those remain separate, harder claims, on exactly the terms `RFC-CDP-045` §3 already insists procedural completion and constitutional legitimacy remain separate claims.
+
+---
+
+## 14. Non-Goals
 
 This document does not:
 
@@ -504,7 +533,7 @@ This document does not:
 
 ---
 
-## 14. Summary
+## 15. Summary
 
 One spine: `Nemawashi → Propose → Challenge → Test → Adjudicate → Legitimize → Execute → Record → Learn`. One gate before the spine (Proposal Sufficiency), one hinge in the middle (Legitimize, where procedural and constitutional legitimacy formally separate), and a cluster of orthogonal machines that attach at named points without becoming further stages: Maturity, Presence, Emergency Override, Rollback, Compensation, Repair, Relationship Disposition, Relationship Type, Reopening, and Covenant.
 

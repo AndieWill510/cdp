@@ -84,6 +84,10 @@ Git history remains the complete source record for earlier forms of this RFC.
 
 The answerability constitutional correction is fully integrated into RFC-CDP-001, RFC-CDP-033, and RFC-CDP-045. An earlier standalone proposal, `RFC-CDP-003-Answerability-Principle.md`, and its related staging documents were superseded and removed to preserve a single constitutional source of truth; see the "Session 026 answerability convergence" entry in the adjudication ledger for the full account.
 
+### 2.7 Architecture layer (non-normative)
+
+`architecture/` is a composition layer, not a constitutional one. Documents there elaborate and cross-reference RFCs into a single buildable narrative; they carry no independent constitutional authority, define no object, state, or failure mode the RFCs do not already define, and are not entered into `rfc/index/rfc-manifest.json` or checked by `scripts/verify_rfc_index.py`. Where an architecture document and an RFC conflict, the RFC controls. See `architecture/README.md` for what exists there and its relationship to this corpus.
+
 ---
 
 ## 3. Folder policy

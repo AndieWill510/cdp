@@ -1,0 +1,40 @@
+name: Architecture Link Integrity
+
+# This workflow verifies the discoverability contract for architecture/:
+# every architecture document is reachable from README.md, RFC-CDP-000, and
+# architecture/README.md itself. It is intentionally small and separate from
+# rfc-index-integrity.yml, which governs the rfc/ lane only.
+on:
+  push:
+    paths:
+      - 'architecture/**'
+      - 'README.md'
+      - 'rfc/RFC-CDP-000-Series-Index.md'
+      - 'scripts/verify_architecture_links.py'
+      - 'Makefile'
+      - '.github/workflows/architecture-link-integrity.yml'
+  pull_request:
+    paths:
+      - 'architecture/**'
+      - 'README.md'
+      - 'rfc/RFC-CDP-000-Series-Index.md'
+      - 'scripts/verify_architecture_links.py'
+      - 'Makefile'
+      - '.github/workflows/architecture-link-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-architecture-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify architecture link discoverability
+        run: make verify-architecture-links
