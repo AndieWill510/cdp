@@ -62,7 +62,7 @@ smoke:
 	bash docker/smoke-test.sh
 
 test:
-	$(PYTEST) tests/test_build_verification.py
+	$(PYTEST) tests/build_verification/test_build_verification.py
 
 codex-test:
 	bash scripts/codex_test_loop.sh
