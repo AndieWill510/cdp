@@ -49,7 +49,7 @@ The Decision Lifecycle Envelope answers:
 - what governed records exist across lifecycle stages;
 - what lineage and integrity markers allow reconstruction of the governed path.
 
-This RFC addresses seven failure modes:
+This RFC addresses eight failure modes:
 
 1. **Governed path severance** — the decision record exists, but the governed path is scattered, loosely linked, or replaced by summary.
 2. **Summary substitution** — a human-readable summary is treated as equivalent to the governed record it summarizes.
@@ -58,6 +58,7 @@ This RFC addresses seven failure modes:
 5. **Admission artifact invisibility** — Proposal Sufficiency, Formation Challenge, or APC gate result artifacts exist as governed records but are not explicitly indexed by the envelope.
 6. **Nemawashi invisibility** — stakeholder mapping, pre-proposal consultation, early dissent, boundary conditions, or unresolved questions exist before proposal admission but are not indexed as part of the governed path.
 7. **Cross-plane hook ambiguity** — Execution Plane and Covenant Plane records exist, but the Decision Lifecycle Envelope lacks explicit hooks to show whether execution, witness, clarification, boundary-holding, appeal, or repair surfaces constrain the decision.
+8. **Computational substrate invisibility** — a model, harness, tool chain, retrieval configuration, supplied context, or execution constraint materially shapes a governed decision, but the Decision Lifecycle Envelope contains no governed reference identifying that substrate.
 
 Admission artifact invisibility creates a governed path gap between formation and proposal/challenge.
 
@@ -144,6 +145,18 @@ decision_envelope:
     closure_blocked: <boolean>
     closure_blocking_reason: <string|null>
     closure_blocking_refs: [<ref>]
+
+  # Computational context control surface
+  computational_context:
+    context_status: <unreviewed|complete|partial|unavailable|not_applicable>
+    computational_context_refs: [<ref>]
+    model_identity_refs: [<ref>]
+    harness_config_refs: [<ref>]
+    tool_chain_refs: [<ref>]
+    retrieval_config_refs: [<ref>]
+    supplied_context_refs: [<ref>]
+    execution_environment_refs: [<ref>]
+    reconstruction_limit_refs: [<ref>]
 
   # Governed stage references
   stage_record_refs:
@@ -445,7 +458,134 @@ An unresolved affected-party claim blocks closure regardless of whether a formal
 
 ---
 
-## 12. Governed Path Hash
+## 12. Computational Context References
+
+The Decision Lifecycle Envelope indexes governed computational-context records without turning the envelope into a warehouse.
+
+A computational-context reference family preserves the material substrate that shaped a governed decision, including models, orchestration, tools, retrieval, supplied context, and runtime constraints.
+
+Computational-context references are required when a computational system materially:
+
+- generated or transformed a proposal;
+- selected, retrieved, ranked, filtered, or summarized evidence;
+- generated a challenge or test;
+- recommended or performed adjudication;
+- evaluated legitimacy;
+- determined or constrained execution;
+- generated a Record or Learn artifact;
+- affected a material outcome through routing, memory, tool access, or runtime configuration.
+
+### 12.1 Computational Context Failure Mode
+
+A Decision Lifecycle Envelope addresses one more failure mode beyond the existing procedural and governance gaps:
+
+- **Computational substrate invisibility** — a model, harness, tool chain, retrieval configuration, supplied context, or execution constraint materially shapes a governed decision, but the Decision Lifecycle Envelope contains no governed reference identifying that substrate.
+
+This failure mode prevents meaningful reconstruction of why the same apparent case and policy produced a different result. It also allows computational change to be mistaken for principled precedent development.
+
+### 12.2 Manifest Coverage for Computational Context
+
+Computational-context references MUST be included in the governed path manifest when they materially shaped the decision.
+
+A manifest for computational context SHOULD preserve:
+
+```yaml
+computational_context_manifest:
+  context_status: <enum>
+  computational_context_refs: [<registered-ref>]
+  model_identity_refs: [<registered-ref>]
+  harness_config_refs: [<registered-ref>]
+  tool_chain_refs: [<registered-ref>]
+  retrieval_config_refs: [<registered-ref>]
+  supplied_context_refs: [<registered-ref>]
+  execution_environment_refs: [<registered-ref>]
+  reconstruction_limit_refs: [<registered-ref>]
+```
+
+Each registered reference included in the manifest MUST preserve the registration-time content hash or equivalent integrity marker required by RFC-CDP-023.
+
+Changing a model alias, harness configuration, retrieval source, tool version, supplied-context record, or execution-environment record without producing a new governed reference and updated manifest constitutes silent reference mutation.
+
+### 12.3 Reference Family Semantics
+
+`computational_context_refs` points to governed records that describe the computational substrate relevant to the decision as a whole. It MAY include an aggregate manifest record whose content hash covers the narrower reference families below.
+
+`model_identity_refs` points to governed records identifying models that materially generated, evaluated, ranked, transformed, summarized, or recommended decision content.
+
+A model identity record SHOULD preserve, where available and permitted:
+
+- provider or operator;
+- model family;
+- model identifier;
+- model or deployment version;
+- inference profile or material runtime parameters;
+- deployment or endpoint identity;
+- effective time window;
+- content hash or attestation reference;
+- known nondeterminism or reproducibility limits.
+
+A marketing name alone is not sufficient when a more precise deployment identifier is available.
+
+`harness_config_refs` points to governed records identifying the orchestration surrounding a model or computational service.
+
+This may include:
+
+- system or policy instruction set version;
+- routing and delegation configuration;
+- memory and context assembly rules;
+- safety and output-gating configuration;
+- tool-selection policy;
+- retry, sampling, fallback, and escalation behavior;
+- applicable schema and parser versions.
+
+The referenced record SHOULD avoid embedding protected prompt content when a content-addressed or sealed reference can preserve integrity without disclosure.
+
+`tool_chain_refs` points to governed records identifying tools, services, connectors, transformations, validators, and execution components that materially shaped the result.
+
+A tool-chain reference SHOULD preserve ordering or dependency relationships when sequence affects the result.
+
+`retrieval_config_refs` points to governed records identifying retrieval sources and configuration, including:
+
+- index or corpus identity;
+- snapshot, effective date, or content-hash boundary;
+- query or retrieval policy version;
+- ranking, filtering, and cutoff configuration;
+- access-control or jurisdictional filters;
+- known source omissions or availability failures.
+
+Retrieved evidence itself remains governed through evidence references. This family records how evidence became reachable.
+
+`supplied_context_refs` points to governed records identifying memory, conversation context, examples, prior decisions, instructions, or other supplied material that materially conditioned computation.
+
+This reference family MUST preserve privacy and minimization requirements. A sealed, redacted, hashed, or access-controlled record MAY be used when direct content exposure would be unsafe.
+
+`execution_environment_refs` points to governed records identifying material runtime constraints, including:
+
+- software and dependency versions;
+- jurisdiction or region;
+- time, cost, latency, or token limits;
+- security, privacy, and access restrictions;
+- deterministic or nondeterministic execution settings;
+- fallback conditions;
+- degraded or partial-service state.
+
+`reconstruction_limit_refs` points to governed records explaining why exact or meaningful reconstruction is limited.
+
+Examples include:
+
+- retired or inaccessible model deployment;
+- unavailable proprietary service version;
+- mutable external source without snapshot;
+- irrecoverable retrieved content;
+- missing harness or prompt attestation;
+- nondeterministic tool behavior;
+- privacy or legal restriction preventing replay.
+
+A reconstruction-limit record is not proof that reconstruction is impossible. It is a contestable claim about the current limit.
+
+---
+
+## 13. Governed Path Hash
 
 The `governed_path_hash` is computed over a canonicalized Governed Path Manifest.
 
@@ -455,7 +595,7 @@ A valid hash may preserve an illegitimate path with perfect fidelity.
 
 That is useful evidence, not approval.
 
-### 12.1 Governed Path Manifest Structure
+### 13.1 Governed Path Manifest Structure
 
 ```yaml
 governed_path_manifest:
@@ -555,7 +695,7 @@ governed_path_manifest:
 
 Each `ref_with_registration_hash` includes sequence position, reference ID, reference type, record type when available, registration-time content hash, hash algorithm, record schema version, and registration timestamp.
 
-### 12.2 Hash Coverage
+### 13.2 Hash Coverage
 
 The manifest covers:
 
@@ -581,15 +721,15 @@ Adding Nemawashi, proposal sufficiency, formation challenge, APC gate result, ex
 
 Therefore the schema and manifest coverage for these reference families are inseparable.
 
-### 12.3 Fields Excluded from the Manifest
+### 13.3 Fields Excluded from the Manifest
 
 Full governed artifacts, mutable display formatting, and access-control metadata are not hashed directly by the governed path manifest.
 
-`nemawashi_refs`, `stakeholder_map_ref`, `pre_proposal_consultation_refs`, `early_dissent_refs`, `boundary_condition_refs`, `unresolved_question_refs`, `proposal_sufficiency_ref`, `formation_challenge_refs`, `apc_gate_result_refs`, execution-control refs, and covenant refs are included in the manifest.
+`nemawashi_refs`, `stakeholder_map_ref`, `pre_proposal_consultation_refs`, `early_dissent_refs`, `boundary_condition_refs`, `unresolved_question_refs`, `proposal_sufficiency_ref`, `formation_challenge_refs`, `apc_gate_result_refs`, `computational_context_refs`, `model_identity_refs`, `harness_config_refs`, `tool_chain_refs`, `retrieval_config_refs`, `supplied_context_refs`, `execution_environment_refs`, `reconstruction_limit_refs`, execution-control refs, and covenant refs are included in the manifest.
 
 They are not excluded.
 
-### 12.4 Canonicalization
+### 13.4 Canonicalization
 
 The manifest uses canonical JSON, UTF-8 encoding, lexicographically sorted object keys, explicit nulls, empty arrays rather than omitted lists, lowercase enum values, lowercase hash algorithm identifiers, and UTC ISO-8601 timestamps with `Z` suffix.
 
@@ -603,7 +743,7 @@ Such a manifest is valid but integrity-incomplete and must not be represented as
 
 ---
 
-## 13. Security and Governance Considerations
+## 14. Security and Governance Considerations
 
 Decision Lifecycle Envelopes may expose affected-party claims, standing and recusal state, Nemawashi participation surfaces, stakeholder maps, early dissent, boundary conditions, unresolved questions, proposal sufficiency state, formation challenge existence, APC gate result existence, challenge existence, dissent references, evidence references, appeal or repair hooks, execution constraints, execution queue state, presence grants, witness records, clarification records, boundary-holding records, and learning artifacts.
 
@@ -611,7 +751,14 @@ Implementations should address access control, redaction, culturally appropriate
 
 ---
 
-## 14. Status of This Draft
+## 15. Status of This Draft
+
+Promoted into Draft v0.8:
+
+- computational-context references for the Decision Lifecycle Envelope;
+- explicit `computational_context` control surface;
+- explicit `computational_context_refs`, `model_identity_refs`, `harness_config_refs`, `tool_chain_refs`, `retrieval_config_refs`, `supplied_context_refs`, `execution_environment_refs`, and `reconstruction_limit_refs`;
+- manifest coverage for computational-context references and reconstruction-limit references.
 
 Promoted into Draft v0.7:
 
@@ -673,7 +820,7 @@ Not yet resolved:
 
 ---
 
-## 15. Summary
+## 16. Summary
 
 The Decision Lifecycle Envelope is the governed path index for a CDP decision.
 
