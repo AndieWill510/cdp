@@ -45,6 +45,7 @@ directly under `tests/`. Folders containing test files:
 - `tests/db/`
 - `tests/decision/`
 - `tests/execution/`
+- `tests/identify_attest_standing/`
 - `tests/migration/`
 - `tests/nemawashi/`
 - `tests/misc/`
@@ -57,7 +58,6 @@ yet) for governance steps with no code or coverage:
 - `tests/docker_build_verification/`
 - `tests/execute_authorization/`
 - `tests/execute_record/`
-- `tests/identify_attest_standing/`
 - `tests/learn/`
 - `tests/legitimize/`
 - `tests/postgres_init_contract/`
@@ -84,7 +84,9 @@ governance steps lack coverage rather than omitting them.
 | Execute (record) | `tests/migration/test_migration_009_execution_record.py::Migration009StaticTests` | `tests/execution/test_execution_record_service.py`; `tests/migration/test_migration_009_execution_record.py::Migration009PostgresSmokeTests` | `tests/execution/test_execution_record_api.py` | CI job `full-cdp-slice-tests`, run `30637092898`, success | Known gaps | `db/ddl/009-execution-record.sql` | A local ad hoc `pytest` run on 2026-07-31 against a stale, long-running local `cdp-api` container showed 2 failures here; CI (fresh build) passes. See [`000-current-state.md`](000-current-state.md#local-vs-ci-discrepancy-documented-not-resolved-here). The gap: nothing in the suite itself detects or warns that `CDP_TEST_API_URL` may be pointing at a stale container — a developer has to notice the discrepancy independently, as happened here. |
 | Record (audit trail) | | `tests/migration/test_migration_006_audit_event_ordering.py::Migration006PostgresSmokeTests`; audit-event content and rollback assertions embedded directly in `tests/decision/test_decision_service.py`, `tests/challenge/test_challenge_service.py`, `tests/challenge/test_challenge_adjudication_service.py`, `tests/execution/test_execution_authorization_service.py`, and `tests/execution/test_execution_record_service.py` (each queries `cdp_audit.event_log` directly and/or forces an audit-write failure to assert the rest of the transaction rolls back) | | CI job `full-cdp-slice-tests` runs the Runtime Tests listed | Healthy | `db/ddl/006-audit-event-ordering.sql`, `cdp/core/repositories/audit.py` | Corrected 2026-07-31: an earlier version of this row understated coverage as "only asserted by the decision-creation test." All five mutating service tests assert on `cdp_audit.event_log` directly. No route exposes the audit trail for external read, so there is still no API Tests entry. |
 | Learn | | | | | N/A | | No code, no tests. |
-| Identify / Attest / Standing | | | | | N/A | | No code, no tests. |
+| Identify (Actor Registry / Identity Claim) | `tests/migration/test_migration_010_identity_and_attestation.py::Migration010StaticTests` | `tests/identify_attest_standing/test_actor_service.py`; `tests/identify_attest_standing/test_identity_claim_service.py`; `tests/migration/test_migration_010_identity_and_attestation.py::Migration010PostgresSmokeTests` | `tests/identify_attest_standing/test_identity_attestation_api.py` (actor/claim portions) | Not yet wired to a passing GitHub Actions run at the time of writing -- see Notes | Healthy | `db/ddl/010-identity-and-attestation.sql` | Ran locally against a live Docker Compose stack (fresh migration apply, live `uvicorn`, live Postgres) with all cases passing, including the anti-delete trigger actually firing (not just present in DDL text) and full supersession/denial-preservation coverage. CI confirmation is the one thing outstanding before this can be cited as E4 in `000-current-state.md`. |
+| Attest (Attestation Record) | `tests/migration/test_migration_010_identity_and_attestation.py::Migration010StaticTests` | `tests/identify_attest_standing/test_attestation_service.py`; `tests/migration/test_migration_010_identity_and_attestation.py::Migration010PostgresSmokeTests` | `tests/identify_attest_standing/test_identity_attestation_api.py` (attested-decision portions) | Not yet wired to a passing GitHub Actions run at the time of writing -- see Notes | Healthy | `db/ddl/010-identity-and-attestation.sql` | Covers the fail-closed proof path against decision creation: unknown actor, inactive actor, actor/subject mismatch, unrecognized claim, wrong-scope claim, claim-belongs-to-different-actor, and forced-failure rollback, each asserting zero rows persisted. Same CI-confirmation caveat as the Identify row above. |
+| Standing and Recusal (RFC-CDP-033) | | | | | N/A | | No code, no tests. Not implemented by the Identity and Attestation slice -- see Non-Goals in `docs/session-027-identity-and-attestation.md`. |
 | Appeals / Repair (RFC-CDP-070 series) | | | | | N/A | | No code, no tests. |
 | Worker / queue consumption | | | | | N/A | `cdp/worker/main.py` | Process runs (no-op loop, per its own docstring) but there is nothing for a test to exercise. |
 | Self-canonicalizing ingestion | `tests/misc/test_self_canonicalizing_ingestion.py` (all classes; no live dependency required) | | | | Known gaps | | The tested code is a reference implementation embedded in the test file itself, not a `cdp/` module — see [`000-current-state.md`](000-current-state.md#execution-substrate). A passing suite here provides zero coverage of any production ingestion path, because none exists. Its fixture-lookup path was also broken by the 2026-07-31 reorg and fixed the same day (commit `7b6efae`). |

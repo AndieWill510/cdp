@@ -7,7 +7,8 @@ name: CDP CI
 #
 # full-cdp-slice-tests: the real DB/service/API tests for the canonical
 # vertical slices (decision creation, challenge transition, challenge
-# adjudication, audit-event ordering). Runs only on push to main, manual
+# adjudication, audit-event ordering, execution authorization/record,
+# identity and attestation). Runs only on push to main, manual
 # dispatch, or a PR labeled run-full-ci -- not on every PR push -- so rapid
 # iteration on a draft PR does not burn Actions minutes on the expensive
 # path. Always gated behind pr-guard passing first.
@@ -54,6 +55,7 @@ jobs:
             tests/migration/test_migration_007_challenge_adjudication.py::Migration007StaticTests \
             tests/migration/test_migration_008_execution_authorization.py::Migration008StaticTests \
             tests/migration/test_migration_009_execution_record.py::Migration009StaticTests \
+            tests/migration/test_migration_010_identity_and_attestation.py::Migration010StaticTests \
             tests/nemawashi/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLStaticTests \
             tests/db/test_postgres_init_contract.py::test_postgres_init_files_have_single_ordered_owner \
             tests/db/test_postgres_init_contract.py::test_bootstrap_sql_enforces_idempotent_smoke_marker \
@@ -147,6 +149,7 @@ jobs:
             tests/migration/test_migration_007_challenge_adjudication.py::Migration007PostgresSmokeTests \
             tests/migration/test_migration_008_execution_authorization.py::Migration008PostgresSmokeTests \
             tests/migration/test_migration_009_execution_record.py::Migration009PostgresSmokeTests \
+            tests/migration/test_migration_010_identity_and_attestation.py::Migration010PostgresSmokeTests \
             tests/nemawashi/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLPostgresSmokeTests \
             tests/db/test_postgres_init_contract.py::test_postgres_bootstrap_runtime_marker_is_unique \
             tests/db/test_db_ddl_runtime.py \
@@ -155,6 +158,9 @@ jobs:
             tests/challenge/test_challenge_adjudication_service.py \
             tests/execution/test_execution_authorization_service.py \
             tests/execution/test_execution_record_service.py \
+            tests/identify_attest_standing/test_actor_service.py \
+            tests/identify_attest_standing/test_identity_claim_service.py \
+            tests/identify_attest_standing/test_attestation_service.py \
             -v
 
       - name: Start API server
@@ -186,6 +192,7 @@ jobs:
             tests/challenge/test_challenge_adjudication_api.py \
             tests/execution/test_execution_authorization_api.py \
             tests/execution/test_execution_record_api.py \
+            tests/identify_attest_standing/test_identity_attestation_api.py \
             -v
 
       - name: Stop API server

@@ -10,6 +10,7 @@ from fastapi import FastAPI
 
 from cdp import __version__
 from cdp.api.decisions import router as decisions_router
+from cdp.api.identity import router as identity_router
 
 app = FastAPI(
     title="Constitutional Decision Plane API",
@@ -18,6 +19,7 @@ app = FastAPI(
 )
 
 app.include_router(decisions_router)
+app.include_router(identity_router)
 
 
 @app.get("/health", tags=["system"])

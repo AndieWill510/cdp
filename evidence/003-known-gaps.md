@@ -11,9 +11,17 @@ the current state faithfully; it does not propose how to close any gap.
 
 No code exists under a canonical implementation path (`cdp/`) for these:
 
-- **Identify** (RFC-CDP-030) — no actor identity code.
-- **Attest** (RFC-CDP-031) — no attestation code.
 - **Standing and Recusal** (RFC-CDP-033) — no standing/recusal code.
+  Deliberately out of scope for the Identity and Attestation slice — see
+  Non-Goals in `docs/session-027-identity-and-attestation.md`. Identity
+  Claim recognition (RFC-CDP-030/033 §11.2) is not Standing: a recognized
+  claim establishes who an actor is for a governed purpose, not whether
+  that actor has the right to participate in a specific decision stage.
+- **Authority and Delegation** (RFC-CDP-032) — no authority-grant,
+  delegation, or authority-evaluation code. `attest_and_create_decision`
+  checks actor existence/activeness and identity-claim recognition/scope,
+  not authority in RFC-CDP-032's sense (no `Authority Grant` object, no
+  separation-of-duties, no quorum, no delegation chain).
 - **Test Protocol** (RFC-CDP-043) — no code implements this as a discrete
   evidence-gathering step distinct from adjudication.
 - **Legitimize** (RFC-CDP-045) — no corresponding route, service function,
@@ -56,6 +64,46 @@ No code exists under a canonical implementation path (`cdp/`) for these:
   no route exposes it for external read, so there is no integration test of
   audit-trail retrieval.
 
+## Identity and Attestation slice -- specific limitations
+
+These are named here rather than left implicit, per this document's own
+discipline:
+
+- **RFC-CDP-030 and RFC-CDP-031 are thin.** Both are Draft v0.3, roughly 40
+  lines each, and specify no persistence schema. The `cdp_core.actor`,
+  `cdp_core.identity_claim`, and `cdp_core.attestation_record` schemas in
+  `db/ddl/010-identity-and-attestation.sql` are a documented interpretation
+  composing those RFCs' minimal required-properties lists with
+  RFC-CDP-033 §11.2's existence/recognition/scope distinction and §11.6's
+  non-erasure rule -- not a direct implementation of a schema either RFC
+  actually specifies. See the DDL file's header and
+  `docs/session-027-identity-and-attestation.md` for the full reasoning.
+- **"Verified" is not cryptographic.** `attest_and_create_decision`'s
+  verification means the actor is active and holds a recognized, in-scope
+  identity claim -- it does not check a cryptographic signature, and
+  `attestation_method`/`credential_reference` record a claimed, opaque
+  evidence reference, not proof. `attestation_verification_result`'s
+  `failed` value is schema-supported but not written by this slice's
+  synchronous service path, which fails closed via exception instead (see
+  `cdp/core/repositories/attestations.py`'s docstring).
+- **The proof path covers exactly one governed act.** `governed_act_type`
+  is seeded with only `decision_created`. Attesting any other mutating act
+  (a challenge, an adjudication, an execution authorization) is not
+  implemented.
+- **A separate `cdp_actor_type` registry, not a retrofit of the legacy
+  `actor_type` registry `decision_registry` already uses.** A compatibility
+  mapping in `cdp/core/repositories/actors.py`
+  (`_LEGACY_ACTOR_TYPE_MAP`) tags each governed actor's underlying
+  `identifier_registry` row with a compatible legacy `actor_type` value
+  (`synthetic` → `agent`, `collective` → `institution`) so it can still be
+  used as `decision_registry.subject_actor_id`, which predates this slice
+  and was out of bounds to modify. This is a bridge, not a claim that the
+  two vocabularies are equivalent.
+- **Recognizing, denying, or contesting a claim does not itself require
+  the deciding actor to hold any authority.** `decided_by_actor_id` must
+  reference a registered actor, nothing more -- no Authority Grant or
+  Standing check gates who may decide a claim in this slice.
+
 ## Missing evidence
 
 - **RFC manifest / disk consistency** — `rfc/index/rfc-manifest.json` is
@@ -65,6 +113,13 @@ No code exists under a canonical implementation path (`cdp/`) for these:
   runs in CI on changes to `rfc/**`, but this document's preparation did not
   include re-running that script against current `main`, so whether it
   currently passes or fails given this drift is not established here.
+- **Identity and Attestation CI confirmation** — all new tests (13 static,
+  21 Postgres/service, 11 API) pass against a live local Docker Compose
+  stack as of 2026-07-31, but this has not yet been confirmed passing in
+  GitHub Actions. Until a PR head commit shows a passing
+  `full-cdp-slice-tests` run, `000-current-state.md` rates Identify/Attest
+  at E3 (Runtime Tested), not E4, per this repository's own rule that E4
+  specifically means CI-confirmed, not locally-confirmed.
 - **Production operation** — no governance step in this repository has E5
   (Production Demonstrated) evidence. All E4 evidence is CI-based (a
   provisioned Postgres service container and a freshly started `uvicorn`

@@ -51,6 +51,43 @@ Demonstrated by `tests/execution/test_execution_authorization_service.py`,
 `tests/execution/test_execution_record_api.py`, all confirmed passing against a fresh
 checkout in CI run `30637092898`.
 
+## Identity and Attestation
+
+An actor can be registered (`POST /actors`), submit an identity claim
+(`POST /identity-claims`), and have that claim recognized, denied, or
+contested (`POST /identity-claims/{claim_id}/{recognize,deny,contest}`) --
+enforcing that a denied or contested claim's row is preserved, never
+deleted, both at the service layer and at the database level
+(`cdp_core.identity_claim`'s `trg_identity_claim_forbid_delete` trigger,
+`db/ddl/010-identity-and-attestation.sql`). A decision-creation act can be
+attested to a registered, active actor holding a recognized, in-scope
+identity claim (`POST /attested-decisions`, `attest_and_create_decision` in
+`cdp/core/services.py`), and rejected closed -- with nothing persisted --
+when the actor is unknown, inactive, mismatched against the decision's
+subject, or the claim is missing, unrecognized, out of scope, or belongs to
+a different actor.
+
+Demonstrated by `tests/identify_attest_standing/test_actor_service.py`,
+`test_identity_claim_service.py`, and `test_attestation_service.py` (21
+cases total, including a direct assertion that `DELETE FROM
+cdp_core.identity_claim` itself raises, not just that the trigger's SQL
+text exists) against a live local Postgres instance, and by
+`tests/identify_attest_standing/test_identity_attestation_api.py` (11
+cases, including a full actor/claim/attestation/decision round trip and a
+protected-actor redaction check) against a live local `uvicorn` process and
+Postgres. All 21 + 11 cases pass locally as of 2026-07-31, alongside the
+full pre-existing suite (131 migration/service tests, 24 API tests) with no
+regressions. This has not yet been confirmed passing in CI -- see the
+caveat on this row in `001-test-matrix.md` and `000-current-state.md`.
+
+This is not authentication, authorization, or personhood: no password,
+token, or key material is stored; "verified" means the actor is active and
+holds a recognized, in-scope claim, not cryptographic proof; and no
+Authority, Standing, Legitimize, or Repair object is written by any
+function in this slice. See `db/ddl/010-identity-and-attestation.sql`'s
+header and `docs/session-027-identity-and-attestation.md` for the full
+scope statement.
+
 ## Audit trail
 
 Every one of the above operations writes to an append-only audit trail
