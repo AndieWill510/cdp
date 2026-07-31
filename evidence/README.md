@@ -4,9 +4,10 @@ Status: Draft v0.1
 
 ## Purpose
 
-The repository has three layers that describe what CDP *should* do and one
-gap: nothing describes what CDP has actually been shown to do. This directory
-is that fourth layer.
+The repository already distinguishes constitutional specification,
+architecture, and implementation. It lacked a dedicated layer documenting
+what those implementations have actually demonstrated. This directory is
+that fourth layer.
 
 The guiding rule is:
 
@@ -21,9 +22,9 @@ here.
 
 | Layer | Location | Answers | Kind of claim |
 |---|---|---|---|
-| RFCs | `rfc/`, `rfcs/` | What is CDP supposed to be? | Constitutional specification |
-| Architecture | `docs/` (diagrams, design notes) | How do the specified pieces compose? | Composition / design |
-| Implementation | `cdp/`, `src/cdp_control_plane/`, `prototype/` | What code exists? | Executable artifact |
+| RFCs | `rfc/`, `rfcs/` | What is CDP required to be? | Constitutional specification |
+| Architecture | `architecture/` (with supporting diagrams and design notes in `docs/`) | How are the specified pieces composed? | Composition / design |
+| Implementation | `cdp/`, `src/cdp_control_plane/`, `prototype/` | What has been built? | Executable artifact |
 | **Evidence** | `evidence/` | What has actually been demonstrated? | Verified fact |
 
 These layers are ordered by decreasing distance from proof. An RFC can
@@ -95,9 +96,20 @@ other questions that are easy to conflate with it:
 - **Has this been proven in production?** E4 evidence in this repository
   currently only ever means "proven in CI" — a provisioned service
   container and a freshly started process inside a GitHub Actions run, not
-  a live deployment. E5 (Production demonstrated) is the only level that
-  answers the production question, and as of this writing no capability in
-  `000-current-state.md` has reached it. Do not read E4 as "battle-tested."
+  a live deployment. E5 (Production demonstrated) is the only level *on
+  this scale* that answers the production question, and as of this writing
+  no capability in `000-current-state.md` has reached it. Do not read E4 as
+  "battle-tested."
+
+  Production experience is not itself rated on the E0–E5 scale — that
+  scale is a single-capability-evidence axis, and reusing E0 for "no
+  production experience" would make it look like the same measurement as
+  "specified only, no code," which is a different claim about a different
+  capability that already has an E4 rating on the capability axis. Describe
+  production experience in plain terms instead: **None** / **Limited** /
+  **Established**, cited to the same kind of artifact required elsewhere in
+  this layer (a deployment log, an incident record, an uptime dashboard —
+  not an RFC or architecture document).
 
 Concretely, these are three independent claims, and a capability's rating
 on one says nothing about its rating on the others:
@@ -105,8 +117,8 @@ on one says nothing about its rating on the others:
 | Claim | Example |
 |---|---|
 | Capability evidence level | Challenge workflow: E4 |
-| Test suite health | Challenge test suite: no known blind spots, vs. "has known gaps around concurrent adjudication" |
-| Production experience | Challenge: E0 — never run outside CI/local Docker |
+| Test suite health | Challenge test suite: Healthy, vs. "Known gaps — concurrent adjudication untested" |
+| Production experience | Challenge: None — never run outside CI/local Docker |
 
 A concrete case from this repository's own history: a test-suite
 reorganization moved files without updating their file-relative path
