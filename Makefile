@@ -2,7 +2,7 @@ COMPOSE_FILE ?= docker/docker-compose.yml
 PYTEST ?= pytest
 PYTHON ?= python3
 
-.PHONY: help up up-build down down-volumes reset-local ps logs logs-api logs-worker logs-localstack smoke test codex-test repair-local-postgres-bootstrap verify verify-rfc-index shell-postgres localstack-health localstack-buckets localstack-queues
+.PHONY: help up up-build down down-volumes reset-local ps logs logs-api logs-worker logs-localstack smoke test codex-test repair-local-postgres-bootstrap verify verify-rfc-index verify-architecture-links shell-postgres localstack-health localstack-buckets localstack-queues
 
 help:
 	@echo "CDP local development commands"
@@ -23,7 +23,8 @@ help:
 	@echo "  make t                               Alias for codex-test"
 	@echo "  make repair-local-postgres-bootstrap Deduplicate and uniquely index the local bootstrap marker"
 	@echo "  make verify-rfc-index                Verify RFC manifest and band-index integrity"
-	@echo "  make verify                          Run RFC index + smoke + pytest verification"
+	@echo "  make verify-architecture-links       Verify architecture/ discoverability pointers"
+	@echo "  make verify                          Run RFC index + architecture links + smoke + pytest verification"
 	@echo "  make shell-postgres                  Open psql in the Postgres container"
 	@echo "  make localstack-health               Check LocalStack health endpoint"
 	@echo "  make localstack-buckets              List LocalStack S3 buckets"
@@ -77,7 +78,10 @@ repair-local-postgres-bootstrap:
 verify-rfc-index:
 	$(PYTHON) scripts/verify_rfc_index.py
 
-verify: verify-rfc-index smoke test
+verify-architecture-links:
+	$(PYTHON) scripts/verify_architecture_links.py
+
+verify: verify-rfc-index verify-architecture-links smoke test
 
 shell-postgres:
 	docker compose -f $(COMPOSE_FILE) exec postgres psql -U cdp -d cdp

@@ -25,6 +25,8 @@ It makes decisions:
 - replayable
 - legitimate
 
+**Building CDP? Start at [`architecture/001-canonical-governance-workflow.md`](architecture/001-canonical-governance-workflow.md).** It is the canonical end-to-end execution narrative — how a governance event actually runs, stage by stage, with exact artifacts and RFC citations. RFCs govern; that document composes; your implementation conforms. See [`architecture/README.md`](architecture/README.md) for how the two relate.
+
 ---
 
 ## Why This Exists
@@ -76,6 +78,8 @@ CDP is composed of layered governance infrastructure:
 10. **State Machines**
 11. **Security, Audit, and Compliance**
 12. **Implementation Profiles**
+
+For the end-to-end execution narrative — how a governance event actually moves through all of the above, stage by stage, with exact artifacts and state transitions — see [`architecture/001-canonical-governance-workflow.md`](architecture/001-canonical-governance-workflow.md). It elaborates this section and RFC-CDP-010/011; it does not replace them.
 
 ---
 
