@@ -54,8 +54,14 @@ Every one of the above operations writes to an append-only audit trail
 (`cdp/core/repositories/audit.py`) inside the same database transaction as
 the operation itself, and the ordering of those events is constrained by
 `db/ddl/006-audit-event-ordering.sql`. This is demonstrated both structurally
-(`tests/migration/test_migration_006_audit_event_ordering.py`) and by direct assertion
-in the decision-creation test named above.
+(`tests/migration/test_migration_006_audit_event_ordering.py`) and by direct
+assertion — querying `cdp_audit.event_log` and forcing an audit-write
+failure to confirm the rest of the transaction rolls back with it — in each
+of `tests/decision/test_decision_service.py`,
+`tests/challenge/test_challenge_service.py`,
+`tests/challenge/test_challenge_adjudication_service.py`,
+`tests/execution/test_execution_authorization_service.py`, and
+`tests/execution/test_execution_record_service.py`.
 
 ## Workflow-rule enforcement (Nemawashi)
 

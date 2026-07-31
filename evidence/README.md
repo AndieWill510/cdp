@@ -86,10 +86,12 @@ other questions that are easy to conflate with it:
   integration test exercised the capability through the full stack and
   passed in CI. It does not mean the test suite has no blind spots, edge
   cases, or fragile assumptions. A capability's evidence level and its test
-  suite's health are separate claims — track the level in
-  `000-current-state.md`/`001-test-matrix.md`, and track known blind spots
-  or fragility as gaps in `003-known-gaps.md` or as row-level notes in the
-  test matrix.
+  suite's health are separate claims, tracked in separate columns: the
+  level lives in `000-current-state.md`/`001-test-matrix.md`'s
+  Static/Runtime/API/Integration Tests columns, and the health assessment
+  lives in `001-test-matrix.md`'s dedicated **Test Suite Health** column
+  (Healthy / Known gaps / Not exercised in CI / N/A), with specifics cited
+  in that row's Notes.
 - **Has this been proven in production?** E4 evidence in this repository
   currently only ever means "proven in CI" — a provisioned service
   container and a freshly started process inside a GitHub Actions run, not
