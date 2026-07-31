@@ -18,7 +18,8 @@ Column definitions:
 
 ## Test folder structure
 
-The repository now organizes Python test artifacts into the following folders:
+The repository now organizes Python test artifacts into per-topic folders
+directly under `tests/`. Folders containing test files:
 
 - `tests/build_verification/`
 - `tests/challenge/`
@@ -28,26 +29,29 @@ The repository now organizes Python test artifacts into the following folders:
 - `tests/migration/`
 - `tests/nemawashi/`
 - `tests/misc/`
-- `tests/governance/`
-  - `tests/governance/nemawashi/`
-  - `tests/governance/propose/`
-  - `tests/governance/challenge/`
-  - `tests/governance/test/`
-  - `tests/governance/adjudicate/`
-  - `tests/governance/legitimize/`
-  - `tests/governance/execute_authorization/`
-  - `tests/governance/execute_record/`
-  - `tests/governance/record/`
-  - `tests/governance/learn/`
-  - `tests/governance/identify_attest_standing/`
-  - `tests/governance/appeals_repair/`
-  - `tests/governance/worker_queue/`
-  - `tests/governance/self_canonicalizing_ingestion/`
-  - `tests/governance/postgres_init_contract/`
-  - `tests/governance/docker_build_verification/`
-  - `tests/governance/rfc_index_manifest_integrity/`
 
-These governance folders are intentionally present even if no test Python scripts currently exist, so the matrix can explicitly record which governance steps lack coverage.
+Folders that exist as placeholders (containing only `.gitkeep`, no test files
+yet) for governance steps with no code or coverage:
+
+- `tests/adjudicate/`
+- `tests/appeals_repair/`
+- `tests/docker_build_verification/`
+- `tests/execute_authorization/`
+- `tests/execute_record/`
+- `tests/identify_attest_standing/`
+- `tests/learn/`
+- `tests/legitimize/`
+- `tests/postgres_init_contract/`
+- `tests/propose/`
+- `tests/record/`
+- `tests/rfc_index_manifest_integrity/`
+- `tests/self_canonicalizing_ingestion/`
+- `tests/test/`
+- `tests/worker_queue/`
+
+These placeholder folders are intentionally present even though no test
+Python scripts exist in them yet, so the matrix can explicitly record which
+governance steps lack coverage rather than omitting them.
 
 | Governance Step | Static Tests | Runtime Tests | API Tests | Integration Tests | Evidence | Notes |
 |---|---|---|---|---|---|---|

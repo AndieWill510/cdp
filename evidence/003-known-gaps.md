@@ -27,7 +27,7 @@ No code exists under a canonical implementation path (`cdp/`) for these:
   implemented." The process runs; it consumes nothing.
 - **Self-canonicalizing spreadsheet ingestion as production code** — the
   only implementation of this capability lives inside
-  `tests/test_self_canonicalizing_ingestion.py` itself. That file's docstring
+  `tests/misc/test_self_canonicalizing_ingestion.py` itself. That file's docstring
   states the embedded code is meant to "prove the contract, not a production
   loader." No module under `cdp/` implements ingestion.
 - **Authentication, authorization, and a policy engine** — `README-control-plane-v0.1.md`
@@ -44,7 +44,7 @@ No code exists under a canonical implementation path (`cdp/`) for these:
 
 ## Missing integration tests
 
-- **Docker build/runtime verification** — `tests/test_build_verification.py`
+- **Docker build/runtime verification** — `tests/build_verification/test_build_verification.py`
   contains 11 real checks against a running Docker stack (API health,
   Postgres extensions, Redis, Qdrant, LocalStack S3/SQS/EventBridge/DynamoDB/SSM/Secrets),
   but neither `.github/workflows/cdp-ci.yml` nor

@@ -13,8 +13,8 @@ A decision can be created through a live HTTP API (`POST /decisions`,
 `cdp/api/decisions.py`) backed by a real Postgres database, and the
 transaction that creates it also creates a workflow instance, a task, and
 three audit events in the same commit. This is demonstrated by
-`tests/test_decision_service.py::test_happy_path_creates_decision_workflow_task_and_three_audit_events`
-and `tests/test_decision_api.py`, both confirmed passing against a live
+`tests/decision/test_decision_service.py::test_happy_path_creates_decision_workflow_task_and_three_audit_events`
+and `tests/decision/test_decision_api.py`, both confirmed passing against a live
 `uvicorn` process and live Postgres service container in CI run `30542840497`
 (`full-cdp-slice-tests` job, push to `main`, 2026-07-30T12:30:41Z).
 
@@ -23,7 +23,7 @@ and `tests/test_decision_api.py`, both confirmed passing against a live
 A decision can be challenged (`POST
 /decisions/{registry_name}/{decision_id}/challenges`), enforcing the
 transition rules encoded in `db/ddl/005-challenge-transition.sql`. Demonstrated
-by `tests/test_challenge_service.py` and `tests/test_challenge_api.py`,
+by `tests/challenge/test_challenge_service.py` and `tests/challenge/test_challenge_api.py`,
 confirmed passing in the same CI run as above.
 
 ## Challenge adjudication
@@ -31,8 +31,8 @@ confirmed passing in the same CI run as above.
 A challenge can be adjudicated (`POST
 .../challenges/{challenge_id}/adjudications`), enforcing the constraints in
 `db/ddl/007-challenge-adjudication.sql`. Demonstrated by
-`tests/test_challenge_adjudication_service.py` and
-`tests/test_challenge_adjudication_api.py`, confirmed passing in the same CI
+`tests/challenge/test_challenge_adjudication_service.py` and
+`tests/challenge/test_challenge_adjudication_api.py`, confirmed passing in the same CI
 run.
 
 ## Execution authorization and execution recording
@@ -42,10 +42,10 @@ A decision can be authorized for execution (`POST
 (`POST .../execution-records`), including the constraint that an execution
 record cannot be created without a prior authorization
 (`db/ddl/008-execution-authorization.sql`, `db/ddl/009-execution-record.sql`).
-Demonstrated by `tests/test_execution_authorization_service.py`,
-`tests/test_execution_authorization_api.py`,
-`tests/test_execution_record_service.py`, and
-`tests/test_execution_record_api.py`, all confirmed passing against a fresh
+Demonstrated by `tests/execution/test_execution_authorization_service.py`,
+`tests/execution/test_execution_authorization_api.py`,
+`tests/execution/test_execution_record_service.py`, and
+`tests/execution/test_execution_record_api.py`, all confirmed passing against a fresh
 checkout in CI run `30542840497`.
 
 ## Audit trail
@@ -54,7 +54,7 @@ Every one of the above operations writes to an append-only audit trail
 (`cdp/core/repositories/audit.py`) inside the same database transaction as
 the operation itself, and the ordering of those events is constrained by
 `db/ddl/006-audit-event-ordering.sql`. This is demonstrated both structurally
-(`tests/test_migration_006_audit_event_ordering.py`) and by direct assertion
+(`tests/migration/test_migration_006_audit_event_ordering.py`) and by direct assertion
 in the decision-creation test named above.
 
 ## Workflow-rule enforcement (Nemawashi)
@@ -65,8 +65,8 @@ its decision class — attempting otherwise raises `NoActiveWorkflowError`
 (`db/ddl/003-nemawashi-workflow-rules.sql`,
 `db/ddl/004-decision-class-workflow-seed.sql`) is demonstrated against a live
 Postgres instance by
-`tests/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLPostgresSmokeTests`
-and `tests/test_migration_004_decision_class_workflow_seed.py`, confirmed
+`tests/nemawashi/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLPostgresSmokeTests`
+and `tests/migration/test_migration_004_decision_class_workflow_seed.py`, confirmed
 passing in CI.
 
 ## Continuous integration itself
