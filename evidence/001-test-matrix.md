@@ -16,6 +16,14 @@ Column definitions:
 - **API Tests** — HTTP round-trip tests against a running server, gated by `CDP_TEST_API_URL`.
 - **Integration Tests** — the specific CI job that runs Static/Runtime/API tests together against a fresh checkout, fresh Postgres, and fresh `uvicorn` process.
 
+The presence of a test in a column is a *capability* evidence claim (this
+governance step has been exercised at this level), not a *test-suite
+health* claim. A row can be fully populated and still have known blind
+spots — record those in the **Notes** column or in
+[`003-known-gaps.md`](003-known-gaps.md) rather than implying thoroughness
+by omission. See [`README.md`](README.md#what-an-evidence-level-does-not-claim)
+for why these are tracked separately.
+
 ## Test folder structure
 
 The repository now organizes Python test artifacts into per-topic folders

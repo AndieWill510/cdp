@@ -76,6 +76,46 @@ artifact exists *now*, not because it once passed at that level and may have
 regressed since (see [`003-known-gaps.md`](003-known-gaps.md) for how
 regressions and drift are tracked).
 
+## What an evidence level does not claim
+
+An evidence level answers one question: *has this been demonstrated to
+work, at least once, by an artifact of this kind?* It does not answer two
+other questions that are easy to conflate with it:
+
+- **Is the test suite behind that level thorough?** E4 means an
+  integration test exercised the capability through the full stack and
+  passed in CI. It does not mean the test suite has no blind spots, edge
+  cases, or fragile assumptions. A capability's evidence level and its test
+  suite's health are separate claims — track the level in
+  `000-current-state.md`/`001-test-matrix.md`, and track known blind spots
+  or fragility as gaps in `003-known-gaps.md` or as row-level notes in the
+  test matrix.
+- **Has this been proven in production?** E4 evidence in this repository
+  currently only ever means "proven in CI" — a provisioned service
+  container and a freshly started process inside a GitHub Actions run, not
+  a live deployment. E5 (Production demonstrated) is the only level that
+  answers the production question, and as of this writing no capability in
+  `000-current-state.md` has reached it. Do not read E4 as "battle-tested."
+
+Concretely, these are three independent claims, and a capability's rating
+on one says nothing about its rating on the others:
+
+| Claim | Example |
+|---|---|
+| Capability evidence level | Challenge workflow: E4 |
+| Test suite health | Challenge test suite: no known blind spots, vs. "has known gaps around concurrent adjudication" |
+| Production experience | Challenge: E0 — never run outside CI/local Docker |
+
+A concrete case from this repository's own history: a test-suite
+reorganization moved files without updating their file-relative path
+computations, and CI caught two resulting bugs (repo-root and fixture
+lookups resolving to the wrong directory). Neither bug touched the
+governance logic those tests exercise — the *capability's* evidence level
+was unaffected — but it was a real, if temporary, gap in test-suite health
+that a passing local run had not revealed. Recording only the capability's
+E-level would have missed that story entirely; it belongs in the
+test-suite-health dimension, not the capability dimension.
+
 ## Documents in this layer
 
 - [`000-current-state.md`](000-current-state.md) — evidence level for every
