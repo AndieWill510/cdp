@@ -9,7 +9,7 @@ import psycopg
 import pytest
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 POSTGRES_INIT_DIR = REPO_ROOT / "docker" / "postgres" / "init"
 BOOTSTRAP_SQL = POSTGRES_INIT_DIR / "01-init-cdp.sql"
 REPOSITORY_HOOK = POSTGRES_INIT_DIR / "02_initialize_repository.sh"

@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Callable
 from xml.etree import ElementTree as ET
 
-FIXTURE_DIR = Path(__file__).parent / "fixtures"
+FIXTURE_DIR = Path(__file__).parent.parent / "fixtures"
 
 IDENTIFIER_COLUMNS = [
     "registry_name",

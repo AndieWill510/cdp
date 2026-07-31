@@ -85,7 +85,7 @@ EXPECTED_SECRETS = {
 def test_localstack_bootstrap_script_is_executable() -> None:
     """LocalStack READY scripts must be executable inside the container."""
     bootstrap_script = (
-        Path(__file__).resolve().parents[1]
+        Path(__file__).resolve().parents[2]
         / "docker"
         / "localstack"
         / "init"
