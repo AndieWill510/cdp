@@ -15,8 +15,11 @@ transaction that creates it also creates a workflow instance, a task, and
 three audit events in the same commit. This is demonstrated by
 `tests/decision/test_decision_service.py::test_happy_path_creates_decision_workflow_task_and_three_audit_events`
 and `tests/decision/test_decision_api.py`, both confirmed passing against a live
-`uvicorn` process and live Postgres service container in CI run `30542840497`
-(`full-cdp-slice-tests` job, push to `main`, 2026-07-30T12:30:41Z).
+`uvicorn` process and live Postgres service container in CI run `30637092898`
+(`full-cdp-slice-tests` job, PR #40 head commit `75c8f5c`, 2026-07-31T14:04:50Z).
+An earlier run, `30542840497`, passed the same test on `main` before this PR's
+test-suite reorganization; `30637092898` is the current citation of record
+since it validates the post-reorg file layout.
 
 ## Challenge transitions
 
@@ -46,7 +49,7 @@ Demonstrated by `tests/execution/test_execution_authorization_service.py`,
 `tests/execution/test_execution_authorization_api.py`,
 `tests/execution/test_execution_record_service.py`, and
 `tests/execution/test_execution_record_api.py`, all confirmed passing against a fresh
-checkout in CI run `30542840497`.
+checkout in CI run `30637092898`.
 
 ## Audit trail
 
@@ -82,8 +85,8 @@ observed to actually execute, not merely exist: `pr-guard` runs lint and
 static tests on every PR push; `full-cdp-slice-tests` provisions a real
 `pgvector/pgvector:pg16` Postgres service container, applies all DDL under
 `db/ddl/`, starts a real `uvicorn cdp.api.main:app` process, and runs the API
-round-trip suite against it. Run `30542840497` (push to `main`,
-2026-07-30T12:30:41Z) shows both jobs completed with conclusion `success`.
+round-trip suite against it. Run `30637092898` (PR #40 head commit `75c8f5c`,
+2026-07-31T14:04:50Z) shows both jobs completed with conclusion `success`.
 
 ## RFC index/manifest verification
 
