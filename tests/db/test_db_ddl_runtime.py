@@ -18,7 +18,7 @@ except ImportError:
         psycopg = None  # type: ignore
         sql = None  # type: ignore
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DDL_DIR = REPO_ROOT / "db" / "ddl"
 
 DDL_OBJECT_PATTERNS = {

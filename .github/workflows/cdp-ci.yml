@@ -48,15 +48,15 @@ jobs:
       - name: Static migration/DDL tests (no live Postgres)
         run: |
           python -m pytest \
-            tests/test_migration_004_decision_class_workflow_seed.py::Migration004StaticTests \
-            tests/test_migration_005_challenge_transition.py::Migration005StaticTests \
-            tests/test_migration_006_audit_event_ordering.py::Migration006StaticTests \
-            tests/test_migration_007_challenge_adjudication.py::Migration007StaticTests \
-            tests/test_migration_008_execution_authorization.py::Migration008StaticTests \
-            tests/test_migration_009_execution_record.py::Migration009StaticTests \
-            tests/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLStaticTests \
-            tests/test_postgres_init_contract.py::test_postgres_init_files_have_single_ordered_owner \
-            tests/test_postgres_init_contract.py::test_bootstrap_sql_enforces_idempotent_smoke_marker \
+            tests/migration/test_migration_004_decision_class_workflow_seed.py::Migration004StaticTests \
+            tests/migration/test_migration_005_challenge_transition.py::Migration005StaticTests \
+            tests/migration/test_migration_006_audit_event_ordering.py::Migration006StaticTests \
+            tests/migration/test_migration_007_challenge_adjudication.py::Migration007StaticTests \
+            tests/migration/test_migration_008_execution_authorization.py::Migration008StaticTests \
+            tests/migration/test_migration_009_execution_record.py::Migration009StaticTests \
+            tests/nemawashi/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLStaticTests \
+            tests/db/test_postgres_init_contract.py::test_postgres_init_files_have_single_ordered_owner \
+            tests/db/test_postgres_init_contract.py::test_bootstrap_sql_enforces_idempotent_smoke_marker \
             -v
 
       - name: Dormant-stack guardrail (warning only, non-blocking)
@@ -141,20 +141,20 @@ jobs:
       - name: Migration/DDL and service tests (require live Postgres)
         run: |
           python -m pytest \
-            tests/test_migration_004_decision_class_workflow_seed.py::Migration004PostgresSmokeTests \
-            tests/test_migration_005_challenge_transition.py::Migration005PostgresSmokeTests \
-            tests/test_migration_006_audit_event_ordering.py::Migration006PostgresSmokeTests \
-            tests/test_migration_007_challenge_adjudication.py::Migration007PostgresSmokeTests \
-            tests/test_migration_008_execution_authorization.py::Migration008PostgresSmokeTests \
-            tests/test_migration_009_execution_record.py::Migration009PostgresSmokeTests \
-            tests/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLPostgresSmokeTests \
-            tests/test_postgres_init_contract.py::test_postgres_bootstrap_runtime_marker_is_unique \
-            tests/test_db_ddl_runtime.py \
-            tests/test_decision_service.py \
-            tests/test_challenge_service.py \
-            tests/test_challenge_adjudication_service.py \
-            tests/test_execution_authorization_service.py \
-            tests/test_execution_record_service.py \
+            tests/migration/test_migration_004_decision_class_workflow_seed.py::Migration004PostgresSmokeTests \
+            tests/migration/test_migration_005_challenge_transition.py::Migration005PostgresSmokeTests \
+            tests/migration/test_migration_006_audit_event_ordering.py::Migration006PostgresSmokeTests \
+            tests/migration/test_migration_007_challenge_adjudication.py::Migration007PostgresSmokeTests \
+            tests/migration/test_migration_008_execution_authorization.py::Migration008PostgresSmokeTests \
+            tests/migration/test_migration_009_execution_record.py::Migration009PostgresSmokeTests \
+            tests/nemawashi/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLPostgresSmokeTests \
+            tests/db/test_postgres_init_contract.py::test_postgres_bootstrap_runtime_marker_is_unique \
+            tests/db/test_db_ddl_runtime.py \
+            tests/decision/test_decision_service.py \
+            tests/challenge/test_challenge_service.py \
+            tests/challenge/test_challenge_adjudication_service.py \
+            tests/execution/test_execution_authorization_service.py \
+            tests/execution/test_execution_record_service.py \
             -v
 
       - name: Start API server
@@ -181,11 +181,11 @@ jobs:
           CDP_TEST_API_URL: http://localhost:8000
         run: |
           python -m pytest \
-            tests/test_decision_api.py \
-            tests/test_challenge_api.py \
-            tests/test_challenge_adjudication_api.py \
-            tests/test_execution_authorization_api.py \
-            tests/test_execution_record_api.py \
+            tests/decision/test_decision_api.py \
+            tests/challenge/test_challenge_api.py \
+            tests/challenge/test_challenge_adjudication_api.py \
+            tests/execution/test_execution_authorization_api.py \
+            tests/execution/test_execution_record_api.py \
             -v
 
       - name: Stop API server

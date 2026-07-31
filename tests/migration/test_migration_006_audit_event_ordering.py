@@ -23,7 +23,7 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DDL_001 = REPO_ROOT / "db" / "ddl" / "001-decision-registry-kernel.sql"
 DDL_003 = REPO_ROOT / "db" / "ddl" / "003-nemawashi-workflow-rules.sql"
 DDL_004 = REPO_ROOT / "db" / "ddl" / "004-decision-class-workflow-seed.sql"
