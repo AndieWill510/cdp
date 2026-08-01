@@ -21,6 +21,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from cdp.core import db
+from cdp.core.repositories import attestations as attestations_repo
 from cdp.core.repositories import decisions as decisions_repo
 from cdp.core.services import (
     AdjudicationInput,
@@ -107,6 +108,36 @@ def get_decision(registry_name: str, decision_id: str) -> dict[str, Any]:
     if decision is None:
         raise HTTPException(status_code=404, detail="Decision not found")
     return decision
+
+
+@router.get("/decisions/{registry_name}/{decision_id}/attestations")
+def list_decision_attestations(registry_name: str, decision_id: str) -> dict[str, Any]:
+    """Durably discover who attested this governed act.
+
+    Returns every cdp_core.attestation_record bound to this decision (see
+    attest_and_create_decision / POST /attested-decisions in
+    cdp/api/identity.py). Does not require the caller to already know an
+    attestation_id -- this is what makes "who performed this act"
+    discoverable from the decision itself, not just from a separate
+    lookup. 404s only if the decision itself does not exist; an
+    unattested decision returns an empty list, not a 404.
+    """
+    try:
+        with db.transaction() as cursor:
+            decision = decisions_repo.fetch_decision(
+                cursor, registry_name=registry_name, decision_id=decision_id
+            )
+            if decision is None:
+                raise HTTPException(status_code=404, detail="Decision not found")
+            attestations = attestations_repo.fetch_attestations_for_decision(
+                cursor, registry_name=registry_name, decision_id=decision_id
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+    return {"attestations": attestations}
 
 
 class ChallengeCreateRequest(BaseModel):

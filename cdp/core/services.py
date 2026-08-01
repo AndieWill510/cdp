@@ -35,6 +35,17 @@ Critically, it never writes to cdp_core.workflow_instance on any outcome --
 see the constitutional-invariant note in db/ddl/009-execution-record.sql:
 repair is mandatory on every outcome, not conditional on failure, so
 execution must not close the workflow or advance it toward learning.
+
+register_actor, submit_identity_claim, recognize_identity_claim,
+deny_identity_claim, contest_identity_claim, and attest_and_create_decision
+are the Identity and Attestation slice (RFC-CDP-030, RFC-CDP-031): register
+a governed actor, submit/recognize/deny/contest an identity claim without
+ever deleting it, and attest a decision-creation act to an actor holding a
+recognized, in-scope identity claim, all inside one transaction per
+operation with a matching audit trail. See
+db/ddl/010-identity-and-attestation.sql for the constitutional scope note
+on what "verified" honestly means in this slice, and for why this
+deliberately does not implement Authority, Standing, Legitimize, or Repair.
 """
 
 from __future__ import annotations
@@ -44,13 +55,18 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+import psycopg
+
 from cdp.core import db
+from cdp.core.repositories import actors as actors_repo
 from cdp.core.repositories import adjudications as adjudications_repo
+from cdp.core.repositories import attestations as attestations_repo
 from cdp.core.repositories import audit as audit_repo
 from cdp.core.repositories import challenges as challenges_repo
 from cdp.core.repositories import decisions as decisions_repo
 from cdp.core.repositories import execution_authorizations as execution_authorizations_repo
 from cdp.core.repositories import execution_records as execution_records_repo
+from cdp.core.repositories import identity_claims as identity_claims_repo
 from cdp.core.repositories import workflows as workflows_repo
 
 # No workflow_stage or rule_definition yet gates challenges through an
@@ -120,6 +136,46 @@ class ExecutionAlreadySucceeded(Exception):
     """This authorization already has a succeeded execution record."""
 
 
+class ActorAlreadyRegistered(Exception):
+    """An actor with this actor_id is already registered."""
+
+
+class ActorNotFound(Exception):
+    """No governed actor exists for the given actor_id."""
+
+
+class ActorNotActive(Exception):
+    """The actor's actor_status is not 'active'."""
+
+
+class IdentityClaimNotFound(Exception):
+    """No identity claim exists for the given claim_id."""
+
+
+class IdentityClaimActorMismatch(Exception):
+    """The identity claim does not belong to the given actor."""
+
+
+class IdentityClaimNotDecidable(Exception):
+    """The claim is not in 'pending' or 'recognized' and cannot be decided again."""
+
+
+class RecognitionAuthorityRequired(Exception):
+    """The deciding actor is not the seeded identity-claim recognition authority."""
+
+
+class SelfRecognitionForbidden(Exception):
+    """An actor cannot recognize, deny, or contest its own identity claim."""
+
+
+class IdentityClaimNotRecognized(Exception):
+    """The identity claim is not currently recognized."""
+
+
+class IdentityClaimScopeInsufficient(Exception):
+    """The identity claim's purpose_scope does not cover the requested governed act."""
+
+
 # A workflow that has been (re-)blocked by a new challenge raised after
 # authorization, or that is already closed/cancelled, cannot accept an
 # execution record -- authorization eligibility is not assumed to still
@@ -156,110 +212,124 @@ def create_decision_with_workflow(decision_input: DecisionInput) -> dict[str, An
     including an unconfigured decision class or workflow - rolls back all of
     it: the decision, the workflow instance, the task, and the audit events.
     """
+    with db.transaction() as cursor:
+        return _create_decision_with_workflow_in_transaction(cursor, decision_input)
+
+
+def _create_decision_with_workflow_in_transaction(
+    cursor: Any, decision_input: DecisionInput
+) -> dict[str, Any]:
+    """Cursor-based body of create_decision_with_workflow.
+
+    Extracted so attest_and_create_decision (see the Identity/Attestation
+    slice below) can run decision creation inside its own single
+    caller-owned transaction, alongside attestation verification and the
+    attestation record insert, without nesting a second db.transaction()
+    connection.
+    """
     created = decision_input.created or datetime.now(UTC)
 
-    with db.transaction() as cursor:
-        decision = decisions_repo.insert_decision(
-            cursor,
-            registry_name=decision_input.registry_name,
-            decision_id=decision_input.decision_id,
-            decision_class_id=decision_input.decision_class_id,
-            antecedent_text=decision_input.antecedent_text,
-            subject_actor_type=decision_input.subject_actor_type,
-            subject_actor_id=decision_input.subject_actor_id,
-            predicate_verb=decision_input.predicate_verb,
-            object_type=decision_input.object_type,
-            object_id=decision_input.object_id,
-            permission_source_type=decision_input.permission_source_type,
-            permission_source_id=decision_input.permission_source_id,
-            human_required=decision_input.human_required,
-            human_approver_id=decision_input.human_approver_id,
-            parent_decision_id=decision_input.parent_decision_id,
-            parent_relation_type=decision_input.parent_relation_type,
-            created=created,
-            source_system=decision_input.source_system,
-            source_ref=decision_input.source_ref,
+    decision = decisions_repo.insert_decision(
+        cursor,
+        registry_name=decision_input.registry_name,
+        decision_id=decision_input.decision_id,
+        decision_class_id=decision_input.decision_class_id,
+        antecedent_text=decision_input.antecedent_text,
+        subject_actor_type=decision_input.subject_actor_type,
+        subject_actor_id=decision_input.subject_actor_id,
+        predicate_verb=decision_input.predicate_verb,
+        object_type=decision_input.object_type,
+        object_id=decision_input.object_id,
+        permission_source_type=decision_input.permission_source_type,
+        permission_source_id=decision_input.permission_source_id,
+        human_required=decision_input.human_required,
+        human_approver_id=decision_input.human_approver_id,
+        parent_decision_id=decision_input.parent_decision_id,
+        parent_relation_type=decision_input.parent_relation_type,
+        created=created,
+        source_system=decision_input.source_system,
+        source_ref=decision_input.source_ref,
+    )
+
+    workflow_definition = workflows_repo.resolve_active_workflow_for_class(
+        cursor,
+        registry_name=decision_input.registry_name,
+        decision_class_id=decision_input.decision_class_id,
+    )
+    if workflow_definition is None:
+        raise DecisionClassNotConfigured(
+            "No active workflow is configured for decision class "
+            f"{decision_input.registry_name}.{decision_input.decision_class_id}"
         )
 
-        workflow_definition = workflows_repo.resolve_active_workflow_for_class(
-            cursor,
-            registry_name=decision_input.registry_name,
-            decision_class_id=decision_input.decision_class_id,
-        )
-        if workflow_definition is None:
-            raise DecisionClassNotConfigured(
-                "No active workflow is configured for decision class "
-                f"{decision_input.registry_name}.{decision_input.decision_class_id}"
-            )
-
-        first_stage = workflows_repo.resolve_first_stage(
-            cursor, workflow_definition_id=workflow_definition["workflow_definition_id"]
-        )
-        if first_stage is None:
-            raise WorkflowStageNotConfigured(
-                "Workflow "
-                f"{workflow_definition['workflow_code']} {workflow_definition['workflow_version']}"
-                " has no stage_order = 1 stage configured"
-            )
-
-        workflow_instance = workflows_repo.insert_workflow_instance(
-            cursor,
-            registry_name=decision_input.registry_name,
-            decision_id=decision_input.decision_id,
-            workflow_definition_id=workflow_definition["workflow_definition_id"],
-            current_stage_id=first_stage["workflow_stage_id"],
-            lifecycle_stage=first_stage["lifecycle_stage"],
+    first_stage = workflows_repo.resolve_first_stage(
+        cursor, workflow_definition_id=workflow_definition["workflow_definition_id"]
+    )
+    if first_stage is None:
+        raise WorkflowStageNotConfigured(
+            "Workflow "
+            f"{workflow_definition['workflow_code']} {workflow_definition['workflow_version']}"
+            " has no stage_order = 1 stage configured"
         )
 
-        task = workflows_repo.insert_task(
-            cursor,
-            workflow_instance_id=workflow_instance["workflow_instance_id"],
-            registry_name=decision_input.registry_name,
-            decision_id=decision_input.decision_id,
-        )
+    workflow_instance = workflows_repo.insert_workflow_instance(
+        cursor,
+        registry_name=decision_input.registry_name,
+        decision_id=decision_input.decision_id,
+        workflow_definition_id=workflow_definition["workflow_definition_id"],
+        current_stage_id=first_stage["workflow_stage_id"],
+        lifecycle_stage=first_stage["lifecycle_stage"],
+    )
 
-        decision_aggregate_id = f"{decision_input.registry_name}:{decision_input.decision_id}"
+    task = workflows_repo.insert_task(
+        cursor,
+        workflow_instance_id=workflow_instance["workflow_instance_id"],
+        registry_name=decision_input.registry_name,
+        decision_id=decision_input.decision_id,
+    )
 
-        audit_repo.append_event(
-            cursor,
-            event_type="decision.created",
-            aggregate_type="decision",
-            aggregate_id=decision_aggregate_id,
-            payload={
-                "registry_name": decision_input.registry_name,
-                "decision_id": decision_input.decision_id,
-                "decision_class_id": decision_input.decision_class_id,
-            },
-        )
-        audit_repo.append_event(
-            cursor,
-            event_type="workflow.started",
-            aggregate_type="workflow_instance",
-            aggregate_id=str(workflow_instance["workflow_instance_id"]),
-            payload={
-                "registry_name": decision_input.registry_name,
-                "decision_id": decision_input.decision_id,
-                "workflow_definition_id": str(workflow_definition["workflow_definition_id"]),
-                "workflow_code": workflow_definition["workflow_code"],
-                "workflow_version": workflow_definition["workflow_version"],
-                "current_stage_id": str(first_stage["workflow_stage_id"]),
-                "stage_code": first_stage["stage_code"],
-            },
-        )
-        audit_repo.append_event(
-            cursor,
-            event_type="task.created",
-            aggregate_type="workflow_task",
-            aggregate_id=str(task["task_id"]),
-            payload={
-                "registry_name": decision_input.registry_name,
-                "decision_id": decision_input.decision_id,
-                "workflow_instance_id": str(workflow_instance["workflow_instance_id"]),
-                "task_type": task["task_type"],
-                "assigned_role": task["assigned_role"],
-                "blocking": task["blocking"],
-            },
-        )
+    decision_aggregate_id = f"{decision_input.registry_name}:{decision_input.decision_id}"
+
+    audit_repo.append_event(
+        cursor,
+        event_type="decision.created",
+        aggregate_type="decision",
+        aggregate_id=decision_aggregate_id,
+        payload={
+            "registry_name": decision_input.registry_name,
+            "decision_id": decision_input.decision_id,
+            "decision_class_id": decision_input.decision_class_id,
+        },
+    )
+    audit_repo.append_event(
+        cursor,
+        event_type="workflow.started",
+        aggregate_type="workflow_instance",
+        aggregate_id=str(workflow_instance["workflow_instance_id"]),
+        payload={
+            "registry_name": decision_input.registry_name,
+            "decision_id": decision_input.decision_id,
+            "workflow_definition_id": str(workflow_definition["workflow_definition_id"]),
+            "workflow_code": workflow_definition["workflow_code"],
+            "workflow_version": workflow_definition["workflow_version"],
+            "current_stage_id": str(first_stage["workflow_stage_id"]),
+            "stage_code": first_stage["stage_code"],
+        },
+    )
+    audit_repo.append_event(
+        cursor,
+        event_type="task.created",
+        aggregate_type="workflow_task",
+        aggregate_id=str(task["task_id"]),
+        payload={
+            "registry_name": decision_input.registry_name,
+            "decision_id": decision_input.decision_id,
+            "workflow_instance_id": str(workflow_instance["workflow_instance_id"]),
+            "task_type": task["task_type"],
+            "assigned_role": task["assigned_role"],
+            "blocking": task["blocking"],
+        },
+    )
 
     return {
         "decision": decision,
@@ -832,3 +902,377 @@ def record_execution_attempt(execution_input: ExecutionRecordInput) -> dict[str,
         "execution_record": execution_record,
         "workflow_instance": workflow_instance,
     }
+
+
+# ---------------------------------------------------------------------------
+# Identity and Attestation (RFC-CDP-030, RFC-CDP-031)
+# ---------------------------------------------------------------------------
+#
+# Scope boundary for this slice, enforced by what is (and is not) below:
+#   - No Authority (RFC-CDP-032) grant/evaluation is implemented. An actor's
+#     ability to register itself or submit a claim is not gated by an
+#     authority check here.
+#   - No Standing (RFC-CDP-033) determination is implemented.
+#   - No Legitimize, Repair, or workflow-advancement side effect is written
+#     by any function below. attest_and_create_decision writes exactly the
+#     same decision/workflow/task/audit rows create_decision_with_workflow
+#     already writes, plus one attestation_record and one audit event.
+#   - "Verified" in this slice means: the actor is active, and holds an
+#     identity claim recognized for a purpose_scope that covers the
+#     requested governed act. It is not cryptographic proof. See
+#     db/ddl/010-identity-and-attestation.sql for the full note.
+
+_DECISION_CREATION_PURPOSE_SCOPE = "decision_creation"
+
+# The single, narrow, bounded governed actor authorized to recognize,
+# deny, or contest an Identity Claim in this slice (seeded by
+# db/ddl/010-identity-and-attestation.sql). This is not RFC-CDP-032
+# Authority -- no grant, scope, or delegation model -- it exists solely to
+# close the gap where any registered actor, including a claimant deciding
+# its own claim, could otherwise produce a binding "recognized" status.
+_IDENTITY_RECOGNITION_AUTHORITY_ACTOR_ID = "cdp_identity_recognition_authority"
+
+
+@dataclass(frozen=True)
+class ActorInput:
+    actor_id: str
+    actor_type: str
+    display_label: str
+    display_mode: str = "public"
+    description: str | None = None
+
+
+def register_actor(actor_input: ActorInput) -> dict[str, Any]:
+    """Register a new governed actor.
+
+    Runs inside exactly one transaction: the underlying identifier_registry
+    row, the cdp_core.actor row, and the audit event all commit or roll
+    back together. Raises ActorAlreadyRegistered if actor_id is already
+    registered.
+    """
+    with db.transaction() as cursor:
+        try:
+            actor = actors_repo.insert_actor(
+                cursor,
+                actor_id=actor_input.actor_id,
+                actor_type=actor_input.actor_type,
+                display_label=actor_input.display_label,
+                display_mode=actor_input.display_mode,
+                description=actor_input.description,
+            )
+        except psycopg.errors.UniqueViolation as exc:
+            raise ActorAlreadyRegistered(
+                f"Actor {actor_input.actor_id!r} is already registered"
+            ) from exc
+
+        audit_repo.append_event(
+            cursor,
+            event_type="actor.registered",
+            aggregate_type="actor",
+            aggregate_id=actor_input.actor_id,
+            payload={
+                "actor_id": actor_input.actor_id,
+                "actor_type": actor_input.actor_type,
+                "display_mode": actor_input.display_mode,
+            },
+        )
+
+    return {"actor": actor}
+
+
+@dataclass(frozen=True)
+class IdentityClaimInput:
+    actor_id: str
+    claimant_actor_id: str
+    claimed_identity_descriptor: str
+    purpose_scope: str
+    evidence_refs: list[Any] | None = None
+    supersedes_claim_id: uuid.UUID | None = None
+
+
+def submit_identity_claim(claim_input: IdentityClaimInput) -> dict[str, Any]:
+    """Submit an identity claim for a registered actor.
+
+    Runs inside exactly one transaction. If supersedes_claim_id is given,
+    the superseded claim's recognition_status is set to 'superseded' in the
+    same transaction as the new claim's insert -- the superseded row is
+    never deleted, only relinked (see cdp_core.identity_claim's
+    forbid-delete trigger).
+    """
+    with db.transaction() as cursor:
+        actor = actors_repo.fetch_actor(cursor, actor_id=claim_input.actor_id)
+        if actor is None:
+            raise ActorNotFound(f"No registered actor {claim_input.actor_id!r}")
+
+        claimant = actors_repo.fetch_actor(cursor, actor_id=claim_input.claimant_actor_id)
+        if claimant is None:
+            raise ActorNotFound(f"No registered actor {claim_input.claimant_actor_id!r}")
+
+        if claim_input.supersedes_claim_id is not None:
+            superseded = identity_claims_repo.fetch_claim(
+                cursor, claim_id=claim_input.supersedes_claim_id
+            )
+            if superseded is None or superseded["actor_id"] != claim_input.actor_id:
+                raise IdentityClaimActorMismatch(
+                    f"Claim {claim_input.supersedes_claim_id} does not belong to actor "
+                    f"{claim_input.actor_id!r} and cannot be superseded by this submission"
+                )
+
+        claim = identity_claims_repo.insert_claim(
+            cursor,
+            actor_id=claim_input.actor_id,
+            claimant_actor_id=claim_input.claimant_actor_id,
+            claimed_identity_descriptor=claim_input.claimed_identity_descriptor,
+            purpose_scope=claim_input.purpose_scope,
+            evidence_refs=claim_input.evidence_refs,
+            supersedes_claim_id=claim_input.supersedes_claim_id,
+        )
+
+        audit_repo.append_event(
+            cursor,
+            event_type="identity_claim.submitted",
+            aggregate_type="identity_claim",
+            aggregate_id=str(claim["claim_id"]),
+            payload={
+                "actor_id": claim_input.actor_id,
+                "claimant_actor_id": claim_input.claimant_actor_id,
+                "purpose_scope": claim_input.purpose_scope,
+                "supersedes_claim_id": str(claim_input.supersedes_claim_id)
+                if claim_input.supersedes_claim_id
+                else None,
+            },
+        )
+        if claim_input.supersedes_claim_id is not None:
+            audit_repo.append_event(
+                cursor,
+                event_type="identity_claim.superseded",
+                aggregate_type="identity_claim",
+                aggregate_id=str(claim_input.supersedes_claim_id),
+                payload={
+                    "actor_id": claim_input.actor_id,
+                    "superseded_by_claim_id": str(claim["claim_id"]),
+                },
+            )
+
+    return {"identity_claim": claim}
+
+
+@dataclass(frozen=True)
+class IdentityClaimDecisionInput:
+    claim_id: uuid.UUID
+    decided_by_actor_id: str
+    rationale: str
+
+
+def _decide_identity_claim(
+    decision_input: IdentityClaimDecisionInput,
+    *,
+    repo_fn: Any,
+    event_type: str,
+) -> dict[str, Any]:
+    """Shared fetch/authorize/decide/audit body for recognize/deny/contest.
+
+    Two authorization checks run before any write, in this order:
+
+    1. the deciding actor must be the seeded
+       _IDENTITY_RECOGNITION_AUTHORITY_ACTOR_ID -- an arbitrary registered
+       actor cannot produce a binding recognition decision (fails closed
+       with RecognitionAuthorityRequired otherwise);
+    2. the deciding actor must not be the claim's own actor or claimant --
+       even the recognition authority cannot decide a claim about itself
+       (fails closed with SelfRecognitionForbidden otherwise). This is
+       redundant with check 1 today, since the authority is a fixed,
+       single, non-claimant actor, but it is kept as an explicit,
+       independently-enforced invariant rather than an incidental
+       consequence of check 1, so it keeps holding if the authority model
+       is ever widened.
+    """
+    with db.transaction() as cursor:
+        claim = identity_claims_repo.fetch_claim(cursor, claim_id=decision_input.claim_id)
+        if claim is None:
+            raise IdentityClaimNotFound(f"No identity claim {decision_input.claim_id}")
+
+        decider = actors_repo.fetch_actor(cursor, actor_id=decision_input.decided_by_actor_id)
+        if decider is None:
+            raise ActorNotFound(f"No registered actor {decision_input.decided_by_actor_id!r}")
+
+        if decision_input.decided_by_actor_id != _IDENTITY_RECOGNITION_AUTHORITY_ACTOR_ID:
+            raise RecognitionAuthorityRequired(
+                f"Actor {decision_input.decided_by_actor_id!r} is not the identity-claim "
+                "recognition authority and cannot decide identity claims"
+            )
+
+        if decision_input.decided_by_actor_id in (claim["actor_id"], claim["claimant_actor_id"]):
+            raise SelfRecognitionForbidden(
+                f"Actor {decision_input.decided_by_actor_id!r} cannot decide its own "
+                "identity claim"
+            )
+
+        updated_claim = repo_fn(
+            cursor,
+            claim_id=decision_input.claim_id,
+            decided_by_actor_id=decision_input.decided_by_actor_id,
+            rationale=decision_input.rationale,
+        )
+        if updated_claim is None:
+            raise IdentityClaimNotDecidable(
+                f"Identity claim {decision_input.claim_id} is {claim['recognition_status']} "
+                "and cannot be decided again"
+            )
+
+        audit_repo.append_event(
+            cursor,
+            event_type=event_type,
+            aggregate_type="identity_claim",
+            aggregate_id=str(decision_input.claim_id),
+            payload={
+                "actor_id": claim["actor_id"],
+                "decided_by_actor_id": decision_input.decided_by_actor_id,
+                "recognition_status": updated_claim["recognition_status"],
+            },
+        )
+
+    return {"identity_claim": updated_claim}
+
+
+def recognize_identity_claim(decision_input: IdentityClaimDecisionInput) -> dict[str, Any]:
+    """Recognize an identity claim. See _decide_identity_claim for the shared
+    fetch/decide/audit shape; recognition never deletes or replaces the claim
+    row, only transitions recognition_status on it."""
+    return _decide_identity_claim(
+        decision_input,
+        repo_fn=identity_claims_repo.recognize_claim,
+        event_type="identity_claim.recognized",
+    )
+
+
+def deny_identity_claim(decision_input: IdentityClaimDecisionInput) -> dict[str, Any]:
+    """Deny an identity claim. The claim row is preserved, not erased --
+    only recognition_status changes to 'denied'."""
+    return _decide_identity_claim(
+        decision_input,
+        repo_fn=identity_claims_repo.deny_claim,
+        event_type="identity_claim.denied",
+    )
+
+
+def contest_identity_claim(decision_input: IdentityClaimDecisionInput) -> dict[str, Any]:
+    """Contest an identity claim (or its prior recognition). The claim row
+    is preserved, not erased -- only recognition_status changes to
+    'contested'."""
+    return _decide_identity_claim(
+        decision_input,
+        repo_fn=identity_claims_repo.contest_claim,
+        event_type="identity_claim.contested",
+    )
+
+
+@dataclass(frozen=True)
+class AttestationInput:
+    actor_id: str
+    identity_claim_id: uuid.UUID
+    attestation_method: str
+    credential_reference: str
+    issued_at: datetime
+
+
+@dataclass(frozen=True)
+class AttestedDecisionInput:
+    decision_input: DecisionInput
+    attestation_input: AttestationInput
+
+
+def attest_and_create_decision(attested_input: AttestedDecisionInput) -> dict[str, Any]:
+    """Attest a decision-creation act to an actor, then create the decision.
+
+    attestation_input.actor_id is the actor who performed/submitted the
+    governed act -- the attestor -- and is not required to equal, and is
+    never inferred from, decision_input.subject_actor_id -- the actor or
+    entity the decision is about. These are different roles: a clinician
+    (attestor) may propose a decision about a patient (subject); an
+    adjuster (attestor) may create a decision about a claimant (subject).
+    Collapsing them would attribute the act to the governed subject rather
+    than its actual author. Both are independently, durably recorded: the
+    attestor via cdp_core.attestation_record.actor_id (immutable, FK'd to
+    this decision, queryable via GET /decisions/{registry_name}/
+    {decision_id}/attestations), the subject via cdp_core.decision_registry
+    unchanged as before. subject_actor_id still has to satisfy
+    decision_registry's own pre-existing identifier rules; it does not
+    have to be a governed cdp_core.actor at all.
+
+    Everything below runs inside exactly one transaction, reusing
+    _create_decision_with_workflow_in_transaction so decision creation is
+    not a nested/second transaction. Any failure - an unknown or inactive
+    actor, a missing/unrecognized/out-of-scope identity claim, or any
+    failure from decision creation itself - rolls back all of it: no
+    decision, no workflow instance, no task, no attestation record, and no
+    audit event survive.
+
+    This is the proof path required by the Identity and Attestation slice.
+    It is additive: POST /decisions (create_decision_with_workflow) is
+    unchanged and continues to accept unattested decisions, exactly as
+    every existing caller and test already expects. Only this new path
+    requires attestation.
+    """
+    decision_input = attested_input.decision_input
+    attestation_input = attested_input.attestation_input
+
+    with db.transaction() as cursor:
+        actor = actors_repo.fetch_actor(cursor, actor_id=attestation_input.actor_id)
+        if actor is None:
+            raise ActorNotFound(f"No registered actor {attestation_input.actor_id!r}")
+        if actor["actor_status"] != "active":
+            raise ActorNotActive(
+                f"Actor {attestation_input.actor_id!r} is {actor['actor_status']}, not active"
+            )
+
+        claim = identity_claims_repo.fetch_claim(
+            cursor, claim_id=attestation_input.identity_claim_id
+        )
+        if claim is None or claim["actor_id"] != attestation_input.actor_id:
+            raise IdentityClaimActorMismatch(
+                f"Identity claim {attestation_input.identity_claim_id} does not belong to "
+                f"actor {attestation_input.actor_id!r}"
+            )
+        if claim["recognition_status"] != "recognized":
+            raise IdentityClaimNotRecognized(
+                f"Identity claim {attestation_input.identity_claim_id} is "
+                f"{claim['recognition_status']}, not recognized"
+            )
+        if claim["purpose_scope"] != _DECISION_CREATION_PURPOSE_SCOPE:
+            raise IdentityClaimScopeInsufficient(
+                f"Identity claim {attestation_input.identity_claim_id} has purpose_scope "
+                f"{claim['purpose_scope']!r}, which does not cover "
+                f"{_DECISION_CREATION_PURPOSE_SCOPE!r}"
+            )
+
+        decision_result = _create_decision_with_workflow_in_transaction(cursor, decision_input)
+
+        attestation = attestations_repo.insert_attestation(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            identity_claim_id=attestation_input.identity_claim_id,
+            governed_act_type="decision_created",
+            governed_act_registry_name=decision_input.registry_name,
+            governed_act_decision_id=decision_input.decision_id,
+            attestation_method=attestation_input.attestation_method,
+            credential_reference=attestation_input.credential_reference,
+            issued_at=attestation_input.issued_at,
+            verifier_actor_id="cdp_attestation_service",
+        )
+
+        audit_repo.append_event(
+            cursor,
+            event_type="attestation.recorded",
+            aggregate_type="attestation_record",
+            aggregate_id=str(attestation["attestation_id"]),
+            payload={
+                "registry_name": decision_input.registry_name,
+                "decision_id": decision_input.decision_id,
+                "actor_id": attestation_input.actor_id,
+                "identity_claim_id": str(attestation_input.identity_claim_id),
+                "attestation_method": attestation_input.attestation_method,
+            },
+        )
+
+    return {**decision_result, "attestation": attestation}
