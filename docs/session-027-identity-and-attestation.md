@@ -1,10 +1,10 @@
 # Session 027 — Identity and Attestation
 
 Status: v0.2, correcting two constitutional bugs a review of v0.1 (PR #41,
-head `70ef08b`) identified before merge. Verified locally against a live
-Docker Compose stack; CI re-run pending on the corrected commit. This file
-documents what already exists in the working tree, not a plan for future
-work.
+head `70ef08b`) identified before merge. Verified locally and confirmed
+passing in CI on the corrected commit (run `30704929899`, head `f8ae3d0`).
+Not yet reviewed/merged. This file documents what already exists in the
+working tree, not a plan for future work.
 
 Scope: **Identity and Attestation** (RFC-CDP-030 Identify Protocol,
 RFC-CDP-031 Attest Protocol), the constitutional goal being: CDP can
@@ -246,18 +246,17 @@ Postgres, live `uvicorn`):
   routes.
 - `ruff check cdp` — passes with no findings.
 
-**GitHub Actions:** re-run pending on the corrected commit; see
-`evidence/000-current-state.md` for the citation once it lands.
+**GitHub Actions:** CI run `30704929899` on head commit `f8ae3d0`
+(2026-08-01T14:59:19Z) — both `PR guard (static, no DB)` and
+`Full CDP slice tests (Postgres/service/API)` completed with conclusion
+`success` on the v0.2-corrected model.
 
 ## 6. Evidence level reached
 
-Identify and Attest were rated **Integration Tested (E4)** on v0.1 (CI run
-`30677856180`, PR #41 head `70ef08b`). That citation is no longer valid on
-its own for the corrected behavior — the attestor/subject and recognition-
-authority semantics materially changed — so `evidence/000-current-state.md`
-will be updated to cite the new CI run once it passes on the corrected
-commit, per this repository's rule that E4 specifically means CI-confirmed
-on the code actually being described.
+Identify and Attest are rated **Integration Tested (E4)** in
+`evidence/000-current-state.md`, cited to CI run `30704929899` on PR #41's
+head commit `f8ae3d0` — the v0.2-corrected model, not the v0.1 citation
+(`30677856180`, `70ef08b`) this superseded.
 
 ## 7. A real gap found along the way, and how it was resolved
 

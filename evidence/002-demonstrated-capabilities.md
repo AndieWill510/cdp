@@ -86,12 +86,11 @@ independently rejected), and by
 `tests/identify_attest_standing/test_identity_attestation_api.py` (15
 cases, including a full actor/claim/attestation/decision round trip, a
 protected-actor redaction check, and the Alice-attests/Bob-is-the-subject
-proof) exercised through a live `uvicorn` process and Postgres. Passing
-locally as of 2026-08-01 on the v0.2-corrected commit, alongside the full
-pre-existing suite with no regressions. CI run `30677856180` (PR #41 head
-`70ef08b`) confirmed the pre-correction v0.1 behavior; a fresh CI run on
-the corrected commit is pending -- see the caveat in `000-current-state.md`
-and `001-test-matrix.md`.
+proof) exercised through a live `uvicorn` process and Postgres. Confirmed
+passing in CI job `full-cdp-slice-tests`, run `30704929899` (PR #41 head
+commit `f8ae3d0`, 2026-08-01T14:59:19Z, conclusion `success`, the
+v0.2-corrected model), alongside the full pre-existing suite with no
+regressions.
 
 This is not authentication, authorization, or personhood: no password,
 token, or key material is stored; "verified" means the actor is active and
