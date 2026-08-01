@@ -71,14 +71,13 @@ Demonstrated by `tests/identify_attest_standing/test_actor_service.py`,
 `test_identity_claim_service.py`, and `test_attestation_service.py` (21
 cases total, including a direct assertion that `DELETE FROM
 cdp_core.identity_claim` itself raises, not just that the trigger's SQL
-text exists) against a live local Postgres instance, and by
-`tests/identify_attest_standing/test_identity_attestation_api.py` (11
-cases, including a full actor/claim/attestation/decision round trip and a
-protected-actor redaction check) against a live local `uvicorn` process and
-Postgres. All 21 + 11 cases pass locally as of 2026-07-31, alongside the
-full pre-existing suite (131 migration/service tests, 24 API tests) with no
-regressions. This has not yet been confirmed passing in CI -- see the
-caveat on this row in `001-test-matrix.md` and `000-current-state.md`.
+text exists), and by `tests/identify_attest_standing/test_identity_attestation_api.py`
+(11 cases, including a full actor/claim/attestation/decision round trip and
+a protected-actor redaction check) exercised through a live `uvicorn`
+process and Postgres. Confirmed passing in CI job `full-cdp-slice-tests`,
+run `30677856180` (PR #41 head commit `70ef08b`, 2026-08-01T01:24:52Z,
+conclusion `success`), alongside the full pre-existing suite with no
+regressions.
 
 This is not authentication, authorization, or personhood: no password,
 token, or key material is stored; "verified" means the actor is active and

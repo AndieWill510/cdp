@@ -113,13 +113,6 @@ discipline:
   runs in CI on changes to `rfc/**`, but this document's preparation did not
   include re-running that script against current `main`, so whether it
   currently passes or fails given this drift is not established here.
-- **Identity and Attestation CI confirmation** — all new tests (13 static,
-  21 Postgres/service, 11 API) pass against a live local Docker Compose
-  stack as of 2026-07-31, but this has not yet been confirmed passing in
-  GitHub Actions. Until a PR head commit shows a passing
-  `full-cdp-slice-tests` run, `000-current-state.md` rates Identify/Attest
-  at E3 (Runtime Tested), not E4, per this repository's own rule that E4
-  specifically means CI-confirmed, not locally-confirmed.
 - **Production operation** — no governance step in this repository has E5
   (Production Demonstrated) evidence. All E4 evidence is CI-based (a
   provisioned Postgres service container and a freshly started `uvicorn`

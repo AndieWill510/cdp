@@ -1,10 +1,9 @@
 # Session 027 — Identity and Attestation
 
-Status: implementation drafted, verified locally against a live Docker
-Compose stack (fresh migration apply, live `uvicorn`, live Postgres,
-fresh-checkout unit/service tests). Not yet staged, committed, tested in
-CI, or reviewed. This file documents what already exists in the working
-tree, not a plan for future work.
+Status: implementation complete, verified locally against a live Docker
+Compose stack and confirmed passing in CI on PR #41 (run `30677856180`,
+head commit `70ef08b`). Not yet reviewed/merged. This file documents what
+already exists in the working tree, not a plan for future work.
 
 Scope: **Identity and Attestation** (RFC-CDP-030 Identify Protocol,
 RFC-CDP-031 Attest Protocol), the constitutional goal being: CDP can
@@ -169,20 +168,19 @@ All of the following were run against a live Docker Compose stack
   routes.
 - `ruff check cdp` — passes with no findings.
 
-**Not yet run: GitHub Actions.** This branch has not been pushed; there is
-no CI run to cite. `.github/workflows/cdp-ci.yml` has been updated to wire
-in the new static/Postgres/API test tiers (mirroring the existing
-`Migration00N*Tests` pattern), but per this repository's evidence
-discipline (`evidence/README.md`), E4 specifically means CI-confirmed, not
-locally-confirmed — see `evidence/003-known-gaps.md`'s new "Identity and
-Attestation slice" section.
+**GitHub Actions:** PR #41 (branch `session-027-identity-and-attestation`),
+labeled `run-full-ci`. CI run `30677856180` on head commit `70ef08b`
+(2026-08-01T01:24:52Z) — both `PR guard (static, no DB)` and
+`Full CDP slice tests (Postgres/service/API)` completed with conclusion
+`success`, exercising the same static/Postgres/API tiers wired into
+`.github/workflows/cdp-ci.yml` above, against a fresh Postgres service
+container and a freshly started `uvicorn` process.
 
 ## 6. Evidence level reached
 
-Identify and Attest are rated **Runtime Tested (E3)** in
-`evidence/000-current-state.md`, not E4, for the CI-confirmation reason
-above. Everything an E4 rating would require has been run except the CI
-confirmation itself.
+Identify and Attest are rated **Integration Tested (E4)** in
+`evidence/000-current-state.md`, cited to CI run `30677856180` on PR #41's
+head commit `70ef08b`.
 
 ## 7. A real gap found along the way, and how it was resolved
 
