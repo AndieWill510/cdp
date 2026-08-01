@@ -1,10 +1,9 @@
 # Session 028 — Authority and Delegation
 
 Status: implementation complete, verified locally against a live Docker
-Compose stack (fresh migration apply, live `uvicorn`, live Postgres). CI
-run pending on this PR's head commit. Not yet reviewed/merged. This file
-documents what already exists in the working tree, not a plan for future
-work.
+Compose stack and confirmed passing in CI on PR #43 (run `30707515976`,
+head commit `b29e75a`). Not yet reviewed/merged. This file documents what
+already exists in the working tree, not a plan for future work.
 
 Scope: **Authority** (RFC-CDP-032 Authority and Delegation Model), scoped
 to that RFC's §19 Minimal Compliance profile. Requested directly by the
@@ -218,16 +217,19 @@ Combined total this session verified locally: **251 tests pass** (213
 static/Postgres/service including the 10 new authority ones, 38 API
 including the 8 new authority-grant ones).
 
-**GitHub Actions:** pending — see `evidence/000-current-state.md` for the
-citation once this PR's CI run passes.
+**GitHub Actions:** PR #43 (branch `session-028-authority-and-delegation`),
+labeled `run-full-ci`. CI run `30707515976` on head commit `b29e75a`
+(2026-08-01T16:09:37Z) — both `PR guard (static, no DB)` and
+`Full CDP slice tests (Postgres/service/API)` completed with conclusion
+`success` on the first push, exercising the same static/Postgres/API
+tiers wired into `.github/workflows/cdp-ci.yml` above, against a fresh
+Postgres service container and a freshly started `uvicorn` process.
 
 ## 6. Evidence level reached
 
-Not yet updated in `evidence/000-current-state.md` pending a passing CI
-run on this PR's head commit — this document intentionally does not
-pre-claim E4 before that exists, per this repository's rule that E4
-specifically means CI-confirmed, not locally-confirmed (the same
-discipline sessions 026 and 027 followed).
+Authority is rated **Integration Tested (E4)** in
+`evidence/000-current-state.md`, cited to CI run `30707515976` on PR #43's
+head commit `b29e75a`.
 
 ## 7. Known limitations (see `evidence/003-known-gaps.md` for the full list)
 

@@ -160,10 +160,10 @@ discipline:
 
 ## Authority (RFC-CDP-032) -- known limitations of the SS19 Minimal Compliance slice
 
-Session 028 rates Authority at E3 (Runtime Tested) in
-`000-current-state.md` -- passing locally, CI-pending. The items below are
-the honest boundaries of that scope, not a claim that RFC-CDP-032 is
-implemented in full:
+Session 028 rates Authority at E4 (Integration Tested) in
+`000-current-state.md`, cited to CI run `30707515976` on PR #43 head
+`b29e75a`. The items below are the honest boundaries of that scope, not a
+claim that RFC-CDP-032 is implemented in full:
 
 - **No delegation.** RFC-CDP-032 SS8's entire delegation model (a
   delegator, a delegation chain, `may_delegate`, recipient/scope/validity

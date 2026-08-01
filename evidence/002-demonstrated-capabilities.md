@@ -141,11 +141,10 @@ authority-gate cases added to
 `tests/identify_attest_standing/test_attestation_service.py` (missing
 grant, wrong registry scope, wrong decision-class scope, wildcard-scope
 success, expired grant, revoked grant) and 3 to
-`test_identity_attestation_api.py`. All pass locally (Docker Compose,
-live Postgres + `uvicorn`) as of 2026-08-01, alongside the full
-pre-existing suite with no regressions. Not yet confirmed passing in
-CI -- see the caveat in `000-current-state.md` and
-`docs/session-028-authority-and-delegation.md`.
+`test_identity_attestation_api.py`. Confirmed passing in CI job
+`full-cdp-slice-tests`, run `30707515976` (PR #43 head commit `b29e75a`,
+2026-08-01T16:09:37Z, conclusion `success`), alongside the full
+pre-existing suite with no regressions.
 
 This is not delegation, quorum, presence, emergency/repair/sovereignty
 authority, or separation-of-duties enforcement, and the grant issuer is a
