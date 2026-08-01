@@ -160,16 +160,20 @@ class IdentityClaimNotDecidable(Exception):
     """The claim is not in 'pending' or 'recognized' and cannot be decided again."""
 
 
+class RecognitionAuthorityRequired(Exception):
+    """The deciding actor is not the seeded identity-claim recognition authority."""
+
+
+class SelfRecognitionForbidden(Exception):
+    """An actor cannot recognize, deny, or contest its own identity claim."""
+
+
 class IdentityClaimNotRecognized(Exception):
     """The identity claim is not currently recognized."""
 
 
 class IdentityClaimScopeInsufficient(Exception):
     """The identity claim's purpose_scope does not cover the requested governed act."""
-
-
-class AttestationActorMismatch(Exception):
-    """The attesting actor does not match the governed act's subject actor."""
 
 
 # A workflow that has been (re-)blocked by a new challenge raised after
@@ -920,6 +924,14 @@ def record_execution_attempt(execution_input: ExecutionRecordInput) -> dict[str,
 
 _DECISION_CREATION_PURPOSE_SCOPE = "decision_creation"
 
+# The single, narrow, bounded governed actor authorized to recognize,
+# deny, or contest an Identity Claim in this slice (seeded by
+# db/ddl/010-identity-and-attestation.sql). This is not RFC-CDP-032
+# Authority -- no grant, scope, or delegation model -- it exists solely to
+# close the gap where any registered actor, including a claimant deciding
+# its own claim, could otherwise produce a binding "recognized" status.
+_IDENTITY_RECOGNITION_AUTHORITY_ACTOR_ID = "cdp_identity_recognition_authority"
+
 
 @dataclass(frozen=True)
 class ActorInput:
@@ -1058,6 +1070,23 @@ def _decide_identity_claim(
     repo_fn: Any,
     event_type: str,
 ) -> dict[str, Any]:
+    """Shared fetch/authorize/decide/audit body for recognize/deny/contest.
+
+    Two authorization checks run before any write, in this order:
+
+    1. the deciding actor must be the seeded
+       _IDENTITY_RECOGNITION_AUTHORITY_ACTOR_ID -- an arbitrary registered
+       actor cannot produce a binding recognition decision (fails closed
+       with RecognitionAuthorityRequired otherwise);
+    2. the deciding actor must not be the claim's own actor or claimant --
+       even the recognition authority cannot decide a claim about itself
+       (fails closed with SelfRecognitionForbidden otherwise). This is
+       redundant with check 1 today, since the authority is a fixed,
+       single, non-claimant actor, but it is kept as an explicit,
+       independently-enforced invariant rather than an incidental
+       consequence of check 1, so it keeps holding if the authority model
+       is ever widened.
+    """
     with db.transaction() as cursor:
         claim = identity_claims_repo.fetch_claim(cursor, claim_id=decision_input.claim_id)
         if claim is None:
@@ -1066,6 +1095,18 @@ def _decide_identity_claim(
         decider = actors_repo.fetch_actor(cursor, actor_id=decision_input.decided_by_actor_id)
         if decider is None:
             raise ActorNotFound(f"No registered actor {decision_input.decided_by_actor_id!r}")
+
+        if decision_input.decided_by_actor_id != _IDENTITY_RECOGNITION_AUTHORITY_ACTOR_ID:
+            raise RecognitionAuthorityRequired(
+                f"Actor {decision_input.decided_by_actor_id!r} is not the identity-claim "
+                "recognition authority and cannot decide identity claims"
+            )
+
+        if decision_input.decided_by_actor_id in (claim["actor_id"], claim["claimant_actor_id"]):
+            raise SelfRecognitionForbidden(
+                f"Actor {decision_input.decided_by_actor_id!r} cannot decide its own "
+                "identity claim"
+            )
 
         updated_claim = repo_fn(
             cursor,
@@ -1144,13 +1185,28 @@ class AttestedDecisionInput:
 def attest_and_create_decision(attested_input: AttestedDecisionInput) -> dict[str, Any]:
     """Attest a decision-creation act to an actor, then create the decision.
 
+    attestation_input.actor_id is the actor who performed/submitted the
+    governed act -- the attestor -- and is not required to equal, and is
+    never inferred from, decision_input.subject_actor_id -- the actor or
+    entity the decision is about. These are different roles: a clinician
+    (attestor) may propose a decision about a patient (subject); an
+    adjuster (attestor) may create a decision about a claimant (subject).
+    Collapsing them would attribute the act to the governed subject rather
+    than its actual author. Both are independently, durably recorded: the
+    attestor via cdp_core.attestation_record.actor_id (immutable, FK'd to
+    this decision, queryable via GET /decisions/{registry_name}/
+    {decision_id}/attestations), the subject via cdp_core.decision_registry
+    unchanged as before. subject_actor_id still has to satisfy
+    decision_registry's own pre-existing identifier rules; it does not
+    have to be a governed cdp_core.actor at all.
+
     Everything below runs inside exactly one transaction, reusing
     _create_decision_with_workflow_in_transaction so decision creation is
     not a nested/second transaction. Any failure - an unknown or inactive
-    actor, a missing/unrecognized/out-of-scope identity claim, an
-    actor/subject mismatch, or any failure from decision creation itself -
-    rolls back all of it: no decision, no workflow instance, no task, no
-    attestation record, and no audit event survive.
+    actor, a missing/unrecognized/out-of-scope identity claim, or any
+    failure from decision creation itself - rolls back all of it: no
+    decision, no workflow instance, no task, no attestation record, and no
+    audit event survive.
 
     This is the proof path required by the Identity and Attestation slice.
     It is additive: POST /decisions (create_decision_with_workflow) is
@@ -1160,12 +1216,6 @@ def attest_and_create_decision(attested_input: AttestedDecisionInput) -> dict[st
     """
     decision_input = attested_input.decision_input
     attestation_input = attested_input.attestation_input
-
-    if attestation_input.actor_id != decision_input.subject_actor_id:
-        raise AttestationActorMismatch(
-            f"Attesting actor {attestation_input.actor_id!r} does not match decision "
-            f"subject_actor_id {decision_input.subject_actor_id!r}"
-        )
 
     with db.transaction() as cursor:
         actor = actors_repo.fetch_actor(cursor, actor_id=attestation_input.actor_id)

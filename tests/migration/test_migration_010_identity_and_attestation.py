@@ -163,6 +163,18 @@ class Migration010StaticTests(unittest.TestCase):
     def test_attestation_verification_result_requires_failure_reason_pairing(self) -> None:
         self.assertIn("chk_attestation_failure_reason_pairing", self.sql)
 
+    def test_recognition_authority_actor_is_seeded_in_both_tables(self) -> None:
+        """The bounded recognition authority must be seeded as both an
+        identifier_registry row and a full cdp_core.actor row -- the
+        latter is required because _decide_identity_claim's decider lookup
+        (actors_repo.fetch_actor) inner-joins both tables."""
+        self.assertIn("'actor', 'cdp_identity_recognition_authority'", self.sql)
+        self.assertIn(
+            "INSERT INTO cdp_core.actor (actor_id, actor_type, display_mode, actor_status)",
+            self.executable_sql,
+        )
+        self.assertIn("'cdp_identity_recognition_authority', 'institution'", self.sql)
+
 
 class Migration010PostgresSmokeTests(unittest.TestCase):
     """Optional Postgres execution smoke test.
@@ -216,6 +228,26 @@ class Migration010PostgresSmokeTests(unittest.TestCase):
                 "WHERE registry_name = 'actor' AND identifier_id = 'cdp_attestation_service'"
             )
             self.assertIsNotNone(cursor.fetchone(), "missing seeded cdp_attestation_service actor")
+
+            cursor.execute(
+                "SELECT 1 FROM cdp_core.identifier_registry "
+                "WHERE registry_name = 'actor' AND identifier_id = 'cdp_identity_recognition_authority'"
+            )
+            self.assertIsNotNone(
+                cursor.fetchone(),
+                "missing seeded cdp_identity_recognition_authority identifier_registry row",
+            )
+
+            cursor.execute(
+                "SELECT actor_type, actor_status FROM cdp_core.actor "
+                "WHERE actor_id = 'cdp_identity_recognition_authority'"
+            )
+            row = cursor.fetchone()
+            self.assertIsNotNone(
+                row, "missing seeded cdp_identity_recognition_authority cdp_core.actor row"
+            )
+            self.assertEqual(row[0], "institution")
+            self.assertEqual(row[1], "active")
 
             # Prove the anti-delete trigger actually fires, not just that
             # the SQL text mentions it.

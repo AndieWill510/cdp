@@ -1,9 +1,10 @@
 # Session 027 — Identity and Attestation
 
-Status: implementation complete, verified locally against a live Docker
-Compose stack and confirmed passing in CI on PR #41 (run `30677856180`,
-head commit `70ef08b`). Not yet reviewed/merged. This file documents what
-already exists in the working tree, not a plan for future work.
+Status: v0.2, correcting two constitutional bugs a review of v0.1 (PR #41,
+head `70ef08b`) identified before merge. Verified locally against a live
+Docker Compose stack; CI re-run pending on the corrected commit. This file
+documents what already exists in the working tree, not a plan for future
+work.
 
 Scope: **Identity and Attestation** (RFC-CDP-030 Identify Protocol,
 RFC-CDP-031 Attest Protocol), the constitutional goal being: CDP can
@@ -112,19 +113,82 @@ demonstration. Inside one transaction:
 2. identity claim ownership + `recognition_status == 'recognized'` check
    (409)
 3. identity claim `purpose_scope == 'decision_creation'` check (409)
-4. attesting actor must equal the decision's `subject_actor_id` (409,
-   checked before the transaction even opens — the cheapest failure first)
-5. decision creation, reusing `_create_decision_with_workflow_in_transaction`
+4. decision creation, reusing `_create_decision_with_workflow_in_transaction`
    — the body of `create_decision_with_workflow`, extracted so this path
    is not a second, nested `db.transaction()` connection
-6. attestation record insert
-7. `attestation.recorded` audit event
+5. attestation record insert
+6. `attestation.recorded` audit event
 
 `POST /decisions` (`create_decision_with_workflow`, `cdp/api/decisions.py`)
 is untouched — same signature, same behavior, same tests passing unchanged.
 This is additive, not a retrofit: every existing caller of `POST /decisions`
 continues to create unattested decisions exactly as before. Only the new
 route requires attestation.
+
+`GET /decisions/{registry_name}/{decision_id}/attestations`
+(`cdp/api/decisions.py`) makes "who attested this act" discoverable
+directly from the decision, without needing to already know an
+`attestation_id` — added in v0.2 alongside the correction below, using a
+repository function (`attestations_repo.fetch_attestations_for_decision`)
+that existed since v0.1 but was not yet wired to a route.
+
+### 2.5 v0.2 review correction: two constitutional bugs fixed before merge
+
+A review of v0.1 (PR #41, head `70ef08b`) identified two seams that were
+too consequential to merge as-is. Both are fixed in this working tree; see
+`evidence/003-known-gaps.md`'s "Identity and Attestation slice" section for
+the permanent record of what changed and why.
+
+**Bug 1 — the attestor was conflated with the decision's subject.**
+`attest_and_create_decision` required `attestation_input.actor_id`
+(the attestor: who performed the governed act) to equal
+`decision_input.subject_actor_id` (who/what the decision is about). Those
+are different roles — a clinician (attestor) proposing a decision about a
+patient (subject), an adjuster (attestor) creating a decision about a
+claimant (subject) — and the equality requirement made those ordinary
+cases impossible, attributing the act to its governed subject rather than
+its actual author. Fixed by deleting the equality check entirely (and the
+`AttestationActorMismatch` exception it raised); the two identities were
+already independently, durably recorded (attestor via
+`cdp_core.attestation_record.actor_id`, subject via
+`cdp_core.decision_registry.subject_actor_id`), so no schema change was
+needed, only removing the wrongful constraint. The API's flat `actor_id`
+field was also renamed to `submitted_by_actor_id` at the request boundary
+for self-documentation, since it now sits deliberately unconstrained next
+to `subject_actor_id` rather than implicitly equal to it. Proven by
+`test_attestor_and_subject_may_independently_differ_and_both_are_preserved`
+(service) and `test_attested_decision_attestor_and_subject_may_differ`
+(API): Alice attests, the decision concerns Bob, both roles verified
+independently via direct queries, neither collapsed into the other.
+
+**Bug 2 — any registered actor could recognize, deny, or contest any
+identity claim, including its own.** `_decide_identity_claim` only checked
+that the deciding actor was registered, nothing more — so a claimant could
+register a second actor and recognize their own claim, or any unrelated
+registered actor could deny someone else's. This let "recognized by CDP"
+be produced by perception or self-assertion rather than a binding governed
+determination, the same failure mode RFC-CDP-033 §11.1 names for Standing.
+Fixed with the narrowest safe correction, not full RFC-CDP-032 Authority:
+a single seeded governed actor, `cdp_identity_recognition_authority`
+(`db/ddl/010-identity-and-attestation.sql`, both an `identifier_registry`
+row and a full `cdp_core.actor` row so it passes the same decider lookup
+as any other actor), is now the only actor_id `_decide_identity_claim`
+accepts as `decided_by_actor_id` (`RecognitionAuthorityRequired` otherwise)
+— and even that actor is forbidden from deciding a claim where it is
+itself the claim's `actor_id` or `claimant_actor_id`
+(`SelfRecognitionForbidden`), an independent, explicitly tested invariant
+rather than an incidental consequence of the first check. Both map to
+`403` at the API layer. Proven by
+`test_recognition_by_unauthorized_actor_is_rejected`,
+`test_claimant_cannot_recognize_their_own_claim`, and
+`test_recognition_authority_cannot_decide_its_own_claim` (service), and
+`test_recognize_claim_by_unauthorized_actor_returns_403` /
+`test_self_recognition_returns_403` (API).
+
+Widening who may hold the recognition-authority role (multiple recognizers,
+delegation, expiry) is deferred to a real RFC-CDP-032 Authority
+implementation — this correction closes the ambient-recognition gap, it
+does not build Authority.
 
 ## 3. Objects added
 
@@ -134,7 +198,9 @@ route requires attestation.
 | Identity Claim | `cdp_core.identity_claim` | `cdp/core/repositories/identity_claims.py` | `submit_identity_claim`, `recognize_identity_claim`, `deny_identity_claim`, `contest_identity_claim` |
 | Attestation Record | `cdp_core.attestation_record` | `cdp/core/repositories/attestations.py` | `attest_and_create_decision` |
 
-## 4. Routes added (`cdp/api/identity.py`)
+## 4. Routes added
+
+In `cdp/api/identity.py`:
 
 - `POST /actors`, `GET /actors/{actor_id}`
 - `POST /identity-claims`, `GET /identity-claims/{claim_id}`
@@ -144,23 +210,35 @@ route requires attestation.
 - `POST /attested-decisions`
 - `GET /attestations/{attestation_id}`
 
+In `cdp/api/decisions.py` (v0.2, alongside the existing decision routes,
+not in `identity.py`, for URL-prefix consistency with `challenges`/
+`execution-authorizations`/`execution-records`):
+
+- `GET /decisions/{registry_name}/{decision_id}/attestations`
+
 `GET /actors/{actor_id}` never exposes `identity_continuity_key`.
 `GET /identity-claims/{claim_id}` redacts `claimed_identity_descriptor` and
 `evidence_refs` to `"[protected]"` whenever the actor's `display_mode` is
 not `public` — verified by
 `test_protected_actor_identity_claim_response_redacts_descriptor_and_evidence`.
+`POST /identity-claims/{claim_id}/{recognize,deny,contest}` return `403`
+for `RecognitionAuthorityRequired`/`SelfRecognitionForbidden` (v0.2).
 
 ## 5. Tests run
 
-All of the following were run against a live Docker Compose stack
-(`docker/docker-compose.yml`: fresh `docker compose build cdp-api`, fresh
-`up -d`, live Postgres, live `uvicorn`) on 2026-07-31:
+v0.1 was verified locally and confirmed passing in CI run `30677856180`
+(PR #41 head `70ef08b`, 2026-08-01T01:24:52Z, both jobs `success`). The
+v0.2 correction above was then re-verified against a rebuilt Docker
+Compose stack (fresh `docker compose build cdp-api`, fresh `up -d`, live
+Postgres, live `uvicorn`):
 
-- **Static** (no DB): `tests/migration/test_migration_010_identity_and_attestation.py::Migration010StaticTests` — 13/13 pass.
+- **Static** (no DB): `tests/migration/test_migration_010_identity_and_attestation.py::Migration010StaticTests` — 14/14 pass (one new case: the recognition-authority actor is seeded in both tables).
 - **Postgres/service**: `Migration010PostgresSmokeTests` (1) +
   `tests/identify_attest_standing/{test_actor_service,test_identity_claim_service,test_attestation_service}.py`
-  (5 + 8 + 8 = 21) — 22/22 pass.
-- **API round-trip**: `tests/identify_attest_standing/test_identity_attestation_api.py` — 11/11 pass.
+  (5 + 10 + 8 = 23) — 24/24 pass. Identity-claim service tests grew from 8
+  to 10 (two removed/replaced by the review, three added: unauthorized
+  recognizer, claimant self-recognition, authority self-recognition).
+- **API round-trip**: `tests/identify_attest_standing/test_identity_attestation_api.py` — 15/15 pass (up from 11: the mismatched-actor-rejection test was replaced by the attestor/subject-independence proof, plus four new cases for the two `403`s and the new attestations-list route).
 - **Full pre-existing suite, unchanged**: 131 migration/service tests + 24
   API tests (including all of `tests/decision`, `tests/challenge`,
   `tests/execution`, `tests/nemawashi`, `tests/db`) — all still pass, no
@@ -168,19 +246,18 @@ All of the following were run against a live Docker Compose stack
   routes.
 - `ruff check cdp` — passes with no findings.
 
-**GitHub Actions:** PR #41 (branch `session-027-identity-and-attestation`),
-labeled `run-full-ci`. CI run `30677856180` on head commit `70ef08b`
-(2026-08-01T01:24:52Z) — both `PR guard (static, no DB)` and
-`Full CDP slice tests (Postgres/service/API)` completed with conclusion
-`success`, exercising the same static/Postgres/API tiers wired into
-`.github/workflows/cdp-ci.yml` above, against a fresh Postgres service
-container and a freshly started `uvicorn` process.
+**GitHub Actions:** re-run pending on the corrected commit; see
+`evidence/000-current-state.md` for the citation once it lands.
 
 ## 6. Evidence level reached
 
-Identify and Attest are rated **Integration Tested (E4)** in
-`evidence/000-current-state.md`, cited to CI run `30677856180` on PR #41's
-head commit `70ef08b`.
+Identify and Attest were rated **Integration Tested (E4)** on v0.1 (CI run
+`30677856180`, PR #41 head `70ef08b`). That citation is no longer valid on
+its own for the corrected behavior — the attestor/subject and recognition-
+authority semantics materially changed — so `evidence/000-current-state.md`
+will be updated to cite the new CI run once it passes on the corrected
+commit, per this repository's rule that E4 specifically means CI-confirmed
+on the code actually being described.
 
 ## 7. A real gap found along the way, and how it was resolved
 
@@ -206,12 +283,14 @@ unaffected and separately FK'd to `cdp_actor_type`. Documented in
 
 - "Verified" is claim-based, not cryptographic.
 - The proof path covers exactly one governed act (`decision_created`).
-- Deciding a claim (recognize/deny/contest) requires the decider to be a
-  registered actor, nothing more — no Authority or Standing check gates
-  who may decide.
-- `recognized_by`/deny/contest actors are validated against the legacy
-  `identifier_registry`, not required to hold their own `cdp_core.actor`
-  governance row.
+- Recognition authority (v0.2) is a single hardcoded seeded actor, not a
+  delegable grant — widening it requires a code change, not a governed
+  act. This is deliberate for now (the narrowest safe correction, not
+  RFC-CDP-032 Authority), not an oversight.
+- A decision's `subject_actor_id` (v0.2: now independent of the attestor)
+  is not required to be a governed `cdp_core.actor` at all, only a
+  legacy-registered identifier per `decision_registry`'s pre-existing
+  rules — Bob-the-subject need not have gone through `POST /actors`.
 
 ## 9. Explicit non-goals (all held to)
 

@@ -59,33 +59,49 @@ contested (`POST /identity-claims/{claim_id}/{recognize,deny,contest}`) --
 enforcing that a denied or contested claim's row is preserved, never
 deleted, both at the service layer and at the database level
 (`cdp_core.identity_claim`'s `trg_identity_claim_forbid_delete` trigger,
-`db/ddl/010-identity-and-attestation.sql`). A decision-creation act can be
-attested to a registered, active actor holding a recognized, in-scope
-identity claim (`POST /attested-decisions`, `attest_and_create_decision` in
-`cdp/core/services.py`), and rejected closed -- with nothing persisted --
-when the actor is unknown, inactive, mismatched against the decision's
-subject, or the claim is missing, unrecognized, out of scope, or belongs to
-a different actor.
+`db/ddl/010-identity-and-attestation.sql`). Only a single seeded, bounded
+recognition authority (`cdp_identity_recognition_authority`) may recognize,
+deny, or contest a claim -- an arbitrary registered actor, or a claimant
+deciding its own claim, is rejected with `403` (v0.2 review correction; see
+`docs/session-027-identity-and-attestation.md` §2.5).
+
+A decision-creation act can be attested to a registered, active actor
+holding a recognized, in-scope identity claim (`POST /attested-decisions`,
+`attest_and_create_decision` in `cdp/core/services.py`), and rejected
+closed -- with nothing persisted -- when the actor is unknown, inactive, or
+the claim is missing, unrecognized, out of scope, or belongs to a different
+actor. The attesting actor (who performed the act) and the decision's
+subject (who/what it concerns) are independently recorded and never
+required to be the same actor (v0.2 review correction): a clinician may
+attest a decision about a patient, an adjuster a decision about a claimant.
+`GET /decisions/{registry_name}/{decision_id}/attestations` makes who
+attested a decision discoverable directly from the decision.
 
 Demonstrated by `tests/identify_attest_standing/test_actor_service.py`,
-`test_identity_claim_service.py`, and `test_attestation_service.py` (21
+`test_identity_claim_service.py`, and `test_attestation_service.py` (24
 cases total, including a direct assertion that `DELETE FROM
 cdp_core.identity_claim` itself raises, not just that the trigger's SQL
-text exists), and by `tests/identify_attest_standing/test_identity_attestation_api.py`
-(11 cases, including a full actor/claim/attestation/decision round trip and
-a protected-actor redaction check) exercised through a live `uvicorn`
-process and Postgres. Confirmed passing in CI job `full-cdp-slice-tests`,
-run `30677856180` (PR #41 head commit `70ef08b`, 2026-08-01T01:24:52Z,
-conclusion `success`), alongside the full pre-existing suite with no
-regressions.
+text exists, and that self-recognition and unauthorized recognition are
+independently rejected), and by
+`tests/identify_attest_standing/test_identity_attestation_api.py` (15
+cases, including a full actor/claim/attestation/decision round trip, a
+protected-actor redaction check, and the Alice-attests/Bob-is-the-subject
+proof) exercised through a live `uvicorn` process and Postgres. Passing
+locally as of 2026-08-01 on the v0.2-corrected commit, alongside the full
+pre-existing suite with no regressions. CI run `30677856180` (PR #41 head
+`70ef08b`) confirmed the pre-correction v0.1 behavior; a fresh CI run on
+the corrected commit is pending -- see the caveat in `000-current-state.md`
+and `001-test-matrix.md`.
 
 This is not authentication, authorization, or personhood: no password,
 token, or key material is stored; "verified" means the actor is active and
 holds a recognized, in-scope claim, not cryptographic proof; and no
 Authority, Standing, Legitimize, or Repair object is written by any
-function in this slice. See `db/ddl/010-identity-and-attestation.sql`'s
-header and `docs/session-027-identity-and-attestation.md` for the full
-scope statement.
+function in this slice -- including the recognition-authority check, which
+is a single hardcoded seeded actor, not a grant/delegation model. See
+`db/ddl/010-identity-and-attestation.sql`'s header and
+`docs/session-027-identity-and-attestation.md` for the full scope
+statement.
 
 ## Audit trail
 

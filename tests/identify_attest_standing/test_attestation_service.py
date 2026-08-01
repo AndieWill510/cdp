@@ -17,6 +17,16 @@ below never reach decision creation (verification fails first, inside the
 same rolled-back transaction), so there is nothing to clean up for those.
 See test_actor_service.py's module docstring for the same reasoning
 applied to actor/identity_claim rows.
+
+v0.2 review correction: attestation_input.actor_id (the attestor -- who
+performed the governed act) is no longer required to equal
+decision_input.subject_actor_id (who/what the decision is about). See
+test_attestor_and_subject_may_independently_differ_and_both_are_preserved
+below, which is the proof path the review asked for: Alice attests, the
+decision concerns Bob, neither identity collapses into the other. Claim
+recognition below uses the seeded recognition-authority actor_id (see
+test_identity_claim_service.py's module docstring) rather than an
+arbitrary registered actor.
 """
 
 from __future__ import annotations
@@ -32,6 +42,10 @@ from psycopg.rows import dict_row
 
 REGISTRY_NAME = "sample_attorney_demo"
 DECISION_CLASS_ID = "claim_approval"
+
+# Pre-seeded by 010-identity-and-attestation.sql; not registered by these
+# tests. See test_identity_claim_service.py's module docstring.
+RECOGNITION_AUTHORITY_ACTOR_ID = "cdp_identity_recognition_authority"
 
 
 def _database_url() -> str:
@@ -82,7 +96,6 @@ def _submit_and_recognize_claim(actor_id: str, *, purpose_scope: str = "decision
         submit_identity_claim,
     )
 
-    recognizer_id = _register_actor("iaa-attest-recognizer")
     claim = submit_identity_claim(
         IdentityClaimInput(
             actor_id=actor_id,
@@ -93,7 +106,9 @@ def _submit_and_recognize_claim(actor_id: str, *, purpose_scope: str = "decision
     )["identity_claim"]
     recognize_identity_claim(
         IdentityClaimDecisionInput(
-            claim_id=claim["claim_id"], decided_by_actor_id=recognizer_id, rationale="Checked."
+            claim_id=claim["claim_id"],
+            decided_by_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
+            rationale="Checked.",
         )
     )
     return claim["claim_id"]
@@ -238,26 +253,47 @@ class AttestAndCreateDecisionTests(unittest.TestCase):
             )
         self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 0)
 
-    def test_mismatched_actor_fails_closed(self) -> None:
-        from cdp.core.services import (
-            AttestationActorMismatch,
-            AttestedDecisionInput,
-            attest_and_create_decision,
+    def test_attestor_and_subject_may_independently_differ_and_both_are_preserved(self) -> None:
+        """The proof path the v0.2 review asked for: Alice (the attestor,
+        who performed the governed act) attests a decision whose subject
+        is Bob (an entirely different actor, e.g. a patient or claimant).
+        Neither identity collapses into the other -- Alice remains
+        immutably attributable as the attestor via
+        cdp_core.attestation_record.actor_id, and Bob remains the
+        decision's subject via cdp_core.decision_registry.subject_actor_id,
+        unaffected by (and not required to hold) any identity claim of his
+        own."""
+        from cdp.core.services import AttestedDecisionInput, attest_and_create_decision
+
+        alice_actor_id = _register_actor("iaa-attest-alice")
+        bob_actor_id = _register_actor("iaa-attest-bob")
+        alice_claim_id = _submit_and_recognize_claim(alice_actor_id)
+        decision_id = _unique("iaa-attested-decision-distinct-roles")
+
+        result = attest_and_create_decision(
+            AttestedDecisionInput(
+                decision_input=_make_decision_input(decision_id, bob_actor_id),
+                attestation_input=_make_attestation_input(alice_actor_id, alice_claim_id),
+            )
         )
 
-        attesting_actor_id = _register_actor("iaa-attest-mismatch-attester")
-        subject_actor_id = _register_actor("iaa-attest-mismatch-subject")
-        claim_id = _submit_and_recognize_claim(attesting_actor_id)
-        decision_id = _unique("iaa-attested-decision-mismatch")
+        self.assertEqual(result["decision"]["subject_actor_id"], bob_actor_id)
+        self.assertEqual(result["attestation"]["actor_id"], alice_actor_id)
 
-        with self.assertRaises(AttestationActorMismatch):
-            attest_and_create_decision(
-                AttestedDecisionInput(
-                    decision_input=_make_decision_input(decision_id, subject_actor_id),
-                    attestation_input=_make_attestation_input(attesting_actor_id, claim_id),
-                )
+        with psycopg.connect(_database_url(), row_factory=dict_row) as conn, conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT subject_actor_id FROM cdp_core.decision_registry "
+                "WHERE registry_name = %s AND decision_id = %s",
+                (REGISTRY_NAME, decision_id),
             )
-        self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 0)
+            self.assertEqual(cursor.fetchone()["subject_actor_id"], bob_actor_id)
+
+            cursor.execute(
+                "SELECT actor_id FROM cdp_core.attestation_record "
+                "WHERE governed_act_registry_name = %s AND governed_act_decision_id = %s",
+                (REGISTRY_NAME, decision_id),
+            )
+            self.assertEqual(cursor.fetchone()["actor_id"], alice_actor_id)
 
     def test_unrecognized_claim_fails_closed(self) -> None:
         from cdp.core.services import (

@@ -5,7 +5,14 @@ Additive to the existing decision API: POST /decisions
 new, explicit integration path that requires attestation before creating a
 decision -- see attest_and_create_decision's docstring in
 cdp/core/services.py for why this is a separate route rather than a
-retrofit of the existing one.
+retrofit of the existing one. The request's submitted_by_actor_id (the
+attestor) is independent of subject_actor_id (who/what the decision is
+about) -- see AttestedDecisionCreateRequest below.
+
+POST /identity-claims/{claim_id}/{recognize,deny,contest} require
+decided_by_actor_id to be the single seeded recognition-authority actor
+and reject an actor deciding its own claim, both with 403 -- see
+_decide_identity_claim's docstring in cdp/core/services.py.
 
 GET /actors/{actor_id} and GET /identity-claims/{claim_id} redact
 identity-claim content whenever the actor's display_mode is not 'public',
@@ -34,7 +41,6 @@ from cdp.core.services import (
     ActorInput,
     ActorNotActive,
     ActorNotFound,
-    AttestationActorMismatch,
     AttestationInput,
     AttestedDecisionInput,
     DecisionClassNotConfigured,
@@ -46,6 +52,8 @@ from cdp.core.services import (
     IdentityClaimNotFound,
     IdentityClaimNotRecognized,
     IdentityClaimScopeInsufficient,
+    RecognitionAuthorityRequired,
+    SelfRecognitionForbidden,
     WorkflowStageNotConfigured,
     attest_and_create_decision,
     contest_identity_claim,
@@ -187,6 +195,8 @@ def _handle_claim_decision(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ActorNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (RecognitionAuthorityRequired, SelfRecognitionForbidden) as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except IdentityClaimNotDecidable as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except (
@@ -242,7 +252,11 @@ class AttestedDecisionCreateRequest(BaseModel):
     source_system: str = "api"
     source_ref: str | None = None
 
-    actor_id: str
+    # The actor who performed/submitted this governed act -- the attestor.
+    # Deliberately not required to equal subject_actor_id above, which is
+    # the actor or entity the decision is about. See
+    # attest_and_create_decision's docstring in cdp/core/services.py.
+    submitted_by_actor_id: str
     identity_claim_id: uuid.UUID
     attestation_method: str
     credential_reference: str = Field(min_length=1)
@@ -275,7 +289,7 @@ def create_attested_decision(request: AttestedDecisionCreateRequest) -> dict[str
     payload = request.model_dump()
     decision_input = DecisionInput(**{key: payload[key] for key in _DECISION_FIELDS})
     attestation_input = AttestationInput(
-        actor_id=payload["actor_id"],
+        actor_id=payload["submitted_by_actor_id"],
         identity_claim_id=payload["identity_claim_id"],
         attestation_method=payload["attestation_method"],
         credential_reference=payload["credential_reference"],
@@ -287,8 +301,6 @@ def create_attested_decision(request: AttestedDecisionCreateRequest) -> dict[str
                 decision_input=decision_input, attestation_input=attestation_input
             )
         )
-    except AttestationActorMismatch as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ActorNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ActorNotActive as exc:

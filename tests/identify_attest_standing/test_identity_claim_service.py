@@ -6,6 +6,16 @@ Require CDP_TEST_DATABASE_URL pointing at a database with
 001-decision-registry-kernel.sql and 010-identity-and-attestation.sql
 already applied.
 
+Recognition authority note (v0.2 review correction): recognizing, denying,
+or contesting a claim requires decided_by_actor_id to be the single
+seeded recognition-authority actor, 'cdp_identity_recognition_authority'
+(db/ddl/010-identity-and-attestation.sql, cdp/core/services.py's
+_decide_identity_claim). Tests below use that literal, pre-seeded actor_id
+rather than registering an arbitrary actor for the role -- an arbitrary
+registered actor is exactly what must now be rejected, covered by
+test_recognition_by_unauthorized_actor_is_rejected and
+test_recognition_authority_cannot_decide_its_own_claim below.
+
 Cleanup note: cdp_core.identity_claim and cdp_core.actor rows cannot be
 deleted (010 enforces this at the database level) -- see
 test_actor_service.py's module docstring for why tests do not attempt to
@@ -20,6 +30,10 @@ import uuid
 
 import psycopg
 from psycopg.rows import dict_row
+
+# Pre-seeded by 010-identity-and-attestation.sql; not registered by these
+# tests. See the module docstring above.
+RECOGNITION_AUTHORITY_ACTOR_ID = "cdp_identity_recognition_authority"
 
 
 def _database_url() -> str:
@@ -103,7 +117,6 @@ class IdentityClaimTests(unittest.TestCase):
         )
 
         actor_id = _register_actor("iaa-claim-recognize")
-        recognizer_id = _register_actor("iaa-claim-recognizer")
         claim = submit_identity_claim(
             IdentityClaimInput(
                 actor_id=actor_id,
@@ -116,16 +129,120 @@ class IdentityClaimTests(unittest.TestCase):
         result = recognize_identity_claim(
             IdentityClaimDecisionInput(
                 claim_id=claim["claim_id"],
-                decided_by_actor_id=recognizer_id,
+                decided_by_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
                 rationale="Evidence checked out.",
             )
         )
 
         recognized = result["identity_claim"]
         self.assertEqual(recognized["recognition_status"], "recognized")
-        self.assertEqual(recognized["recognized_by_actor_id"], recognizer_id)
+        self.assertEqual(recognized["recognized_by_actor_id"], RECOGNITION_AUTHORITY_ACTOR_ID)
         self.assertEqual(recognized["recognition_rationale"], "Evidence checked out.")
         self.assertIsNotNone(recognized["decided_at"])
+
+    def test_recognition_by_unauthorized_actor_is_rejected(self) -> None:
+        """An arbitrary registered actor -- not the seeded recognition
+        authority -- must not be able to produce a binding recognition
+        decision. This is the ambient-recognition gap the v0.2 review
+        correction closes."""
+        from cdp.core.services import (
+            IdentityClaimDecisionInput,
+            IdentityClaimInput,
+            RecognitionAuthorityRequired,
+            recognize_identity_claim,
+            submit_identity_claim,
+        )
+
+        actor_id = _register_actor("iaa-claim-unauth-subject")
+        unrelated_actor_id = _register_actor("iaa-claim-unauth-decider")
+        claim = submit_identity_claim(
+            IdentityClaimInput(
+                actor_id=actor_id,
+                claimant_actor_id=actor_id,
+                claimed_identity_descriptor="Should not be recognizable by just anyone.",
+                purpose_scope="decision_creation",
+            )
+        )["identity_claim"]
+
+        with self.assertRaises(RecognitionAuthorityRequired):
+            recognize_identity_claim(
+                IdentityClaimDecisionInput(
+                    claim_id=claim["claim_id"],
+                    decided_by_actor_id=unrelated_actor_id,
+                    rationale="I say it's fine.",
+                )
+            )
+
+        with psycopg.connect(_database_url(), row_factory=dict_row) as conn, conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT recognition_status FROM cdp_core.identity_claim WHERE claim_id = %s",
+                (claim["claim_id"],),
+            )
+            self.assertEqual(cursor.fetchone()["recognition_status"], "pending")
+
+    def test_claimant_cannot_recognize_their_own_claim(self) -> None:
+        """The claimant registering as decided_by_actor_id for their own
+        claim is rejected by the authority check alone (the claimant is
+        never the seeded authority) -- covered here as the concrete
+        "self-recognition" scenario the review explicitly asked to see
+        proven, distinct from an unrelated third party."""
+        from cdp.core.services import (
+            IdentityClaimDecisionInput,
+            IdentityClaimInput,
+            RecognitionAuthorityRequired,
+            recognize_identity_claim,
+            submit_identity_claim,
+        )
+
+        actor_id = _register_actor("iaa-claim-self-recognize")
+        claim = submit_identity_claim(
+            IdentityClaimInput(
+                actor_id=actor_id,
+                claimant_actor_id=actor_id,
+                claimed_identity_descriptor="Self-submitted, should not self-recognize.",
+                purpose_scope="decision_creation",
+            )
+        )["identity_claim"]
+
+        with self.assertRaises(RecognitionAuthorityRequired):
+            recognize_identity_claim(
+                IdentityClaimDecisionInput(
+                    claim_id=claim["claim_id"],
+                    decided_by_actor_id=actor_id,
+                    rationale="I recognize myself.",
+                )
+            )
+
+    def test_recognition_authority_cannot_decide_its_own_claim(self) -> None:
+        """Even the seeded recognition authority is forbidden from deciding
+        a claim where it is itself the claim's actor or claimant --
+        SelfRecognitionForbidden is independently reachable and
+        load-bearing, not merely implied by the authority check."""
+        from cdp.core.services import (
+            IdentityClaimDecisionInput,
+            IdentityClaimInput,
+            SelfRecognitionForbidden,
+            recognize_identity_claim,
+            submit_identity_claim,
+        )
+
+        claim = submit_identity_claim(
+            IdentityClaimInput(
+                actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
+                claimant_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
+                claimed_identity_descriptor="The authority's own claim about itself.",
+                purpose_scope="decision_creation",
+            )
+        )["identity_claim"]
+
+        with self.assertRaises(SelfRecognitionForbidden):
+            recognize_identity_claim(
+                IdentityClaimDecisionInput(
+                    claim_id=claim["claim_id"],
+                    decided_by_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
+                    rationale="I recognize myself.",
+                )
+            )
 
     def test_deny_claim_preserves_the_row_it_does_not_erase_it(self) -> None:
         from cdp.core.services import (
@@ -136,7 +253,6 @@ class IdentityClaimTests(unittest.TestCase):
         )
 
         actor_id = _register_actor("iaa-claim-deny")
-        denier_id = _register_actor("iaa-claim-denier")
         descriptor = "A claim that will be denied but never erased."
         claim = submit_identity_claim(
             IdentityClaimInput(
@@ -150,7 +266,7 @@ class IdentityClaimTests(unittest.TestCase):
         result = deny_identity_claim(
             IdentityClaimDecisionInput(
                 claim_id=claim["claim_id"],
-                decided_by_actor_id=denier_id,
+                decided_by_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
                 rationale="Evidence did not support the claim.",
             )
         )
@@ -176,7 +292,6 @@ class IdentityClaimTests(unittest.TestCase):
         )
 
         actor_id = _register_actor("iaa-claim-nodelete")
-        denier_id = _register_actor("iaa-claim-nodelete-denier")
         claim = submit_identity_claim(
             IdentityClaimInput(
                 actor_id=actor_id,
@@ -187,7 +302,9 @@ class IdentityClaimTests(unittest.TestCase):
         )["identity_claim"]
         deny_identity_claim(
             IdentityClaimDecisionInput(
-                claim_id=claim["claim_id"], decided_by_actor_id=denier_id, rationale="No."
+                claim_id=claim["claim_id"],
+                decided_by_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
+                rationale="No.",
             )
         )
 
@@ -209,7 +326,6 @@ class IdentityClaimTests(unittest.TestCase):
         )
 
         actor_id = _register_actor("iaa-claim-contest")
-        other_id = _register_actor("iaa-claim-contester")
         claim = submit_identity_claim(
             IdentityClaimInput(
                 actor_id=actor_id,
@@ -220,14 +336,16 @@ class IdentityClaimTests(unittest.TestCase):
         )["identity_claim"]
         recognize_identity_claim(
             IdentityClaimDecisionInput(
-                claim_id=claim["claim_id"], decided_by_actor_id=other_id, rationale="Looked fine."
+                claim_id=claim["claim_id"],
+                decided_by_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
+                rationale="Looked fine.",
             )
         )
 
         result = contest_identity_claim(
             IdentityClaimDecisionInput(
                 claim_id=claim["claim_id"],
-                decided_by_actor_id=other_id,
+                decided_by_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
                 rationale="New information raises doubt.",
             )
         )
@@ -243,7 +361,6 @@ class IdentityClaimTests(unittest.TestCase):
         )
 
         actor_id = _register_actor("iaa-claim-terminal")
-        decider_id = _register_actor("iaa-claim-terminal-decider")
         claim = submit_identity_claim(
             IdentityClaimInput(
                 actor_id=actor_id,
@@ -254,7 +371,9 @@ class IdentityClaimTests(unittest.TestCase):
         )["identity_claim"]
         deny_identity_claim(
             IdentityClaimDecisionInput(
-                claim_id=claim["claim_id"], decided_by_actor_id=decider_id, rationale="No."
+                claim_id=claim["claim_id"],
+                decided_by_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
+                rationale="No.",
             )
         )
 
@@ -262,7 +381,7 @@ class IdentityClaimTests(unittest.TestCase):
             deny_identity_claim(
                 IdentityClaimDecisionInput(
                     claim_id=claim["claim_id"],
-                    decided_by_actor_id=decider_id,
+                    decided_by_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
                     rationale="Still no.",
                 )
             )
@@ -276,7 +395,6 @@ class IdentityClaimTests(unittest.TestCase):
         )
 
         actor_id = _register_actor("iaa-claim-supersede")
-        recognizer_id = _register_actor("iaa-claim-supersede-recognizer")
         original = submit_identity_claim(
             IdentityClaimInput(
                 actor_id=actor_id,
@@ -288,7 +406,7 @@ class IdentityClaimTests(unittest.TestCase):
         recognize_identity_claim(
             IdentityClaimDecisionInput(
                 claim_id=original["claim_id"],
-                decided_by_actor_id=recognizer_id,
+                decided_by_actor_id=RECOGNITION_AUTHORITY_ACTOR_ID,
                 rationale="Fine for now.",
             )
         )

@@ -99,10 +99,23 @@ discipline:
   used as `decision_registry.subject_actor_id`, which predates this slice
   and was out of bounds to modify. This is a bridge, not a claim that the
   two vocabularies are equivalent.
-- **Recognizing, denying, or contesting a claim does not itself require
-  the deciding actor to hold any authority.** `decided_by_actor_id` must
-  reference a registered actor, nothing more -- no Authority Grant or
-  Standing check gates who may decide a claim in this slice.
+- **Recognition authority is a single hardcoded actor, not a delegable
+  grant.** `decided_by_actor_id` must equal the one seeded
+  `cdp_identity_recognition_authority` actor (v0.2 review correction,
+  `cdp/core/services.py`'s `_decide_identity_claim`) -- an arbitrary
+  registered actor, or the claimant itself, cannot decide a claim. This
+  closes the ambient-recognition gap the RFC-CDP-033 §11.1 constitutional
+  root explicitly warns against, but it is still not RFC-CDP-032 Authority:
+  there is no grant, scope, expiry, or delegation chain, and widening who
+  may hold this role requires a code change, not a governed act.
+- **The attestor and the decision's subject are independently recorded,
+  never required to be the same actor** (v0.2 review correction).
+  `attest_and_create_decision` no longer requires
+  `attestation_input.actor_id` to equal `decision_input.subject_actor_id`
+  -- a clinician (attestor) may attest a decision about a patient
+  (subject). The subject is not required to be a governed `cdp_core.actor`
+  at all, only a legacy-registered identifier, per
+  `decision_registry`'s pre-existing rules.
 
 ## Missing evidence
 

@@ -24,6 +24,21 @@
 --   Identity Claim," not cryptographic proof. See the session doc for the
 --   honest scope of what "verified" means in this slice.
 --
+-- v0.2 correction (review response, docs/session-027-identity-and-attestation.md):
+--   Two constitutional bugs from v0.1 are fixed here. First, the actor who
+--   attests a governed act is no longer required to equal that act's
+--   subject_actor_id -- a clinician attesting a decision about a patient,
+--   an adjuster attesting a decision about a claimant, are now
+--   representable; the attesting actor and the decision's subject are
+--   independently recorded and never collapsed into each other. Second,
+--   recognizing/denying/contesting an Identity Claim is no longer open to
+--   any registered actor -- it now requires the deciding actor to be the
+--   single seeded cdp_identity_recognition_authority actor below, and
+--   forbids that actor (or anyone) from deciding a claim where it is
+--   itself the claim's actor or claimant. This is still not RFC-CDP-032
+--   Authority -- it is the narrowest bounded recognition process that
+--   closes the ambient-recognition gap, not a grant/delegation model.
+--
 -- Design pattern note:
 --   Actors already exist today only as rows in cdp_core.identifier_registry
 --   (registry_name = 'actor'), referenced by every other table via
@@ -152,12 +167,24 @@ DO UPDATE SET
 -- slice's verification is a governed CDP process, not a human/institutional
 -- decision, so it is attributed to a named system actor rather than left
 -- implicit.
+--
+-- cdp_identity_recognition_authority is the single, narrow, bounded actor
+-- authorized to recognize, deny, or contest an Identity Claim in this
+-- slice (cdp/core/services.py's _decide_identity_claim requires
+-- decided_by_actor_id to equal this exact actor_id, and separately
+-- forbids an actor deciding a claim where it is itself the claim's actor
+-- or claimant, even if it is this actor). This is deliberately not RFC-
+-- CDP-032 Authority -- no grant, scope, or delegation model -- it is the
+-- narrowest seeded recognition process that prevents an arbitrary
+-- registered actor, or a claimant, from producing a binding "recognized"
+-- status. See the file header and docs/session-027-identity-and-attestation.md.
 INSERT INTO cdp_core.identifier_registry (
     registry_name, identifier_id, identifier_type_registry_name, identifier_type_id,
     display_label, description, status
 )
 VALUES
-    ('actor', 'cdp_attestation_service', 'actor_type', 'system', 'CDP Attestation Service', 'System actor that performs claim-based attestation verification for this slice.', 'active')
+    ('actor', 'cdp_attestation_service', 'actor_type', 'system', 'CDP Attestation Service', 'System actor that performs claim-based attestation verification for this slice.', 'active'),
+    ('actor', 'cdp_identity_recognition_authority', 'actor_type', 'institution', 'CDP Identity Recognition Authority', 'The single governed process authorized to recognize, deny, or contest Identity Claims in this slice.', 'active')
 ON CONFLICT (registry_name, identifier_id)
 DO UPDATE SET
     identifier_type_registry_name = EXCLUDED.identifier_type_registry_name,
@@ -269,6 +296,14 @@ DROP TRIGGER IF EXISTS trg_actor_forbid_delete ON cdp_core.actor;
 CREATE TRIGGER trg_actor_forbid_delete
 BEFORE DELETE ON cdp_core.actor
 FOR EACH ROW EXECUTE FUNCTION cdp_core.forbid_actor_delete();
+
+-- Governed cdp_core.actor row for the recognition authority (its
+-- identifier_registry row was seeded above). Inserted directly, not
+-- through the application's register_actor path, since it is a seeded
+-- system fixture rather than something a caller registers.
+INSERT INTO cdp_core.actor (actor_id, actor_type, display_mode, actor_status)
+VALUES ('cdp_identity_recognition_authority', 'institution', 'public', 'active')
+ON CONFLICT (actor_registry_name, actor_id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
 -- cdp_core.identity_claim
