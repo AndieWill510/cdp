@@ -87,10 +87,11 @@ independently rejected), and by
 cases, including a full actor/claim/attestation/decision round trip, a
 protected-actor redaction check, and the Alice-attests/Bob-is-the-subject
 proof) exercised through a live `uvicorn` process and Postgres. Confirmed
-passing in CI job `full-cdp-slice-tests`, run `30704929899` (PR #41 head
-commit `f8ae3d0`, 2026-08-01T14:59:19Z, conclusion `success`, the
-v0.2-corrected model), alongside the full pre-existing suite with no
-regressions.
+passing in CI job `full-cdp-slice-tests`, run `30704929899` on commit
+`f8ae3d0` (2026-08-01T14:59:19Z, conclusion `success`, the v0.2-corrected
+code), re-confirmed unchanged by run `30705068165` on `46afc46` (PR #41's
+actual merged head -- only evidence-doc text differed between the two
+commits), alongside the full pre-existing suite with no regressions.
 
 This is not authentication, authorization, or personhood: no password,
 token, or key material is stored; "verified" means the actor is active and

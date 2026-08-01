@@ -1,10 +1,12 @@
 # Session 027 — Identity and Attestation
 
-Status: v0.2, correcting two constitutional bugs a review of v0.1 (PR #41,
-head `70ef08b`) identified before merge. Verified locally and confirmed
-passing in CI on the corrected commit (run `30704929899`, head `f8ae3d0`).
-Not yet reviewed/merged. This file documents what already exists in the
-working tree, not a plan for future work.
+Status: merged (PR #41, merge commit `2b2cc5c`). v0.2 corrected two
+constitutional bugs a review of v0.1 (head `70ef08b`) identified before
+merge; the corrected code (commit `f8ae3d0`) was confirmed passing in CI
+run `30704929899`, then re-confirmed unchanged by run `30705068165` on
+`46afc46`, PR #41's actual merged head (only evidence-doc text differed
+between the two commits, not the code). This file documents what existed
+in the working tree at merge time, not a plan for future work.
 
 Scope: **Identity and Attestation** (RFC-CDP-030 Identify Protocol,
 RFC-CDP-031 Attest Protocol), the constitutional goal being: CDP can
@@ -246,17 +248,21 @@ Postgres, live `uvicorn`):
   routes.
 - `ruff check cdp` — passes with no findings.
 
-**GitHub Actions:** CI run `30704929899` on head commit `f8ae3d0`
+**GitHub Actions:** CI run `30704929899` on commit `f8ae3d0`
 (2026-08-01T14:59:19Z) — both `PR guard (static, no DB)` and
 `Full CDP slice tests (Postgres/service/API)` completed with conclusion
-`success` on the v0.2-corrected model.
+`success` on the v0.2-corrected code. A follow-up doc-only commit,
+`46afc46` (updating these evidence citations), was PR #41's actual merged
+head; CI re-ran and passed on it too (run `30705068165`), confirming the
+citation update didn't silently change behavior.
 
 ## 6. Evidence level reached
 
 Identify and Attest are rated **Integration Tested (E4)** in
-`evidence/000-current-state.md`, cited to CI run `30704929899` on PR #41's
-head commit `f8ae3d0` — the v0.2-corrected model, not the v0.1 citation
-(`30677856180`, `70ef08b`) this superseded.
+`evidence/000-current-state.md`, cited to CI run `30704929899` on commit
+`f8ae3d0` — the v0.2-corrected model, not the v0.1 citation
+(`30677856180`, `70ef08b`) this superseded — re-confirmed unchanged by run
+`30705068165` on `46afc46`, PR #41's actual merged head.
 
 ## 7. A real gap found along the way, and how it was resolved
 

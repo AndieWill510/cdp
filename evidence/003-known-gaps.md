@@ -80,8 +80,9 @@ No code exists under a canonical implementation path (`cdp/`) for these:
 
 Identify and Attest (RFC-CDP-030, RFC-CDP-031) are now **Integration
 Tested (E4)** for the bounded decision-creation proof path (see
-`000-current-state.md`, cited to CI run `30704929899`, PR #41 head
-`46afc46`): actor registration, identity-claim submission/recognition,
+`000-current-state.md`, cited to CI run `30704929899` on commit `f8ae3d0`,
+re-confirmed unchanged by run `30705068165` on `46afc46`, PR #41's actual
+merged head): actor registration, identity-claim submission/recognition,
 claim preservation under denial/contest, protected/pseudonymous display,
 attested decision creation, distinct attestor/subject preservation, and
 decision-level attestation lookup are all exercised through the live API
