@@ -1,6 +1,6 @@
 # Known Gaps
 
-Status: Draft v0.2 -- as of 2026-08-01, PR #41 head `46afc46`
+Status: Draft v0.3 -- as of 2026-08-01, session 028 (Authority and Delegation) working tree, building on PR #41 head `46afc46`
 
 This document describes known gaps, limitations, and evidence boundaries:
 capabilities the constitutional or architecture layer expects but that are
@@ -21,11 +21,6 @@ No code exists under a canonical implementation path (`cdp/`) for these:
   Claim recognition (RFC-CDP-030/033 §11.2) is not Standing: a recognized
   claim establishes who an actor is for a governed purpose, not whether
   that actor has the right to participate in a specific decision stage.
-- **Authority and Delegation** (RFC-CDP-032) — no authority-grant,
-  delegation, or authority-evaluation code. `attest_and_create_decision`
-  checks actor existence/activeness and identity-claim recognition/scope,
-  not authority in RFC-CDP-032's sense (no `Authority Grant` object, no
-  separation-of-duties, no quorum, no delegation chain).
 - **Test Protocol** (RFC-CDP-043) — no code implements this as a discrete
   evidence-gathering step distinct from adjudication.
 - **Legitimize** (RFC-CDP-045) — no corresponding route, service function,
@@ -42,17 +37,21 @@ No code exists under a canonical implementation path (`cdp/`) for these:
   `tests/misc/test_self_canonicalizing_ingestion.py` itself. That file's docstring
   states the embedded code is meant to "prove the contract, not a production
   loader." No module under `cdp/` implements ingestion.
-- **Application authentication, general authorization, and a policy
-  engine.** No caller authentication, session model, OAuth/OIDC/SAML, or
-  general authority-grant evaluator exists in the canonical `cdp/` path.
-  `README-control-plane-v0.1.md` states the same of the (dormant)
-  `src/cdp_control_plane` prototype: "No auth. No UI. No policy engine. No
-  migration framework." The seeded identity-recognition authority added in
-  PR #41 (`cdp_identity_recognition_authority`, see the Identity and
-  Attestation section below) does not change this -- it is a single
-  hardcoded, bounded guardrail against ambient identity-claim recognition,
-  not a general authorization system, and it predates neither RFC-CDP-032
-  Authority nor any caller-identity/session mechanism.
+- **Application authentication and a general policy engine.** No caller
+  authentication, session model, or OAuth/OIDC/SAML exists in the
+  canonical `cdp/` path. `README-control-plane-v0.1.md` states the same of
+  the (dormant) `src/cdp_control_plane` prototype: "No auth. No UI. No
+  policy engine. No migration framework." A bounded RFC-CDP-032 Authority
+  Grant/evaluation mechanism now exists (session 028 -- see the Authority
+  section below), but it is not a general authorization system: it
+  evaluates exactly one authority type (`PROPOSE`) for exactly one
+  governed act (decision creation), grants can only be issued or revoked
+  by a single hardcoded seeded actor, and nothing in it authenticates an
+  HTTP caller's identity -- every actor_id in every request is accepted at
+  face value. Likewise, the seeded identity-recognition authority added in
+  PR #41 (`cdp_identity_recognition_authority`) remains a single hardcoded,
+  bounded guardrail against ambient identity-claim recognition, not a
+  general authorization system.
 
 ## Missing standalone protocol surface
 
@@ -158,6 +157,52 @@ discipline:
 - **No production deployment evidence exists for this slice**, consistent
   with every other capability in this repository -- see "Production
   operation" under Missing evidence below.
+
+## Authority (RFC-CDP-032) -- known limitations of the SS19 Minimal Compliance slice
+
+Session 028 rates Authority at E3 (Runtime Tested) in
+`000-current-state.md` -- passing locally, CI-pending. The items below are
+the honest boundaries of that scope, not a claim that RFC-CDP-032 is
+implemented in full:
+
+- **No delegation.** RFC-CDP-032 SS8's entire delegation model (a
+  delegator, a delegation chain, `may_delegate`, recipient/scope/validity
+  propagation) is absent. `grant_type` (SS6:
+  `direct | delegated | quorum | presence | emergency | repair |
+  sovereignty`) is not even a column -- every grant this slice can issue
+  is implicitly "direct."
+- **No quorum, presence (beyond a pre-existing, narrower table), or
+  emergency/repair/sovereignty grant types** (SS12, SS14, SS15).
+  `cdp_core.execution_authorization_record` (session 025) already covers
+  a narrower slice of "presence"-shaped ground and predates this session;
+  it is not unified with `cdp_core.authority_grant` here.
+- **No separation-of-duties enforcement** (SS11) -- nothing prevents the
+  same actor from holding conflicting authorities.
+- **Only `PROPOSE` is evaluated.** All 23 RFC-CDP-032 SS5 authority types
+  are seeded as controlled vocabulary (so a future slice can grant and
+  evaluate them without a schema change), but no code path checks any
+  authority type except `PROPOSE`, and only for decision creation.
+- **Authority decay is a single `expires_at` comparison.** RFC-CDP-032
+  SS9 names many decay triggers (policy version change, role change, risk
+  reclassification, active-challenge conflict, jurisdiction change...);
+  this slice tracks none of them.
+- **Scope is a two-level hierarchy, not RFC-CDP-032 SS6's full scope
+  object.** `scope_registry_name` + nullable `scope_decision_class_id`
+  (with an explicit wildcard rule) is a real hierarchy, a genuine step
+  past Identity's flat string-equality `purpose_scope` -- but it has no
+  jurisdiction, `risk_level_max`, environment, target-systems,
+  affected-parties, or repair-agenda dimensions.
+- **The grant issuer is a single hardcoded seeded actor**
+  (`cdp_authority_grant_issuer`), not a delegable role -- the same
+  documented limitation session 027 v0.2 accepted for the identity
+  recognition authority, applied here from the start. Widening it
+  requires a code change, not a governed act.
+- **Caller authentication does not exist here either** -- the same gap
+  named in the Identity and Attestation section above applies identically
+  to `POST /authority-grants`: `issued_by_actor_id` and
+  `revoked_by_actor_id` are accepted at face value, not proven to be the
+  HTTP caller.
+- **No production deployment evidence exists for this slice.**
 
 ## RFC index/manifest verification -- known limitation of a working check
 

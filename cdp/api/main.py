@@ -9,6 +9,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from cdp import __version__
+from cdp.api.authority import router as authority_router
 from cdp.api.decisions import router as decisions_router
 from cdp.api.identity import router as identity_router
 
@@ -20,6 +21,7 @@ app = FastAPI(
 
 app.include_router(decisions_router)
 app.include_router(identity_router)
+app.include_router(authority_router)
 
 
 @app.get("/health", tags=["system"])

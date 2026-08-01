@@ -27,6 +27,16 @@ decision concerns Bob, neither identity collapses into the other. Claim
 recognition below uses the seeded recognition-authority actor_id (see
 test_identity_claim_service.py's module docstring) rather than an
 arbitrary registered actor.
+
+Authority slice (session 028, RFC-CDP-032): attest_and_create_decision now
+also requires the attesting actor to hold an active, unexpired PROPOSE
+authority grant scoped to the decision's registry_name/decision_class_id
+before it will create the decision -- see
+tests/authority/test_authority_grant_service.py's module docstring for the
+same seeded-issuer discipline applied to grants. Every test below that
+reaches decision creation now grants that authority as part of setup via
+_grant_propose_authority; the identity-claim failure-path tests do not,
+since those checks run before the authority check and never reach it.
 """
 
 from __future__ import annotations
@@ -34,7 +44,7 @@ from __future__ import annotations
 import os
 import unittest
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest import mock
 
 import psycopg
@@ -46,6 +56,11 @@ DECISION_CLASS_ID = "claim_approval"
 # Pre-seeded by 010-identity-and-attestation.sql; not registered by these
 # tests. See test_identity_claim_service.py's module docstring.
 RECOGNITION_AUTHORITY_ACTOR_ID = "cdp_identity_recognition_authority"
+
+# Pre-seeded by 011-authority-and-delegation.sql; not registered by these
+# tests. See tests/authority/test_authority_grant_service.py's module
+# docstring.
+GRANT_ISSUER_ACTOR_ID = "cdp_authority_grant_issuer"
 
 
 def _database_url() -> str:
@@ -114,6 +129,28 @@ def _submit_and_recognize_claim(actor_id: str, *, purpose_scope: str = "decision
     return claim["claim_id"]
 
 
+def _grant_propose_authority(
+    actor_id: str,
+    *,
+    scope_registry_name: str = REGISTRY_NAME,
+    scope_decision_class_id: str | None = DECISION_CLASS_ID,
+    expires_at=None,
+):
+    from cdp.core.services import GrantAuthorityInput, grant_authority
+
+    grant_authority(
+        GrantAuthorityInput(
+            actor_id=actor_id,
+            authority="PROPOSE",
+            scope_registry_name=scope_registry_name,
+            scope_decision_class_id=scope_decision_class_id,
+            expires_at=expires_at or (datetime.now(UTC) + timedelta(days=1)),
+            issued_by_actor_id=GRANT_ISSUER_ACTOR_ID,
+            basis="policy",
+        )
+    )
+
+
 def _make_decision_input(decision_id: str, subject_actor_id: str):
     from cdp.core.services import DecisionInput
 
@@ -174,6 +211,7 @@ class AttestAndCreateDecisionTests(unittest.TestCase):
 
         actor_id = _register_actor("iaa-attest-happy")
         claim_id = _submit_and_recognize_claim(actor_id)
+        _grant_propose_authority(actor_id)
         decision_id = _unique("iaa-attested-decision")
 
         result = attest_and_create_decision(
@@ -189,6 +227,10 @@ class AttestAndCreateDecisionTests(unittest.TestCase):
         self.assertEqual(attestation["actor_id"], actor_id)
         self.assertEqual(attestation["verification_result"], "verified")
         self.assertEqual(attestation["governed_act_decision_id"], decision_id)
+        evaluation = result["authority_evaluation"]
+        self.assertEqual(evaluation["result"], "pass")
+        self.assertEqual(evaluation["actor_id"], actor_id)
+        self.assertEqual(evaluation["required_authority"], "PROPOSE")
 
         with psycopg.connect(_database_url(), row_factory=dict_row) as conn, conn.cursor() as cursor:
             cursor.execute(
@@ -203,6 +245,17 @@ class AttestAndCreateDecisionTests(unittest.TestCase):
             self.assertEqual(row["verification_result"], "verified")
 
             cursor.execute(
+                "SELECT actor_id, result, matched_authority_grant_id "
+                "FROM cdp_core.authority_evaluation_result "
+                "WHERE governed_act_registry_name = %s AND governed_act_decision_id = %s",
+                (REGISTRY_NAME, decision_id),
+            )
+            row = cursor.fetchone()
+            self.assertEqual(row["actor_id"], actor_id)
+            self.assertEqual(row["result"], "pass")
+            self.assertIsNotNone(row["matched_authority_grant_id"])
+
+            cursor.execute(
                 "SELECT event_type FROM cdp_audit.event_log "
                 "WHERE payload ->> 'registry_name' = %s AND payload ->> 'decision_id' = %s "
                 "ORDER BY event_sequence",
@@ -211,7 +264,13 @@ class AttestAndCreateDecisionTests(unittest.TestCase):
             event_types = [row["event_type"] for row in cursor.fetchall()]
             self.assertEqual(
                 event_types,
-                ["decision.created", "workflow.started", "task.created", "attestation.recorded"],
+                [
+                    "decision.created",
+                    "workflow.started",
+                    "task.created",
+                    "attestation.recorded",
+                    "authority.evaluated",
+                ],
             )
 
     def test_unknown_actor_fails_closed_and_nothing_is_persisted(self) -> None:
@@ -268,6 +327,7 @@ class AttestAndCreateDecisionTests(unittest.TestCase):
         alice_actor_id = _register_actor("iaa-attest-alice")
         bob_actor_id = _register_actor("iaa-attest-bob")
         alice_claim_id = _submit_and_recognize_claim(alice_actor_id)
+        _grant_propose_authority(alice_actor_id)
         decision_id = _unique("iaa-attested-decision-distinct-roles")
 
         result = attest_and_create_decision(
@@ -370,6 +430,7 @@ class AttestAndCreateDecisionTests(unittest.TestCase):
 
         actor_id = _register_actor("iaa-attest-rollback")
         claim_id = _submit_and_recognize_claim(actor_id)
+        _grant_propose_authority(actor_id)
         decision_id = _unique("iaa-attested-decision-rollback")
 
         with mock.patch(
@@ -396,6 +457,152 @@ class AttestAndCreateDecisionTests(unittest.TestCase):
                 (REGISTRY_NAME, decision_id),
             )
             self.assertEqual(cursor.fetchone()["n"], 0, "no audit event should survive rollback")
+
+    def test_missing_authority_fails_closed(self) -> None:
+        from cdp.core.services import AttestedDecisionInput, AuthorityNotGranted, attest_and_create_decision
+
+        actor_id = _register_actor("iaa-attest-noauth")
+        claim_id = _submit_and_recognize_claim(actor_id)
+        # Deliberately no _grant_propose_authority call.
+        decision_id = _unique("iaa-attested-decision-noauth")
+
+        with self.assertRaises(AuthorityNotGranted):
+            attest_and_create_decision(
+                AttestedDecisionInput(
+                    decision_input=_make_decision_input(decision_id, actor_id),
+                    attestation_input=_make_attestation_input(actor_id, claim_id),
+                )
+            )
+        self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 0)
+
+    def test_wrong_registry_scope_authority_fails_closed(self) -> None:
+        from cdp.core.services import AttestedDecisionInput, AuthorityNotGranted, attest_and_create_decision
+
+        actor_id = _register_actor("iaa-attest-wrongregistry")
+        claim_id = _submit_and_recognize_claim(actor_id)
+        _grant_propose_authority(actor_id, scope_registry_name="a_different_registry")
+        decision_id = _unique("iaa-attested-decision-wrongregistry")
+
+        with self.assertRaises(AuthorityNotGranted):
+            attest_and_create_decision(
+                AttestedDecisionInput(
+                    decision_input=_make_decision_input(decision_id, actor_id),
+                    attestation_input=_make_attestation_input(actor_id, claim_id),
+                )
+            )
+        self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 0)
+
+    def test_wrong_decision_class_scope_authority_fails_closed(self) -> None:
+        """A grant scoped to a specific, different decision_class_id (not
+        the wildcard NULL) must not cover this decision's class."""
+        from cdp.core.services import AttestedDecisionInput, AuthorityNotGranted, attest_and_create_decision
+
+        actor_id = _register_actor("iaa-attest-wrongclass")
+        claim_id = _submit_and_recognize_claim(actor_id)
+        _grant_propose_authority(actor_id, scope_decision_class_id="some_other_decision_class")
+        decision_id = _unique("iaa-attested-decision-wrongclass")
+
+        with self.assertRaises(AuthorityNotGranted):
+            attest_and_create_decision(
+                AttestedDecisionInput(
+                    decision_input=_make_decision_input(decision_id, actor_id),
+                    attestation_input=_make_attestation_input(actor_id, claim_id),
+                )
+            )
+        self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 0)
+
+    def test_wildcard_scope_authority_grant_covers_any_decision_class(self) -> None:
+        from cdp.core.services import AttestedDecisionInput, attest_and_create_decision
+
+        actor_id = _register_actor("iaa-attest-wildcard")
+        claim_id = _submit_and_recognize_claim(actor_id)
+        _grant_propose_authority(actor_id, scope_decision_class_id=None)
+        decision_id = _unique("iaa-attested-decision-wildcard")
+
+        result = attest_and_create_decision(
+            AttestedDecisionInput(
+                decision_input=_make_decision_input(decision_id, actor_id),
+                attestation_input=_make_attestation_input(actor_id, claim_id),
+            )
+        )
+        self.assertEqual(result["authority_evaluation"]["result"], "pass")
+
+    def test_expired_authority_grant_fails_closed(self) -> None:
+        from cdp.core.services import AttestedDecisionInput, AuthorityNotGranted, attest_and_create_decision
+
+        actor_id = _register_actor("iaa-attest-expired")
+        claim_id = _submit_and_recognize_claim(actor_id)
+        # A grant that is already expired: effective_at defaults to
+        # issued_at (now), so an expires_at one second later followed by
+        # evaluation slightly afterward is enough to reliably lapse it --
+        # but to keep this deterministic under CI timing variance, insert
+        # the already-expired grant directly rather than racing the clock.
+        with psycopg.connect(_database_url()) as conn, conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO cdp_core.authority_grant
+                    (actor_id, authority, scope_registry_name, scope_decision_class_id,
+                     issued_at, effective_at, expires_at, issuer_actor_id, basis)
+                VALUES
+                    (%s, 'PROPOSE', %s, %s,
+                     now() - interval '2 days', now() - interval '2 days',
+                     now() - interval '1 day', %s, 'policy')
+                """,
+                (actor_id, REGISTRY_NAME, DECISION_CLASS_ID, GRANT_ISSUER_ACTOR_ID),
+            )
+            conn.commit()
+        decision_id = _unique("iaa-attested-decision-expired")
+
+        with self.assertRaises(AuthorityNotGranted):
+            attest_and_create_decision(
+                AttestedDecisionInput(
+                    decision_input=_make_decision_input(decision_id, actor_id),
+                    attestation_input=_make_attestation_input(actor_id, claim_id),
+                )
+            )
+        self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 0)
+
+    def test_revoked_authority_grant_fails_closed(self) -> None:
+        from cdp.core.services import (
+            AttestedDecisionInput,
+            AuthorityNotGranted,
+            GrantAuthorityInput,
+            RevokeAuthorityInput,
+            attest_and_create_decision,
+            grant_authority,
+            revoke_authority,
+        )
+
+        actor_id = _register_actor("iaa-attest-revokedauth")
+        claim_id = _submit_and_recognize_claim(actor_id)
+        grant = grant_authority(
+            GrantAuthorityInput(
+                actor_id=actor_id,
+                authority="PROPOSE",
+                scope_registry_name=REGISTRY_NAME,
+                scope_decision_class_id=DECISION_CLASS_ID,
+                expires_at=datetime.now(UTC) + timedelta(days=1),
+                issued_by_actor_id=GRANT_ISSUER_ACTOR_ID,
+                basis="policy",
+            )
+        )["authority_grant"]
+        revoke_authority(
+            RevokeAuthorityInput(
+                grant_id=grant["authority_grant_id"],
+                revoked_by_actor_id=GRANT_ISSUER_ACTOR_ID,
+                reason="Revoked before use.",
+            )
+        )
+        decision_id = _unique("iaa-attested-decision-revokedauth")
+
+        with self.assertRaises(AuthorityNotGranted):
+            attest_and_create_decision(
+                AttestedDecisionInput(
+                    decision_input=_make_decision_input(decision_id, actor_id),
+                    attestation_input=_make_attestation_input(actor_id, claim_id),
+                )
+            )
+        self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 0)
 
 
 if __name__ == "__main__":

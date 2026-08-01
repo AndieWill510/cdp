@@ -25,6 +25,12 @@ decided_by_actor_id to be the seeded recognition-authority actor,
 RECOGNITION_AUTHORITY_ACTOR_ID below -- see
 test_recognize_claim_by_unauthorized_actor_returns_403 and
 test_self_recognition_returns_403.
+
+Authority slice (session 028, RFC-CDP-032): /attested-decisions now also
+requires submitted_by_actor_id to hold an active, unexpired PROPOSE
+authority grant scoped to the decision's registry_name/decision_class_id,
+issued via POST /authority-grants by the seeded GRANT_ISSUER_ACTOR_ID
+below -- see test_attested_decision_without_authority_grant_returns_403.
 """
 
 from __future__ import annotations
@@ -34,7 +40,7 @@ import os
 import urllib.error
 import urllib.request
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -45,6 +51,10 @@ DECISION_CLASS_ID = "claim_approval"
 # Pre-seeded by 010-identity-and-attestation.sql; not registered by these
 # tests.
 RECOGNITION_AUTHORITY_ACTOR_ID = "cdp_identity_recognition_authority"
+
+# Pre-seeded by 011-authority-and-delegation.sql; not registered by these
+# tests.
+GRANT_ISSUER_ACTOR_ID = "cdp_authority_grant_issuer"
 
 
 def _request(method: str, url: str, payload: dict | None = None) -> tuple[int, dict]:
@@ -114,6 +124,27 @@ def _recognize_claim(claim_id: str, decided_by_actor_id: str = RECOGNITION_AUTHO
     assert status == 200, f"expected 200, got {status}: {body}"
 
 
+def _grant_propose_authority(
+    actor_id: str,
+    *,
+    scope_registry_name: str = REGISTRY_NAME,
+    scope_decision_class_id: str | None = DECISION_CLASS_ID,
+) -> None:
+    status, body = _post_json(
+        f"{API_URL}/authority-grants",
+        {
+            "actor_id": actor_id,
+            "authority": "PROPOSE",
+            "scope_registry_name": scope_registry_name,
+            "scope_decision_class_id": scope_decision_class_id,
+            "expires_at": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
+            "issued_by_actor_id": GRANT_ISSUER_ACTOR_ID,
+            "basis": "policy",
+        },
+    )
+    assert status == 201, f"expected 201, got {status}: {body}"
+
+
 def _attested_decision_payload(
     attestor_actor_id: str, claim_id: str, decision_id: str, *, subject_actor_id: str | None = None
 ) -> dict:
@@ -142,6 +173,7 @@ def test_full_actor_claim_attestation_round_trip_and_governed_mutation_succeeds(
     actor_id = _register_actor()
     claim_id = _submit_claim(actor_id)
     _recognize_claim(claim_id)
+    _grant_propose_authority(actor_id)
     decision_id = _unique("iaa-api-decision")
 
     status, body = _post_json(
@@ -151,6 +183,7 @@ def test_full_actor_claim_attestation_round_trip_and_governed_mutation_succeeds(
     assert body["decision"]["decision_id"] == decision_id
     assert body["decision"]["subject_actor_id"] == actor_id
     assert body["attestation"]["verification_result"] == "verified"
+    assert body["authority_evaluation"]["result"] == "pass"
     attestation_id = body["attestation"]["attestation_id"]
 
     actor_status, actor_body = _get_json(f"{API_URL}/actors/{actor_id}")
@@ -178,6 +211,13 @@ def test_full_actor_claim_attestation_round_trip_and_governed_mutation_succeeds(
     assert list_status == 200
     assert [a["attestation_id"] for a in list_body["attestations"]] == [attestation_id]
 
+    eval_status, eval_body = _get_json(
+        f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}/authority-evaluations"
+    )
+    assert eval_status == 200
+    assert len(eval_body["authority_evaluations"]) == 1
+    assert eval_body["authority_evaluations"][0]["result"] == "pass"
+
 
 def test_attested_decision_attestor_and_subject_may_differ() -> None:
     """The proof path the v0.2 review asked for: Alice attests, the
@@ -187,6 +227,7 @@ def test_attested_decision_attestor_and_subject_may_differ() -> None:
     bob_actor_id = _register_actor()
     claim_id = _submit_claim(alice_actor_id)
     _recognize_claim(claim_id)
+    _grant_propose_authority(alice_actor_id)
     decision_id = _unique("iaa-api-decision-distinct-roles")
 
     status, body = _post_json(
@@ -246,6 +287,14 @@ def test_decision_attestations_list_against_missing_decision_returns_404() -> No
     assert "detail" in body
 
 
+def test_decision_authority_evaluations_list_against_missing_decision_returns_404() -> None:
+    status, body = _get_json(
+        f"{API_URL}/decisions/{REGISTRY_NAME}/{_unique('iaa-api-missing-decision')}/authority-evaluations"
+    )
+    assert status == 404
+    assert "detail" in body
+
+
 def test_attested_decision_missing_credential_reference_returns_422() -> None:
     actor_id = _register_actor()
     claim_id = _submit_claim(actor_id)
@@ -271,6 +320,22 @@ def test_attested_decision_with_unrecognized_claim_returns_409() -> None:
         f"{API_URL}/attested-decisions", _attested_decision_payload(actor_id, claim_id, decision_id)
     )
     assert status == 409, f"expected 409, got {status}: {body}"
+
+    get_status, _ = _get_json(f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}")
+    assert get_status == 404, "no decision should have been created"
+
+
+def test_attested_decision_without_authority_grant_returns_403() -> None:
+    actor_id = _register_actor()
+    claim_id = _submit_claim(actor_id)
+    _recognize_claim(claim_id)
+    # Deliberately no _grant_propose_authority call.
+    decision_id = _unique("iaa-api-decision-noauth")
+
+    status, body = _post_json(
+        f"{API_URL}/attested-decisions", _attested_decision_payload(actor_id, claim_id, decision_id)
+    )
+    assert status == 403, f"expected 403, got {status}: {body}"
 
     get_status, _ = _get_json(f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}")
     assert get_status == 404, "no decision should have been created"

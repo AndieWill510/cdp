@@ -46,6 +46,14 @@ operation with a matching audit trail. See
 db/ddl/010-identity-and-attestation.sql for the constitutional scope note
 on what "verified" honestly means in this slice, and for why this
 deliberately does not implement Authority, Standing, Legitimize, or Repair.
+
+grant_authority, revoke_authority, and attest_and_create_decision's
+Authority gate are the Authority slice (RFC-CDP-032), scoped to that RFC's
+SS19 Minimal Compliance: a governed Authority Grant, a governed Authority
+Evaluation Result, and a single bounded actor authorized to issue or
+revoke grants -- no delegation, no quorum, no separation-of-duties
+enforcement. See db/ddl/011-authority-and-delegation.sql for the full
+boundary statement.
 """
 
 from __future__ import annotations
@@ -62,6 +70,7 @@ from cdp.core.repositories import actors as actors_repo
 from cdp.core.repositories import adjudications as adjudications_repo
 from cdp.core.repositories import attestations as attestations_repo
 from cdp.core.repositories import audit as audit_repo
+from cdp.core.repositories import authority as authority_repo
 from cdp.core.repositories import challenges as challenges_repo
 from cdp.core.repositories import decisions as decisions_repo
 from cdp.core.repositories import execution_authorizations as execution_authorizations_repo
@@ -174,6 +183,22 @@ class IdentityClaimNotRecognized(Exception):
 
 class IdentityClaimScopeInsufficient(Exception):
     """The identity claim's purpose_scope does not cover the requested governed act."""
+
+
+class AuthorityGrantIssuerRequired(Exception):
+    """The issuing/revoking actor is not the seeded authority-grant issuer."""
+
+
+class AuthorityGrantNotFound(Exception):
+    """No authority grant exists for the given grant_id."""
+
+
+class AuthorityGrantNotActive(Exception):
+    """The authority grant is not currently 'active' and cannot be revoked again."""
+
+
+class AuthorityNotGranted(Exception):
+    """No active, unexpired, in-scope authority grant covers this act."""
 
 
 # A workflow that has been (re-)blocked by a new challenge raised after
@@ -1167,6 +1192,166 @@ def contest_identity_claim(decision_input: IdentityClaimDecisionInput) -> dict[s
     )
 
 
+# ---------------------------------------------------------------------------
+# Authority (RFC-CDP-032), scoped to SS19 Minimal Compliance
+# ---------------------------------------------------------------------------
+#
+# See db/ddl/011-authority-and-delegation.sql's header for the full
+# boundary statement. In one line: a governed Authority Grant, a governed
+# Authority Evaluation Result, and a single bounded actor who may issue or
+# revoke grants -- no delegation, no quorum, no separation-of-duties
+# enforcement, no grant types beyond RFC-CDP-032's implicit "direct".
+
+_AUTHORITY_GRANT_ISSUER_ACTOR_ID = "cdp_authority_grant_issuer"
+_PROPOSE_AUTHORITY = "PROPOSE"
+
+
+@dataclass(frozen=True)
+class GrantAuthorityInput:
+    actor_id: str
+    authority: str
+    scope_registry_name: str
+    expires_at: datetime
+    issued_by_actor_id: str
+    basis: str
+    scope_decision_class_id: str | None = None
+    issued_at: datetime | None = None
+    effective_at: datetime | None = None
+
+
+def grant_authority(grant_input: GrantAuthorityInput) -> dict[str, Any]:
+    """Issue an Authority Grant. Only the seeded
+    _AUTHORITY_GRANT_ISSUER_ACTOR_ID may issue one -- RFC-CDP-032 SS3: "No
+    anonymous authority. No ambient authority." Runs inside exactly one
+    transaction: the grant row and its audit event commit or roll back
+    together.
+    """
+    if grant_input.issued_by_actor_id != _AUTHORITY_GRANT_ISSUER_ACTOR_ID:
+        raise AuthorityGrantIssuerRequired(
+            f"Actor {grant_input.issued_by_actor_id!r} is not the authority-grant issuer "
+            "and cannot issue authority grants"
+        )
+
+    issued_at = grant_input.issued_at or datetime.now(UTC)
+    effective_at = grant_input.effective_at or issued_at
+
+    with db.transaction() as cursor:
+        actor = actors_repo.fetch_actor(cursor, actor_id=grant_input.actor_id)
+        if actor is None:
+            raise ActorNotFound(f"No registered actor {grant_input.actor_id!r}")
+
+        grant = authority_repo.insert_grant(
+            cursor,
+            actor_id=grant_input.actor_id,
+            authority=grant_input.authority,
+            scope_registry_name=grant_input.scope_registry_name,
+            scope_decision_class_id=grant_input.scope_decision_class_id,
+            issued_at=issued_at,
+            effective_at=effective_at,
+            expires_at=grant_input.expires_at,
+            issuer_actor_id=grant_input.issued_by_actor_id,
+            basis=grant_input.basis,
+        )
+
+        audit_repo.append_event(
+            cursor,
+            event_type="authority_grant.issued",
+            aggregate_type="authority_grant",
+            aggregate_id=str(grant["authority_grant_id"]),
+            payload={
+                "actor_id": grant_input.actor_id,
+                "authority": grant_input.authority,
+                "scope_registry_name": grant_input.scope_registry_name,
+                "scope_decision_class_id": grant_input.scope_decision_class_id,
+            },
+        )
+
+    return {"authority_grant": grant}
+
+
+@dataclass(frozen=True)
+class RevokeAuthorityInput:
+    grant_id: uuid.UUID
+    revoked_by_actor_id: str
+    reason: str
+
+
+def revoke_authority(revoke_input: RevokeAuthorityInput) -> dict[str, Any]:
+    """Revoke an Authority Grant. Only the seeded issuer may revoke, and
+    only a currently-'active' grant can be revoked -- revoking an
+    already-revoked grant raises AuthorityGrantNotActive rather than
+    silently succeeding again. Revocation is a status transition; the row
+    is never deleted (cdp_core.authority_grant's forbid-delete trigger).
+    """
+    if revoke_input.revoked_by_actor_id != _AUTHORITY_GRANT_ISSUER_ACTOR_ID:
+        raise AuthorityGrantIssuerRequired(
+            f"Actor {revoke_input.revoked_by_actor_id!r} is not the authority-grant issuer "
+            "and cannot revoke authority grants"
+        )
+
+    with db.transaction() as cursor:
+        existing = authority_repo.fetch_grant(cursor, grant_id=revoke_input.grant_id)
+        if existing is None:
+            raise AuthorityGrantNotFound(f"No authority grant {revoke_input.grant_id}")
+
+        revoked = authority_repo.revoke_grant(
+            cursor,
+            grant_id=revoke_input.grant_id,
+            revoked_by_actor_id=revoke_input.revoked_by_actor_id,
+            reason=revoke_input.reason,
+        )
+        if revoked is None:
+            raise AuthorityGrantNotActive(
+                f"Authority grant {revoke_input.grant_id} is {existing['status']}, not active"
+            )
+
+        audit_repo.append_event(
+            cursor,
+            event_type="authority_grant.revoked",
+            aggregate_type="authority_grant",
+            aggregate_id=str(revoke_input.grant_id),
+            payload={
+                "actor_id": existing["actor_id"],
+                "revoked_by_actor_id": revoke_input.revoked_by_actor_id,
+                "reason": revoke_input.reason,
+            },
+        )
+
+    return {"authority_grant": revoked}
+
+
+def _evaluate_propose_authority(
+    cursor: Any,
+    *,
+    actor_id: str,
+    scope_registry_name: str,
+    scope_decision_class_id: str,
+    at_time: datetime,
+) -> tuple[str, uuid.UUID | None, str | None]:
+    """Cursor-based PROPOSE-authority evaluation, run inside
+    attest_and_create_decision's transaction. Returns
+    (result, matched_grant_id, failure_reason) -- does not itself raise or
+    persist anything; the caller decides both, since whether to persist
+    depends on whether the decision this evaluation gates ends up created.
+    """
+    matches = authority_repo.fetch_active_grants_for_actor(
+        cursor,
+        actor_id=actor_id,
+        authority=_PROPOSE_AUTHORITY,
+        scope_registry_name=scope_registry_name,
+        scope_decision_class_id=scope_decision_class_id,
+        at_time=at_time,
+    )
+    if not matches:
+        return (
+            "fail",
+            None,
+            f"No active, unexpired {_PROPOSE_AUTHORITY} grant covers "
+            f"{scope_registry_name}.{scope_decision_class_id} for actor {actor_id!r}",
+        )
+    return ("pass", matches[0]["authority_grant_id"], None)
+
+
 @dataclass(frozen=True)
 class AttestationInput:
     actor_id: str
@@ -1200,19 +1385,34 @@ def attest_and_create_decision(attested_input: AttestedDecisionInput) -> dict[st
     decision_registry's own pre-existing identifier rules; it does not
     have to be a governed cdp_core.actor at all.
 
+    Between the identity/attestation checks and decision creation, this
+    function also evaluates whether the attesting actor holds an active,
+    unexpired PROPOSE authority grant scoped to the decision's
+    registry_name and decision_class_id (exact match, or a grant with
+    scope_decision_class_id NULL as a registry-wide wildcard) -- see
+    db/ddl/011-authority-and-delegation.sql. This completes the ordering
+    architecture/001 prescribes (Identify + Attest -> Authority -> ...
+    -> Propose) for this one proof path; it does not introduce a second,
+    competing decision-creation route. Existing callers of this same
+    function/route from before the Authority slice must now also hold a
+    matching grant, or the call fails closed with AuthorityNotGranted --
+    a deliberate, documented behavior change to the one proof path this
+    project has been building across sessions 027 and 028, not a breaking
+    change to a stable external contract.
+
     Everything below runs inside exactly one transaction, reusing
     _create_decision_with_workflow_in_transaction so decision creation is
     not a nested/second transaction. Any failure - an unknown or inactive
-    actor, a missing/unrecognized/out-of-scope identity claim, or any
-    failure from decision creation itself - rolls back all of it: no
-    decision, no workflow instance, no task, no attestation record, and no
-    audit event survive.
+    actor, a missing/unrecognized/out-of-scope identity claim, missing
+    authority, or any failure from decision creation itself - rolls back
+    all of it: no decision, no workflow instance, no task, no attestation
+    record, no authority evaluation record, and no audit event survive.
 
     This is the proof path required by the Identity and Attestation slice.
     It is additive: POST /decisions (create_decision_with_workflow) is
-    unchanged and continues to accept unattested decisions, exactly as
-    every existing caller and test already expects. Only this new path
-    requires attestation.
+    unchanged and continues to accept unattested, unauthorized decisions,
+    exactly as every existing caller and test already expects. Only this
+    new path requires attestation and authority.
     """
     decision_input = attested_input.decision_input
     attestation_input = attested_input.attestation_input
@@ -1246,6 +1446,18 @@ def attest_and_create_decision(attested_input: AttestedDecisionInput) -> dict[st
                 f"{_DECISION_CREATION_PURPOSE_SCOPE!r}"
             )
 
+        authority_result, matched_grant_id, authority_failure_reason = (
+            _evaluate_propose_authority(
+                cursor,
+                actor_id=attestation_input.actor_id,
+                scope_registry_name=decision_input.registry_name,
+                scope_decision_class_id=decision_input.decision_class_id,
+                at_time=datetime.now(UTC),
+            )
+        )
+        if authority_result == "fail":
+            raise AuthorityNotGranted(authority_failure_reason)
+
         decision_result = _create_decision_with_workflow_in_transaction(cursor, decision_input)
 
         attestation = attestations_repo.insert_attestation(
@@ -1275,4 +1487,35 @@ def attest_and_create_decision(attested_input: AttestedDecisionInput) -> dict[st
             },
         )
 
-    return {**decision_result, "attestation": attestation}
+        authority_evaluation = authority_repo.insert_evaluation_result(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            required_authority=_PROPOSE_AUTHORITY,
+            governed_act_type="decision_created",
+            governed_act_registry_name=decision_input.registry_name,
+            governed_act_decision_id=decision_input.decision_id,
+            matched_authority_grant_id=matched_grant_id,
+            result="pass",
+            failure_reason=None,
+        )
+
+        audit_repo.append_event(
+            cursor,
+            event_type="authority.evaluated",
+            aggregate_type="authority_evaluation_result",
+            aggregate_id=str(authority_evaluation["authority_evaluation_id"]),
+            payload={
+                "registry_name": decision_input.registry_name,
+                "decision_id": decision_input.decision_id,
+                "actor_id": attestation_input.actor_id,
+                "required_authority": _PROPOSE_AUTHORITY,
+                "matched_authority_grant_id": str(matched_grant_id),
+                "result": "pass",
+            },
+        )
+
+    return {
+        **decision_result,
+        "attestation": attestation,
+        "authority_evaluation": authority_evaluation,
+    }
