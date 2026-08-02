@@ -286,16 +286,23 @@ normal migrations unmodified was born with known, active, privileged
 credentials. That seeding now lives only in
 `db/seed/dev-caller-authentication-tokens.sql`, applied solely by the
 local Docker Compose init hook and by CI's test job, never by `db/ddl/`.
-Applying `db/ddl/014` alone now leaves both bounded actors with zero
-tokens. Review also flagged that `verify_bearer_token` opens and
+Applying only `db/ddl/001` through `014` to an otherwise-empty database
+now leaves both bounded actors with zero tokens (confirmed manually
+against a throwaway database); against the shared local/CI database,
+where `db/seed/` is intentionally applied before the test suite runs for
+the benefit of other tests, the equivalent, database-state-independent
+claim is proven at the static-analysis level instead -- `014`'s own SQL
+text contains no `INSERT INTO cdp_core.actor_bearer_token` at all. Review
+also flagged that `verify_bearer_token` opens and
 completes its own transaction, separate from the governed mutation it
 authorizes -- a check/use gap recorded in
 `evidence/003-known-gaps.md`'s Caller Authentication section rather than
 fixed in this session; see that section for the full reasoning.
 
 Demonstrated by `tests/migration/test_migration_014_caller_authentication.py`
-(now asserting the migration seeds *no* tokens, and that applying it
-alone leaves both bounded actors with zero active tokens) and the new
+(a static test asserting the migration's SQL text seeds *no* tokens, plus
+a Postgres smoke test asserting rerunning the migration never changes
+the bounded actors' token count, whatever it already was) and the new
 `tests/migration/test_dev_seed_caller_authentication_tokens.py` (static
 + Postgres smoke, including a direct assertion that the published
 seed-token plaintext actually hashes to the value stored in that file,

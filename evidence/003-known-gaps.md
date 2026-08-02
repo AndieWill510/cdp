@@ -328,13 +328,17 @@ statement:
   A "provide zero secrecy" warning in a comment does not make that a
   safe default. The seed INSERT now lives only in `db/seed/`, applied
   solely by the local Docker Compose init hook and by CI's test job --
-  never by `db/ddl/`. `db/ddl/014` alone now leaves both bounded actors
-  with zero tokens (see
+  never by `db/ddl/`. `db/ddl/014`'s SQL text contains no `INSERT INTO
+  cdp_core.actor_bearer_token` at all (see
   `tests/migration/test_migration_014_caller_authentication.py`'s
-  `test_migration_does_not_seed_any_tokens` and the Postgres smoke
-  test's explicit zero-token assertion). A real deployment must still
-  provision credentials for these two actors through its own out-of-band
-  mechanism, which this repository does not provide.
+  `test_migration_does_not_seed_any_tokens`, a static, database-state-
+  independent assertion; the accompanying Postgres smoke test asserts
+  the weaker but portable claim that rerunning 014 never changes the
+  bounded actors' token count, since the shared test database it runs
+  against may already have `db/seed/` applied for other tests in the
+  same CI/local run). A real deployment must still provision credentials
+  for these two actors through its own out-of-band mechanism, which this
+  repository does not provide.
 - **Caller-binding verification runs in a separate transaction from the
   governed mutation it authorizes -- a check/use gap.**
   `verify_bearer_token` opens and completes its own `db.transaction()`

@@ -13,10 +13,13 @@ Review correction (before merging PR #48): this migration no longer
 seeds any tokens itself -- see 014's file header ("No privileged tokens
 are seeded here") and db/seed/dev-caller-authentication-tokens.sql,
 which is not part of this migration and is covered by
-test_dev_seed_caller_authentication_tokens.py instead. Applying only
-001-014 (this file's own DDL_FILES list) must leave the two bounded
-system actors with zero tokens -- see
-test_apply_001_through_013_then_014_twice_is_idempotent below.
+test_dev_seed_caller_authentication_tokens.py instead. The definitive
+proof that 014 seeds nothing is the static
+test_migration_does_not_seed_any_tokens (SQL text inspection, database-
+state-independent); the Postgres smoke test below only proves rerunning
+014 changes nothing, since the shared test database it runs against may
+already have db/seed/ applied by an earlier CI/local-init step intended
+for other tests in the same run.
 """
 
 from __future__ import annotations
@@ -136,8 +139,6 @@ class Migration014PostgresSmokeTests(unittest.TestCase):
             cursor = conn.cursor()
             for filename in DDL_FILES:
                 cursor.execute(read_sql(REPO_ROOT / "db" / "ddl" / filename))
-            # Rerun 014 alone to prove idempotency/rerun-safety.
-            cursor.execute(read_sql(DDL_014))
 
             cursor.execute(
                 "SELECT column_name FROM information_schema.columns "
@@ -146,18 +147,36 @@ class Migration014PostgresSmokeTests(unittest.TestCase):
             )
             self.assertIsNotNone(cursor.fetchone(), "missing actor_bearer_token.token_hash")
 
-            # Applying only 001-014 (no db/seed/) must leave the two
-            # bounded system actors with zero tokens -- the migration
-            # itself provisions no privileged credentials. This is the
-            # property the PR #48 review required.
+            # 014 itself must never change the token count for the two
+            # bounded system actors -- whether this shared test database
+            # already has db/seed/ applied (as CI's own "Seed dev/
+            # test-only data" step and this repo's local Docker init both
+            # do, for the benefit of *other* tests in the same run) or
+            # not, rerunning 014 alone must be a pure no-op on this
+            # table. This is the property the PR #48 review required --
+            # proven here as "014 changes nothing," not "the count is
+            # zero," since this test does not control whether it runs
+            # against an otherwise-fresh database or one db/seed/ has
+            # already touched. The static test
+            # test_migration_does_not_seed_any_tokens proves the stronger
+            # claim (014's own SQL text contains no INSERT into this
+            # table at all) independent of database state.
+            cursor.execute(
+                "SELECT count(*) FROM cdp_core.actor_bearer_token "
+                "WHERE actor_id IN ('cdp_identity_recognition_authority', 'cdp_authority_grant_issuer')"
+            )
+            count_before_rerun = cursor.fetchone()[0]
+
+            cursor.execute(read_sql(DDL_014))
+
             cursor.execute(
                 "SELECT count(*) FROM cdp_core.actor_bearer_token "
                 "WHERE actor_id IN ('cdp_identity_recognition_authority', 'cdp_authority_grant_issuer')"
             )
             self.assertEqual(
                 cursor.fetchone()[0],
-                0,
-                "db/ddl/014 alone must not seed any token for either bounded system actor",
+                count_before_rerun,
+                "rerunning 014 must not change the bounded actors' token count",
             )
 
             # Unrelated configured workflow_definition rows must be untouched.

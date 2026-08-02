@@ -195,16 +195,23 @@ migration apply, live Postgres, live `uvicorn`):
   continues to pass -- 118 static (pr-guard's exact list) + 119
   Postgres/service (full-cdp-slice-tests' exact list) + 56 API
   (full-cdp-slice-tests' exact list) = 293 tests, zero regressions in any
-  test that did not need updating for the new auth requirement. The
-  Postgres/service tier's `test_apply_001_through_013_then_014_twice_is_idempotent`
-  fails when run against this developer's long-lived local Postgres
-  (which still holds the two bounded actors' tokens from before this
-  review pass, seeded before the fix); run against a genuinely fresh
-  database (`CREATE DATABASE`, apply 001-014, no `db/seed/`) it passes,
-  as does the full `test_migration_014_caller_authentication.py` +
-  `test_dev_seed_caller_authentication_tokens.py` set (15/15) -- CI's
-  Postgres service container is always fresh per run, so this is a local
-  dev-environment artifact, not a defect the fix commit introduces.
+  test that did not need updating for the new auth requirement.
+  **Design note, discovered mid-review:** an earlier version of
+  `test_apply_001_through_013_then_014_twice_is_idempotent` asserted the
+  two bounded actors have *exactly zero* tokens after applying 001-014 --
+  true against an isolated database, but false in both this developer's
+  persistent local Docker Postgres and in CI itself, since CI's own
+  "Seed dev/test-only data" step (added by this same fix, for the
+  benefit of every *other* test in the run) commits `db/seed/`'s tokens
+  into the one shared test database before any pytest file runs. The
+  assertion now checks that rerunning 014 leaves the count *unchanged*
+  (true regardless of what already seeded the table), while the static
+  `test_migration_does_not_seed_any_tokens` -- SQL text inspection, no
+  database dependency -- carries the actual "014 seeds nothing" claim.
+  Confirmed working both ways: manually verified against a throwaway
+  `CREATE DATABASE` with only 001-014 applied (zero tokens, as expected)
+  and against the normal shared local/CI database (already-seeded,
+  count-unchanged assertion holds).
 - `ruff check cdp` -- passes with no findings.
 
 **GitHub Actions:** the citations below (`30751140549` on `29c5cdb`)
