@@ -22,6 +22,7 @@ def insert_attestation(
     credential_reference: str,
     issued_at: datetime,
     verifier_actor_id: str,
+    governed_act_ref_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
     """Insert a 'verified' attestation record.
 
@@ -30,18 +31,24 @@ def insert_attestation(
     always 'verified' here. A 'failed' result is schema-supported (see
     010-identity-and-attestation.sql) but not written by this function; a
     failed check raises an exception before any row is inserted instead.
+
+    governed_act_ref_id disambiguates which sub-record (challenge,
+    adjudication, authorization, execution) this attestation covers when
+    a decision can have more than one -- see
+    012-universal-attestation.sql. NULL for decision_created, where the
+    decision itself is the governed act.
     """
     cursor.execute(
         """
         INSERT INTO cdp_core.attestation_record (
             actor_id, identity_claim_id, governed_act_type,
-            governed_act_registry_name, governed_act_decision_id,
+            governed_act_registry_name, governed_act_decision_id, governed_act_ref_id,
             attestation_method, credential_reference, issued_at,
             verification_result, verifier_actor_id
         )
         VALUES (
             %(actor_id)s, %(identity_claim_id)s, %(governed_act_type)s,
-            %(governed_act_registry_name)s, %(governed_act_decision_id)s,
+            %(governed_act_registry_name)s, %(governed_act_decision_id)s, %(governed_act_ref_id)s,
             %(attestation_method)s, %(credential_reference)s, %(issued_at)s,
             'verified', %(verifier_actor_id)s
         )
@@ -53,6 +60,7 @@ def insert_attestation(
             "governed_act_type": governed_act_type,
             "governed_act_registry_name": governed_act_registry_name,
             "governed_act_decision_id": governed_act_decision_id,
+            "governed_act_ref_id": governed_act_ref_id,
             "attestation_method": attestation_method,
             "credential_reference": credential_reference,
             "issued_at": issued_at,

@@ -387,111 +387,123 @@ def raise_challenge_for_decision(challenge_input: ChallengeInput) -> dict[str, A
     challenge-policy model.
     """
     with db.transaction() as cursor:
-        decision = decisions_repo.fetch_decision(
-            cursor,
-            registry_name=challenge_input.registry_name,
-            decision_id=challenge_input.decision_id,
-        )
-        if decision is None:
-            raise DecisionNotFound(
-                f"No decision {challenge_input.registry_name}.{challenge_input.decision_id}"
-            )
+        return _raise_challenge_for_decision_in_transaction(cursor, challenge_input)
 
-        workflow_instance = workflows_repo.fetch_workflow_instance_for_decision(
-            cursor,
-            registry_name=challenge_input.registry_name,
-            decision_id=challenge_input.decision_id,
-        )
-        if workflow_instance is None:
-            raise ChallengeNotPermitted(
-                "No workflow instance is configured for decision "
-                f"{challenge_input.registry_name}.{challenge_input.decision_id}"
-            )
-        if workflow_instance["workflow_status"] in _TERMINAL_WORKFLOW_STATUSES:
-            raise ChallengeNotPermitted(
-                f"Workflow for decision {challenge_input.registry_name}."
-                f"{challenge_input.decision_id} is {workflow_instance['workflow_status']} "
-                "and can no longer accept a challenge"
-            )
 
-        updated_workflow_instance = workflows_repo.mark_workflow_instance_blocked(
-            cursor,
-            workflow_instance_id=workflow_instance["workflow_instance_id"],
-            blocked_reason=(
-                f"Challenge raised by {challenge_input.raised_by_actor_id}; "
-                "pending adjudication"
-            ),
+def _raise_challenge_for_decision_in_transaction(
+    cursor: Any, challenge_input: ChallengeInput
+) -> dict[str, Any]:
+    """Cursor-based body of raise_challenge_for_decision, extracted so
+    attest_and_raise_challenge (see the Universal Attestation slice below)
+    can run it inside its own single caller-owned transaction, alongside
+    attestation/authority checks, without nesting a second
+    db.transaction() connection."""
+    decision = decisions_repo.fetch_decision(
+        cursor,
+        registry_name=challenge_input.registry_name,
+        decision_id=challenge_input.decision_id,
+    )
+    if decision is None:
+        raise DecisionNotFound(
+            f"No decision {challenge_input.registry_name}.{challenge_input.decision_id}"
         )
 
-        task = workflows_repo.insert_task(
-            cursor,
-            workflow_instance_id=workflow_instance["workflow_instance_id"],
-            registry_name=challenge_input.registry_name,
-            decision_id=challenge_input.decision_id,
-            task_type="adjudicate_challenge",
-            assigned_role="adjudicator",
-            blocking=True,
+    workflow_instance = workflows_repo.fetch_workflow_instance_for_decision(
+        cursor,
+        registry_name=challenge_input.registry_name,
+        decision_id=challenge_input.decision_id,
+    )
+    if workflow_instance is None:
+        raise ChallengeNotPermitted(
+            "No workflow instance is configured for decision "
+            f"{challenge_input.registry_name}.{challenge_input.decision_id}"
+        )
+    if workflow_instance["workflow_status"] in _TERMINAL_WORKFLOW_STATUSES:
+        raise ChallengeNotPermitted(
+            f"Workflow for decision {challenge_input.registry_name}."
+            f"{challenge_input.decision_id} is {workflow_instance['workflow_status']} "
+            "and can no longer accept a challenge"
         )
 
-        challenge = challenges_repo.insert_challenge(
-            cursor,
-            registry_name=challenge_input.registry_name,
-            decision_id=challenge_input.decision_id,
-            workflow_instance_id=workflow_instance["workflow_instance_id"],
-            raised_by_actor_id=challenge_input.raised_by_actor_id,
-            challenge_type=challenge_input.challenge_type,
-            challenge_text=challenge_input.challenge_text,
-            created_task_id=task["task_id"],
-            metadata=challenge_input.metadata,
-        )
+    updated_workflow_instance = workflows_repo.mark_workflow_instance_blocked(
+        cursor,
+        workflow_instance_id=workflow_instance["workflow_instance_id"],
+        blocked_reason=(
+            f"Challenge raised by {challenge_input.raised_by_actor_id}; "
+            "pending adjudication"
+        ),
+    )
 
-        # Audit narrative order is challenge.raised -> workflow.transitioned ->
-        # task.created (cause, then its consequences), independent of the
-        # repository write order above, which inserts the task before the
-        # challenge record so challenge_record.created_task_id has a real
-        # value to reference.
-        audit_repo.append_event(
-            cursor,
-            event_type="challenge.raised",
-            aggregate_type="challenge",
-            aggregate_id=str(challenge["challenge_id"]),
-            payload={
-                "registry_name": challenge_input.registry_name,
-                "decision_id": challenge_input.decision_id,
-                "raised_by_actor_id": challenge_input.raised_by_actor_id,
-                "challenge_type": challenge["challenge_type"],
-                "created_task_id": str(task["task_id"]),
-            },
-        )
-        audit_repo.append_event(
-            cursor,
-            event_type="workflow.transitioned",
-            aggregate_type="workflow_instance",
-            aggregate_id=str(workflow_instance["workflow_instance_id"]),
-            payload={
-                "registry_name": challenge_input.registry_name,
-                "decision_id": challenge_input.decision_id,
-                "workflow_status": updated_workflow_instance["workflow_status"],
-                "blocked": updated_workflow_instance["blocked"],
-                "blocked_reason": updated_workflow_instance["blocked_reason"],
-            },
-        )
-        audit_repo.append_event(
-            cursor,
-            event_type="task.created",
-            aggregate_type="workflow_task",
-            aggregate_id=str(task["task_id"]),
-            payload={
-                "registry_name": challenge_input.registry_name,
-                "decision_id": challenge_input.decision_id,
-                "workflow_instance_id": str(workflow_instance["workflow_instance_id"]),
-                "task_type": task["task_type"],
-                "assigned_role": task["assigned_role"],
-                "blocking": task["blocking"],
-            },
-        )
+    task = workflows_repo.insert_task(
+        cursor,
+        workflow_instance_id=workflow_instance["workflow_instance_id"],
+        registry_name=challenge_input.registry_name,
+        decision_id=challenge_input.decision_id,
+        task_type="adjudicate_challenge",
+        assigned_role="adjudicator",
+        blocking=True,
+    )
+
+    challenge = challenges_repo.insert_challenge(
+        cursor,
+        registry_name=challenge_input.registry_name,
+        decision_id=challenge_input.decision_id,
+        workflow_instance_id=workflow_instance["workflow_instance_id"],
+        raised_by_actor_id=challenge_input.raised_by_actor_id,
+        challenge_type=challenge_input.challenge_type,
+        challenge_text=challenge_input.challenge_text,
+        created_task_id=task["task_id"],
+        metadata=challenge_input.metadata,
+    )
+
+    # Audit narrative order is challenge.raised -> workflow.transitioned ->
+    # task.created (cause, then its consequences), independent of the
+    # repository write order above, which inserts the task before the
+    # challenge record so challenge_record.created_task_id has a real
+    # value to reference.
+    audit_repo.append_event(
+        cursor,
+        event_type="challenge.raised",
+        aggregate_type="challenge",
+        aggregate_id=str(challenge["challenge_id"]),
+        payload={
+            "registry_name": challenge_input.registry_name,
+            "decision_id": challenge_input.decision_id,
+            "raised_by_actor_id": challenge_input.raised_by_actor_id,
+            "challenge_type": challenge["challenge_type"],
+            "created_task_id": str(task["task_id"]),
+        },
+    )
+    audit_repo.append_event(
+        cursor,
+        event_type="workflow.transitioned",
+        aggregate_type="workflow_instance",
+        aggregate_id=str(workflow_instance["workflow_instance_id"]),
+        payload={
+            "registry_name": challenge_input.registry_name,
+            "decision_id": challenge_input.decision_id,
+            "workflow_status": updated_workflow_instance["workflow_status"],
+            "blocked": updated_workflow_instance["blocked"],
+            "blocked_reason": updated_workflow_instance["blocked_reason"],
+        },
+    )
+    audit_repo.append_event(
+        cursor,
+        event_type="task.created",
+        aggregate_type="workflow_task",
+        aggregate_id=str(task["task_id"]),
+        payload={
+            "registry_name": challenge_input.registry_name,
+            "decision_id": challenge_input.decision_id,
+            "workflow_instance_id": str(workflow_instance["workflow_instance_id"]),
+            "task_type": task["task_type"],
+            "assigned_role": task["assigned_role"],
+            "blocking": task["blocking"],
+        },
+    )
 
     return {
+        "decision": decision,
         "challenge": challenge,
         "workflow_instance": updated_workflow_instance,
         "task": task,
@@ -526,121 +538,132 @@ def adjudicate_challenge(adjudication_input: AdjudicationInput) -> dict[str, Any
     escalate repeat challenges.
     """
     with db.transaction() as cursor:
-        decision = decisions_repo.fetch_decision(
+        return _adjudicate_challenge_in_transaction(cursor, adjudication_input)
+
+
+def _adjudicate_challenge_in_transaction(
+    cursor: Any, adjudication_input: AdjudicationInput
+) -> dict[str, Any]:
+    """Cursor-based body of adjudicate_challenge, extracted so
+    attest_and_adjudicate_challenge can reuse it inside its own single
+    caller-owned transaction -- see
+    _raise_challenge_for_decision_in_transaction's docstring for why."""
+    decision = decisions_repo.fetch_decision(
+        cursor,
+        registry_name=adjudication_input.registry_name,
+        decision_id=adjudication_input.decision_id,
+    )
+    if decision is None:
+        raise DecisionNotFound(
+            f"No decision {adjudication_input.registry_name}.{adjudication_input.decision_id}"
+        )
+
+    challenge = challenges_repo.fetch_challenge(
+        cursor, challenge_id=adjudication_input.challenge_id
+    )
+    if (
+        challenge is None
+        or challenge["registry_name"] != adjudication_input.registry_name
+        or challenge["decision_id"] != adjudication_input.decision_id
+    ):
+        raise ChallengeNotFound(
+            f"No challenge {adjudication_input.challenge_id} for decision "
+            f"{adjudication_input.registry_name}.{adjudication_input.decision_id}"
+        )
+    if challenge["challenge_status"] in _TERMINAL_CHALLENGE_STATUSES:
+        raise ChallengeNotAdjudicable(
+            f"Challenge {adjudication_input.challenge_id} is already "
+            f"{challenge['challenge_status']} and cannot be adjudicated again"
+        )
+
+    resulting_challenge_status = _OUTCOME_TO_CHALLENGE_STATUS.get(adjudication_input.outcome)
+    if resulting_challenge_status is None:
+        raise ValueError(
+            f"Unknown challenge adjudication outcome: {adjudication_input.outcome!r}"
+        )
+    set_resolved_at = resulting_challenge_status in ("resolved", "dismissed")
+
+    updated_challenge = challenges_repo.update_challenge_status(
+        cursor,
+        challenge_id=challenge["challenge_id"],
+        challenge_status=resulting_challenge_status,
+        set_resolved_at=set_resolved_at,
+    )
+
+    task = None
+    workflow_instance = None
+    if resulting_challenge_status != "under_review":
+        if challenge["created_task_id"] is not None:
+            task = workflows_repo.complete_task(cursor, task_id=challenge["created_task_id"])
+
+        remaining_open = challenges_repo.count_open_challenges_for_decision(
             cursor,
             registry_name=adjudication_input.registry_name,
             decision_id=adjudication_input.decision_id,
+            exclude_challenge_id=challenge["challenge_id"],
         )
-        if decision is None:
-            raise DecisionNotFound(
-                f"No decision {adjudication_input.registry_name}.{adjudication_input.decision_id}"
+        if remaining_open == 0:
+            workflow_instance = workflows_repo.unblock_workflow_instance(
+                cursor, workflow_instance_id=challenge["workflow_instance_id"]
             )
 
-        challenge = challenges_repo.fetch_challenge(
-            cursor, challenge_id=adjudication_input.challenge_id
-        )
-        if (
-            challenge is None
-            or challenge["registry_name"] != adjudication_input.registry_name
-            or challenge["decision_id"] != adjudication_input.decision_id
-        ):
-            raise ChallengeNotFound(
-                f"No challenge {adjudication_input.challenge_id} for decision "
-                f"{adjudication_input.registry_name}.{adjudication_input.decision_id}"
-            )
-        if challenge["challenge_status"] in _TERMINAL_CHALLENGE_STATUSES:
-            raise ChallengeNotAdjudicable(
-                f"Challenge {adjudication_input.challenge_id} is already "
-                f"{challenge['challenge_status']} and cannot be adjudicated again"
-            )
+    adjudication = adjudications_repo.insert_adjudication(
+        cursor,
+        registry_name=adjudication_input.registry_name,
+        decision_id=adjudication_input.decision_id,
+        challenge_id=challenge["challenge_id"],
+        adjudicated_by_actor_id=adjudication_input.adjudicated_by_actor_id,
+        outcome=adjudication_input.outcome,
+        rationale=adjudication_input.rationale,
+        resulting_challenge_status=resulting_challenge_status,
+        adjudicated_task_id=task["task_id"] if task is not None else None,
+    )
 
-        resulting_challenge_status = _OUTCOME_TO_CHALLENGE_STATUS.get(adjudication_input.outcome)
-        if resulting_challenge_status is None:
-            raise ValueError(
-                f"Unknown challenge adjudication outcome: {adjudication_input.outcome!r}"
-            )
-        set_resolved_at = resulting_challenge_status in ("resolved", "dismissed")
+    base_payload = {
+        "registry_name": adjudication_input.registry_name,
+        "decision_id": adjudication_input.decision_id,
+        "challenge_id": str(challenge["challenge_id"]),
+        "adjudication_id": str(adjudication["adjudication_id"]),
+        "outcome": adjudication["outcome"],
+        "challenge_status": updated_challenge["challenge_status"],
+    }
 
-        updated_challenge = challenges_repo.update_challenge_status(
-            cursor,
-            challenge_id=challenge["challenge_id"],
-            challenge_status=resulting_challenge_status,
-            set_resolved_at=set_resolved_at,
-        )
-
-        task = None
-        workflow_instance = None
-        if resulting_challenge_status != "under_review":
-            if challenge["created_task_id"] is not None:
-                task = workflows_repo.complete_task(cursor, task_id=challenge["created_task_id"])
-
-            remaining_open = challenges_repo.count_open_challenges_for_decision(
-                cursor,
-                registry_name=adjudication_input.registry_name,
-                decision_id=adjudication_input.decision_id,
-                exclude_challenge_id=challenge["challenge_id"],
-            )
-            if remaining_open == 0:
-                workflow_instance = workflows_repo.unblock_workflow_instance(
-                    cursor, workflow_instance_id=challenge["workflow_instance_id"]
-                )
-
-        adjudication = adjudications_repo.insert_adjudication(
-            cursor,
-            registry_name=adjudication_input.registry_name,
-            decision_id=adjudication_input.decision_id,
-            challenge_id=challenge["challenge_id"],
-            adjudicated_by_actor_id=adjudication_input.adjudicated_by_actor_id,
-            outcome=adjudication_input.outcome,
-            rationale=adjudication_input.rationale,
-            resulting_challenge_status=resulting_challenge_status,
-            adjudicated_task_id=task["task_id"] if task is not None else None,
-        )
-
-        base_payload = {
-            "registry_name": adjudication_input.registry_name,
-            "decision_id": adjudication_input.decision_id,
-            "challenge_id": str(challenge["challenge_id"]),
-            "adjudication_id": str(adjudication["adjudication_id"]),
-            "outcome": adjudication["outcome"],
-            "challenge_status": updated_challenge["challenge_status"],
-        }
-
-        # Audit narrative order is challenge.adjudicated -> workflow.transitioned
-        # -> task.completed (cause, then its consequences). For a 'deferred'
-        # outcome, only challenge.adjudicated is emitted -- nothing else changed.
+    # Audit narrative order is challenge.adjudicated -> workflow.transitioned
+    # -> task.completed (cause, then its consequences). For a 'deferred'
+    # outcome, only challenge.adjudicated is emitted -- nothing else changed.
+    audit_repo.append_event(
+        cursor,
+        event_type="challenge.adjudicated",
+        aggregate_type="challenge_adjudication",
+        aggregate_id=str(adjudication["adjudication_id"]),
+        payload=dict(base_payload),
+    )
+    if workflow_instance is not None:
         audit_repo.append_event(
             cursor,
-            event_type="challenge.adjudicated",
-            aggregate_type="challenge_adjudication",
-            aggregate_id=str(adjudication["adjudication_id"]),
-            payload=dict(base_payload),
+            event_type="workflow.transitioned",
+            aggregate_type="workflow_instance",
+            aggregate_id=str(challenge["workflow_instance_id"]),
+            payload={
+                **base_payload,
+                "workflow_status": workflow_instance["workflow_status"],
+                "blocked": workflow_instance["blocked"],
+            },
         )
-        if workflow_instance is not None:
-            audit_repo.append_event(
-                cursor,
-                event_type="workflow.transitioned",
-                aggregate_type="workflow_instance",
-                aggregate_id=str(challenge["workflow_instance_id"]),
-                payload={
-                    **base_payload,
-                    "workflow_status": workflow_instance["workflow_status"],
-                    "blocked": workflow_instance["blocked"],
-                },
-            )
-        if task is not None:
-            audit_repo.append_event(
-                cursor,
-                event_type="task.completed",
-                aggregate_type="workflow_task",
-                aggregate_id=str(task["task_id"]),
-                payload={
-                    **base_payload,
-                    "task_status": task["task_status"],
-                },
-            )
+    if task is not None:
+        audit_repo.append_event(
+            cursor,
+            event_type="task.completed",
+            aggregate_type="workflow_task",
+            aggregate_id=str(task["task_id"]),
+            payload={
+                **base_payload,
+                "task_status": task["task_status"],
+            },
+        )
 
     return {
+        "decision": decision,
         "adjudication": adjudication,
         "challenge": updated_challenge,
         "workflow_instance": workflow_instance,
@@ -684,128 +707,139 @@ def authorize_execution(authorization_input: ExecutionAuthorizationInput) -> dic
     requests that both pass this check before either commits.
     """
     with db.transaction() as cursor:
-        decision = decisions_repo.fetch_decision(
-            cursor,
-            registry_name=authorization_input.registry_name,
-            decision_id=authorization_input.decision_id,
-        )
-        if decision is None:
-            raise DecisionNotFound(
-                f"No decision {authorization_input.registry_name}.{authorization_input.decision_id}"
-            )
+        return _authorize_execution_in_transaction(cursor, authorization_input)
 
-        existing_authorization = execution_authorizations_repo.fetch_authorization_for_decision(
-            cursor,
-            registry_name=authorization_input.registry_name,
-            decision_id=authorization_input.decision_id,
-        )
-        if existing_authorization is not None:
-            raise ExecutionAlreadyAuthorized(
-                f"Decision {authorization_input.registry_name}.{authorization_input.decision_id} "
-                "already has an execution authorization"
-            )
 
-        workflow_instance = workflows_repo.fetch_workflow_instance_for_decision(
-            cursor,
-            registry_name=authorization_input.registry_name,
-            decision_id=authorization_input.decision_id,
-        )
-        if workflow_instance is None:
-            raise ExecutionAuthorizationNotPermitted(
-                "No workflow instance is configured for decision "
-                f"{authorization_input.registry_name}.{authorization_input.decision_id}"
-            )
-
-        open_challenge_count = challenges_repo.count_open_challenges_for_decision(
-            cursor,
-            registry_name=authorization_input.registry_name,
-            decision_id=authorization_input.decision_id,
-        )
-        if open_challenge_count > 0:
-            raise ExecutionAuthorizationNotPermitted(
-                f"{open_challenge_count} blocking challenge(s) remain open for decision "
-                f"{authorization_input.registry_name}.{authorization_input.decision_id}"
-            )
-
-        open_adjudication_task_count = workflows_repo.count_open_tasks_by_type(
-            cursor,
-            registry_name=authorization_input.registry_name,
-            decision_id=authorization_input.decision_id,
-            task_type="adjudicate_challenge",
-        )
-        if open_adjudication_task_count > 0:
-            raise ExecutionAuthorizationNotPermitted(
-                f"{open_adjudication_task_count} open adjudicate_challenge task(s) remain for "
-                f"decision {authorization_input.registry_name}.{authorization_input.decision_id}"
-            )
-
-        review_task = workflows_repo.fetch_open_task_by_type(
-            cursor,
-            registry_name=authorization_input.registry_name,
-            decision_id=authorization_input.decision_id,
-            task_type="review_decision",
-        )
-        if review_task is None:
-            raise ExecutionAuthorizationNotPermitted(
-                "No open review_decision task exists for decision "
-                f"{authorization_input.registry_name}.{authorization_input.decision_id} to complete"
-            )
-
-        authorization = execution_authorizations_repo.insert_authorization(
-            cursor,
-            registry_name=authorization_input.registry_name,
-            decision_id=authorization_input.decision_id,
-            workflow_instance_id=workflow_instance["workflow_instance_id"],
-            authorized_by_actor_id=authorization_input.authorized_by_actor_id,
-            rationale=authorization_input.rationale,
-            completed_task_id=review_task["task_id"],
+def _authorize_execution_in_transaction(
+    cursor: Any, authorization_input: ExecutionAuthorizationInput
+) -> dict[str, Any]:
+    """Cursor-based body of authorize_execution, extracted so
+    attest_and_authorize_execution can reuse it inside its own single
+    caller-owned transaction -- see
+    _raise_challenge_for_decision_in_transaction's docstring for why."""
+    decision = decisions_repo.fetch_decision(
+        cursor,
+        registry_name=authorization_input.registry_name,
+        decision_id=authorization_input.decision_id,
+    )
+    if decision is None:
+        raise DecisionNotFound(
+            f"No decision {authorization_input.registry_name}.{authorization_input.decision_id}"
         )
 
-        updated_workflow_instance = workflows_repo.mark_workflow_instance_advanced(
-            cursor, workflow_instance_id=workflow_instance["workflow_instance_id"]
+    existing_authorization = execution_authorizations_repo.fetch_authorization_for_decision(
+        cursor,
+        registry_name=authorization_input.registry_name,
+        decision_id=authorization_input.decision_id,
+    )
+    if existing_authorization is not None:
+        raise ExecutionAlreadyAuthorized(
+            f"Decision {authorization_input.registry_name}.{authorization_input.decision_id} "
+            "already has an execution authorization"
         )
 
-        completed_task = workflows_repo.complete_task(cursor, task_id=review_task["task_id"])
+    workflow_instance = workflows_repo.fetch_workflow_instance_for_decision(
+        cursor,
+        registry_name=authorization_input.registry_name,
+        decision_id=authorization_input.decision_id,
+    )
+    if workflow_instance is None:
+        raise ExecutionAuthorizationNotPermitted(
+            "No workflow instance is configured for decision "
+            f"{authorization_input.registry_name}.{authorization_input.decision_id}"
+        )
 
-        base_payload = {
-            "registry_name": authorization_input.registry_name,
-            "decision_id": authorization_input.decision_id,
-            "authorization_id": str(authorization["authorization_id"]),
-            "workflow_instance_id": str(workflow_instance["workflow_instance_id"]),
-            "completed_task_id": str(completed_task["task_id"]),
-        }
+    open_challenge_count = challenges_repo.count_open_challenges_for_decision(
+        cursor,
+        registry_name=authorization_input.registry_name,
+        decision_id=authorization_input.decision_id,
+    )
+    if open_challenge_count > 0:
+        raise ExecutionAuthorizationNotPermitted(
+            f"{open_challenge_count} blocking challenge(s) remain open for decision "
+            f"{authorization_input.registry_name}.{authorization_input.decision_id}"
+        )
 
-        # Audit narrative order is execution.authorized -> workflow.transitioned
-        # -> task.completed (cause, then its consequences).
-        audit_repo.append_event(
-            cursor,
-            event_type="execution.authorized",
-            aggregate_type="execution_authorization",
-            aggregate_id=str(authorization["authorization_id"]),
-            payload=dict(base_payload),
+    open_adjudication_task_count = workflows_repo.count_open_tasks_by_type(
+        cursor,
+        registry_name=authorization_input.registry_name,
+        decision_id=authorization_input.decision_id,
+        task_type="adjudicate_challenge",
+    )
+    if open_adjudication_task_count > 0:
+        raise ExecutionAuthorizationNotPermitted(
+            f"{open_adjudication_task_count} open adjudicate_challenge task(s) remain for "
+            f"decision {authorization_input.registry_name}.{authorization_input.decision_id}"
         )
-        audit_repo.append_event(
-            cursor,
-            event_type="workflow.transitioned",
-            aggregate_type="workflow_instance",
-            aggregate_id=str(workflow_instance["workflow_instance_id"]),
-            payload={
-                **base_payload,
-                "workflow_status": updated_workflow_instance["workflow_status"],
-            },
+
+    review_task = workflows_repo.fetch_open_task_by_type(
+        cursor,
+        registry_name=authorization_input.registry_name,
+        decision_id=authorization_input.decision_id,
+        task_type="review_decision",
+    )
+    if review_task is None:
+        raise ExecutionAuthorizationNotPermitted(
+            "No open review_decision task exists for decision "
+            f"{authorization_input.registry_name}.{authorization_input.decision_id} to complete"
         )
-        audit_repo.append_event(
-            cursor,
-            event_type="task.completed",
-            aggregate_type="workflow_task",
-            aggregate_id=str(completed_task["task_id"]),
-            payload={
-                **base_payload,
-                "task_status": completed_task["task_status"],
-            },
-        )
+
+    authorization = execution_authorizations_repo.insert_authorization(
+        cursor,
+        registry_name=authorization_input.registry_name,
+        decision_id=authorization_input.decision_id,
+        workflow_instance_id=workflow_instance["workflow_instance_id"],
+        authorized_by_actor_id=authorization_input.authorized_by_actor_id,
+        rationale=authorization_input.rationale,
+        completed_task_id=review_task["task_id"],
+    )
+
+    updated_workflow_instance = workflows_repo.mark_workflow_instance_advanced(
+        cursor, workflow_instance_id=workflow_instance["workflow_instance_id"]
+    )
+
+    completed_task = workflows_repo.complete_task(cursor, task_id=review_task["task_id"])
+
+    base_payload = {
+        "registry_name": authorization_input.registry_name,
+        "decision_id": authorization_input.decision_id,
+        "authorization_id": str(authorization["authorization_id"]),
+        "workflow_instance_id": str(workflow_instance["workflow_instance_id"]),
+        "completed_task_id": str(completed_task["task_id"]),
+    }
+
+    # Audit narrative order is execution.authorized -> workflow.transitioned
+    # -> task.completed (cause, then its consequences).
+    audit_repo.append_event(
+        cursor,
+        event_type="execution.authorized",
+        aggregate_type="execution_authorization",
+        aggregate_id=str(authorization["authorization_id"]),
+        payload=dict(base_payload),
+    )
+    audit_repo.append_event(
+        cursor,
+        event_type="workflow.transitioned",
+        aggregate_type="workflow_instance",
+        aggregate_id=str(workflow_instance["workflow_instance_id"]),
+        payload={
+            **base_payload,
+            "workflow_status": updated_workflow_instance["workflow_status"],
+        },
+    )
+    audit_repo.append_event(
+        cursor,
+        event_type="task.completed",
+        aggregate_type="workflow_task",
+        aggregate_id=str(completed_task["task_id"]),
+        payload={
+            **base_payload,
+            "task_status": completed_task["task_status"],
+        },
+    )
 
     return {
+        "decision": decision,
         "authorization": authorization,
         "workflow_instance": updated_workflow_instance,
         "completed_task": completed_task,
@@ -845,85 +879,96 @@ def record_execution_attempt(execution_input: ExecutionRecordInput) -> dict[str,
     for a future, mandatory repair slice to act on.
     """
     with db.transaction() as cursor:
-        decision = decisions_repo.fetch_decision(
-            cursor,
-            registry_name=execution_input.registry_name,
-            decision_id=execution_input.decision_id,
-        )
-        if decision is None:
-            raise DecisionNotFound(
-                f"No decision {execution_input.registry_name}.{execution_input.decision_id}"
-            )
+        return _record_execution_attempt_in_transaction(cursor, execution_input)
 
-        authorization = execution_authorizations_repo.fetch_authorization_for_decision(
-            cursor,
-            registry_name=execution_input.registry_name,
-            decision_id=execution_input.decision_id,
+
+def _record_execution_attempt_in_transaction(
+    cursor: Any, execution_input: ExecutionRecordInput
+) -> dict[str, Any]:
+    """Cursor-based body of record_execution_attempt, extracted so
+    attest_and_record_execution_attempt can reuse it inside its own single
+    caller-owned transaction -- see
+    _raise_challenge_for_decision_in_transaction's docstring for why."""
+    decision = decisions_repo.fetch_decision(
+        cursor,
+        registry_name=execution_input.registry_name,
+        decision_id=execution_input.decision_id,
+    )
+    if decision is None:
+        raise DecisionNotFound(
+            f"No decision {execution_input.registry_name}.{execution_input.decision_id}"
         )
-        if authorization is None:
-            raise DecisionNotAuthorizedForExecution(
+
+    authorization = execution_authorizations_repo.fetch_authorization_for_decision(
+        cursor,
+        registry_name=execution_input.registry_name,
+        decision_id=execution_input.decision_id,
+    )
+    if authorization is None:
+        raise DecisionNotAuthorizedForExecution(
+            f"Decision {execution_input.registry_name}.{execution_input.decision_id} "
+            "has no execution authorization"
+        )
+
+    workflow_instance = workflows_repo.fetch_workflow_instance_for_decision(
+        cursor,
+        registry_name=execution_input.registry_name,
+        decision_id=execution_input.decision_id,
+    )
+    if workflow_instance is None:
+        raise ExecutionNotPermitted(
+            "No workflow instance is configured for decision "
+            f"{execution_input.registry_name}.{execution_input.decision_id}"
+        )
+    if workflow_instance["workflow_status"] in _INELIGIBLE_FOR_EXECUTION_WORKFLOW_STATUSES:
+        raise ExecutionNotPermitted(
+            f"Workflow for decision {execution_input.registry_name}."
+            f"{execution_input.decision_id} is {workflow_instance['workflow_status']} "
+            "and cannot currently accept an execution record"
+        )
+
+    if execution_input.completed_at < execution_input.attempted_at:
+        raise ValueError("completed_at must not be before attempted_at")
+
+    if execution_input.execution_status == "succeeded":
+        existing_success = execution_records_repo.fetch_succeeded_execution_for_authorization(
+            cursor, authorization_id=authorization["authorization_id"]
+        )
+        if existing_success is not None:
+            raise ExecutionAlreadySucceeded(
                 f"Decision {execution_input.registry_name}.{execution_input.decision_id} "
-                "has no execution authorization"
+                "already has a succeeded execution record"
             )
 
-        workflow_instance = workflows_repo.fetch_workflow_instance_for_decision(
-            cursor,
-            registry_name=execution_input.registry_name,
-            decision_id=execution_input.decision_id,
-        )
-        if workflow_instance is None:
-            raise ExecutionNotPermitted(
-                "No workflow instance is configured for decision "
-                f"{execution_input.registry_name}.{execution_input.decision_id}"
-            )
-        if workflow_instance["workflow_status"] in _INELIGIBLE_FOR_EXECUTION_WORKFLOW_STATUSES:
-            raise ExecutionNotPermitted(
-                f"Workflow for decision {execution_input.registry_name}."
-                f"{execution_input.decision_id} is {workflow_instance['workflow_status']} "
-                "and cannot currently accept an execution record"
-            )
+    execution_record = execution_records_repo.insert_execution_record(
+        cursor,
+        registry_name=execution_input.registry_name,
+        decision_id=execution_input.decision_id,
+        authorization_id=authorization["authorization_id"],
+        workflow_instance_id=workflow_instance["workflow_instance_id"],
+        executed_by_actor_id=execution_input.executed_by_actor_id,
+        execution_status=execution_input.execution_status,
+        result_summary=execution_input.result_summary,
+        attempted_at=execution_input.attempted_at,
+        completed_at=execution_input.completed_at,
+    )
 
-        if execution_input.completed_at < execution_input.attempted_at:
-            raise ValueError("completed_at must not be before attempted_at")
-
-        if execution_input.execution_status == "succeeded":
-            existing_success = execution_records_repo.fetch_succeeded_execution_for_authorization(
-                cursor, authorization_id=authorization["authorization_id"]
-            )
-            if existing_success is not None:
-                raise ExecutionAlreadySucceeded(
-                    f"Decision {execution_input.registry_name}.{execution_input.decision_id} "
-                    "already has a succeeded execution record"
-                )
-
-        execution_record = execution_records_repo.insert_execution_record(
-            cursor,
-            registry_name=execution_input.registry_name,
-            decision_id=execution_input.decision_id,
-            authorization_id=authorization["authorization_id"],
-            workflow_instance_id=workflow_instance["workflow_instance_id"],
-            executed_by_actor_id=execution_input.executed_by_actor_id,
-            execution_status=execution_input.execution_status,
-            result_summary=execution_input.result_summary,
-            attempted_at=execution_input.attempted_at,
-            completed_at=execution_input.completed_at,
-        )
-
-        audit_repo.append_event(
-            cursor,
-            event_type="execution.recorded",
-            aggregate_type="execution_record",
-            aggregate_id=str(execution_record["execution_id"]),
-            payload={
-                "registry_name": execution_input.registry_name,
-                "decision_id": execution_input.decision_id,
-                "execution_id": str(execution_record["execution_id"]),
-                "authorization_id": str(authorization["authorization_id"]),
-                "execution_status": execution_record["execution_status"],
-            },
-        )
+    audit_repo.append_event(
+        cursor,
+        event_type="execution.recorded",
+        aggregate_type="execution_record",
+        aggregate_id=str(execution_record["execution_id"]),
+        payload={
+            "registry_name": execution_input.registry_name,
+            "decision_id": execution_input.decision_id,
+            "execution_id": str(execution_record["execution_id"]),
+            "authorization_id": str(authorization["authorization_id"]),
+            "execution_status": execution_record["execution_status"],
+        },
+    )
 
     return {
+        "decision": decision,
         "execution_record": execution_record,
         "workflow_instance": workflow_instance,
     }
@@ -1320,24 +1365,25 @@ def revoke_authority(revoke_input: RevokeAuthorityInput) -> dict[str, Any]:
     return {"authority_grant": revoked}
 
 
-def _evaluate_propose_authority(
+def _evaluate_authority(
     cursor: Any,
     *,
     actor_id: str,
+    authority: str,
     scope_registry_name: str,
     scope_decision_class_id: str,
     at_time: datetime,
 ) -> tuple[str, uuid.UUID | None, str | None]:
-    """Cursor-based PROPOSE-authority evaluation, run inside
-    attest_and_create_decision's transaction. Returns
-    (result, matched_grant_id, failure_reason) -- does not itself raise or
-    persist anything; the caller decides both, since whether to persist
-    depends on whether the decision this evaluation gates ends up created.
+    """Cursor-based authority evaluation, run inside an attest_and_*
+    function's transaction. Returns (result, matched_grant_id,
+    failure_reason) -- does not itself raise or persist anything; the
+    caller decides both, since whether to persist depends on whether the
+    governed act this evaluation gates ends up performed.
     """
     matches = authority_repo.fetch_active_grants_for_actor(
         cursor,
         actor_id=actor_id,
-        authority=_PROPOSE_AUTHORITY,
+        authority=authority,
         scope_registry_name=scope_registry_name,
         scope_decision_class_id=scope_decision_class_id,
         at_time=at_time,
@@ -1346,10 +1392,130 @@ def _evaluate_propose_authority(
         return (
             "fail",
             None,
-            f"No active, unexpired {_PROPOSE_AUTHORITY} grant covers "
+            f"No active, unexpired {authority} grant covers "
             f"{scope_registry_name}.{scope_decision_class_id} for actor {actor_id!r}",
         )
     return ("pass", matches[0]["authority_grant_id"], None)
+
+
+def _check_actor_active(cursor: Any, actor_id: str) -> dict[str, Any]:
+    """Shared actor-existence/activeness check used by every attest_and_*
+    function. Raises ActorNotFound / ActorNotActive; returns the actor row
+    on success."""
+    actor = actors_repo.fetch_actor(cursor, actor_id=actor_id)
+    if actor is None:
+        raise ActorNotFound(f"No registered actor {actor_id!r}")
+    if actor["actor_status"] != "active":
+        raise ActorNotActive(f"Actor {actor_id!r} is {actor['actor_status']}, not active")
+    return actor
+
+
+def _check_claim_recognized_and_scoped(
+    cursor: Any, *, claim_id: uuid.UUID, actor_id: str, required_purpose_scope: str
+) -> dict[str, Any]:
+    """Shared identity-claim ownership/recognition/scope check used by
+    every attest_and_* function. Raises IdentityClaimActorMismatch /
+    IdentityClaimNotRecognized / IdentityClaimScopeInsufficient; returns
+    the claim row on success."""
+    claim = identity_claims_repo.fetch_claim(cursor, claim_id=claim_id)
+    if claim is None or claim["actor_id"] != actor_id:
+        raise IdentityClaimActorMismatch(
+            f"Identity claim {claim_id} does not belong to actor {actor_id!r}"
+        )
+    if claim["recognition_status"] != "recognized":
+        raise IdentityClaimNotRecognized(
+            f"Identity claim {claim_id} is {claim['recognition_status']}, not recognized"
+        )
+    if claim["purpose_scope"] != required_purpose_scope:
+        raise IdentityClaimScopeInsufficient(
+            f"Identity claim {claim_id} has purpose_scope {claim['purpose_scope']!r}, "
+            f"which does not cover {required_purpose_scope!r}"
+        )
+    return claim
+
+
+def _persist_attestation_and_authority(
+    cursor: Any,
+    *,
+    actor_id: str,
+    identity_claim_id: uuid.UUID,
+    governed_act_type: str,
+    governed_act_registry_name: str,
+    governed_act_decision_id: str,
+    governed_act_ref_id: uuid.UUID | None,
+    attestation_method: str,
+    credential_reference: str,
+    issued_at: datetime,
+    required_authority: str,
+    matched_authority_grant_id: uuid.UUID | None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Shared attestation-record + authority-evaluation-result persist,
+    each with its own audit event in that causal order, used by every
+    attest_and_* function after its governed act has been performed. Both
+    rows share the same governed_act_registry_name/decision_id/ref_id so
+    both are discoverable together from the decision (or, via
+    governed_act_ref_id, the specific sub-record)."""
+    attestation = attestations_repo.insert_attestation(
+        cursor,
+        actor_id=actor_id,
+        identity_claim_id=identity_claim_id,
+        governed_act_type=governed_act_type,
+        governed_act_registry_name=governed_act_registry_name,
+        governed_act_decision_id=governed_act_decision_id,
+        governed_act_ref_id=governed_act_ref_id,
+        attestation_method=attestation_method,
+        credential_reference=credential_reference,
+        issued_at=issued_at,
+        verifier_actor_id="cdp_attestation_service",
+    )
+
+    audit_repo.append_event(
+        cursor,
+        event_type="attestation.recorded",
+        aggregate_type="attestation_record",
+        aggregate_id=str(attestation["attestation_id"]),
+        payload={
+            "registry_name": governed_act_registry_name,
+            "decision_id": governed_act_decision_id,
+            "governed_act_type": governed_act_type,
+            "governed_act_ref_id": str(governed_act_ref_id) if governed_act_ref_id else None,
+            "actor_id": actor_id,
+            "identity_claim_id": str(identity_claim_id),
+            "attestation_method": attestation_method,
+        },
+    )
+
+    authority_evaluation = authority_repo.insert_evaluation_result(
+        cursor,
+        actor_id=actor_id,
+        required_authority=required_authority,
+        governed_act_type=governed_act_type,
+        governed_act_registry_name=governed_act_registry_name,
+        governed_act_decision_id=governed_act_decision_id,
+        governed_act_ref_id=governed_act_ref_id,
+        matched_authority_grant_id=matched_authority_grant_id,
+        result="pass",
+        failure_reason=None,
+    )
+
+    audit_repo.append_event(
+        cursor,
+        event_type="authority.evaluated",
+        aggregate_type="authority_evaluation_result",
+        aggregate_id=str(authority_evaluation["authority_evaluation_id"]),
+        payload={
+            "registry_name": governed_act_registry_name,
+            "decision_id": governed_act_decision_id,
+            "governed_act_type": governed_act_type,
+            "governed_act_ref_id": str(governed_act_ref_id) if governed_act_ref_id else None,
+            "actor_id": actor_id,
+            "required_authority": required_authority,
+            "matched_authority_grant_id": str(matched_authority_grant_id),
+            "result": "pass",
+        },
+    )
+
+    return attestation, authority_evaluation
 
 
 @dataclass(frozen=True)
@@ -1418,104 +1584,371 @@ def attest_and_create_decision(attested_input: AttestedDecisionInput) -> dict[st
     attestation_input = attested_input.attestation_input
 
     with db.transaction() as cursor:
-        actor = actors_repo.fetch_actor(cursor, actor_id=attestation_input.actor_id)
-        if actor is None:
-            raise ActorNotFound(f"No registered actor {attestation_input.actor_id!r}")
-        if actor["actor_status"] != "active":
-            raise ActorNotActive(
-                f"Actor {attestation_input.actor_id!r} is {actor['actor_status']}, not active"
-            )
-
-        claim = identity_claims_repo.fetch_claim(
-            cursor, claim_id=attestation_input.identity_claim_id
+        _check_actor_active(cursor, attestation_input.actor_id)
+        _check_claim_recognized_and_scoped(
+            cursor,
+            claim_id=attestation_input.identity_claim_id,
+            actor_id=attestation_input.actor_id,
+            required_purpose_scope=_DECISION_CREATION_PURPOSE_SCOPE,
         )
-        if claim is None or claim["actor_id"] != attestation_input.actor_id:
-            raise IdentityClaimActorMismatch(
-                f"Identity claim {attestation_input.identity_claim_id} does not belong to "
-                f"actor {attestation_input.actor_id!r}"
-            )
-        if claim["recognition_status"] != "recognized":
-            raise IdentityClaimNotRecognized(
-                f"Identity claim {attestation_input.identity_claim_id} is "
-                f"{claim['recognition_status']}, not recognized"
-            )
-        if claim["purpose_scope"] != _DECISION_CREATION_PURPOSE_SCOPE:
-            raise IdentityClaimScopeInsufficient(
-                f"Identity claim {attestation_input.identity_claim_id} has purpose_scope "
-                f"{claim['purpose_scope']!r}, which does not cover "
-                f"{_DECISION_CREATION_PURPOSE_SCOPE!r}"
-            )
 
-        authority_result, matched_grant_id, authority_failure_reason = (
-            _evaluate_propose_authority(
-                cursor,
-                actor_id=attestation_input.actor_id,
-                scope_registry_name=decision_input.registry_name,
-                scope_decision_class_id=decision_input.decision_class_id,
-                at_time=datetime.now(UTC),
-            )
+        authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            authority=_PROPOSE_AUTHORITY,
+            scope_registry_name=decision_input.registry_name,
+            scope_decision_class_id=decision_input.decision_class_id,
+            at_time=datetime.now(UTC),
         )
         if authority_result == "fail":
             raise AuthorityNotGranted(authority_failure_reason)
 
         decision_result = _create_decision_with_workflow_in_transaction(cursor, decision_input)
 
-        attestation = attestations_repo.insert_attestation(
+        attestation, authority_evaluation = _persist_attestation_and_authority(
             cursor,
             actor_id=attestation_input.actor_id,
             identity_claim_id=attestation_input.identity_claim_id,
             governed_act_type="decision_created",
             governed_act_registry_name=decision_input.registry_name,
             governed_act_decision_id=decision_input.decision_id,
+            governed_act_ref_id=None,
             attestation_method=attestation_input.attestation_method,
             credential_reference=attestation_input.credential_reference,
             issued_at=attestation_input.issued_at,
-            verifier_actor_id="cdp_attestation_service",
-        )
-
-        audit_repo.append_event(
-            cursor,
-            event_type="attestation.recorded",
-            aggregate_type="attestation_record",
-            aggregate_id=str(attestation["attestation_id"]),
-            payload={
-                "registry_name": decision_input.registry_name,
-                "decision_id": decision_input.decision_id,
-                "actor_id": attestation_input.actor_id,
-                "identity_claim_id": str(attestation_input.identity_claim_id),
-                "attestation_method": attestation_input.attestation_method,
-            },
-        )
-
-        authority_evaluation = authority_repo.insert_evaluation_result(
-            cursor,
-            actor_id=attestation_input.actor_id,
             required_authority=_PROPOSE_AUTHORITY,
-            governed_act_type="decision_created",
-            governed_act_registry_name=decision_input.registry_name,
-            governed_act_decision_id=decision_input.decision_id,
             matched_authority_grant_id=matched_grant_id,
-            result="pass",
-            failure_reason=None,
-        )
-
-        audit_repo.append_event(
-            cursor,
-            event_type="authority.evaluated",
-            aggregate_type="authority_evaluation_result",
-            aggregate_id=str(authority_evaluation["authority_evaluation_id"]),
-            payload={
-                "registry_name": decision_input.registry_name,
-                "decision_id": decision_input.decision_id,
-                "actor_id": attestation_input.actor_id,
-                "required_authority": _PROPOSE_AUTHORITY,
-                "matched_authority_grant_id": str(matched_grant_id),
-                "result": "pass",
-            },
         )
 
     return {
         **decision_result,
+        "attestation": attestation,
+        "authority_evaluation": authority_evaluation,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Universal Attestation (RFC-CDP-031 SS2: "All mutating acts MUST be
+# attested"), extending the attest+authority proof path from decision
+# creation alone to the other mutating governed acts this repository
+# already implements: raising a challenge, adjudicating a challenge,
+# authorizing execution, and recording an execution attempt.
+#
+# "Universal" means "every mutating act this repository's canonical
+# implementation path already has a governed service function for" -- it
+# does not reach Test/Legitimize/Learn (unimplemented) and it does not
+# reach the Identity/Attestation/Authority slices' own mutations
+# (register_actor, submit_identity_claim, recognize/deny/
+# contest_identity_claim, grant_authority, revoke_authority), which would
+# be circular: they are the foundation attestation depends on, not acts
+# attestation can be layered on top of. See
+# db/ddl/012-universal-attestation.sql and
+# docs/session-029-universal-attestation.md for the full boundary
+# statement.
+#
+# Each function below follows the exact shape attest_and_create_decision
+# established: check actor, check identity claim (its own purpose_scope
+# per act type), evaluate authority (its own authority type per act
+# type), perform the underlying governed act via the extracted
+# _..._in_transaction helper, then persist attestation + authority
+# evaluation via _persist_attestation_and_authority, all inside one
+# transaction. Each is additive: the underlying unattested route/function
+# (raise_challenge_for_decision, adjudicate_challenge, authorize_execution,
+# record_execution_attempt) is completely untouched, exactly like
+# POST /decisions remained untouched by attest_and_create_decision.
+# ---------------------------------------------------------------------------
+
+_CHALLENGE_RAISING_PURPOSE_SCOPE = "challenge_raising"
+_CHALLENGE_ADJUDICATION_PURPOSE_SCOPE = "challenge_adjudication"
+_EXECUTION_AUTHORIZATION_PURPOSE_SCOPE = "execution_authorization"
+_EXECUTION_RECORDING_PURPOSE_SCOPE = "execution_recording"
+
+_CHALLENGE_AUTHORITY = "CHALLENGE"
+_ADJUDICATE_AUTHORITY = "ADJUDICATE"
+_AUTHORIZE_EXECUTION_AUTHORITY = "AUTHORIZE_EXECUTION"
+_RECORD_AUTHORITY = "RECORD"
+
+
+@dataclass(frozen=True)
+class AttestedChallengeInput:
+    challenge_input: ChallengeInput
+    attestation_input: AttestationInput
+
+
+def attest_and_raise_challenge(attested_input: AttestedChallengeInput) -> dict[str, Any]:
+    """Attest a challenge-raising act to an actor, then raise the challenge.
+
+    Requires the attesting actor to hold a recognized identity claim
+    scoped to 'challenge_raising' and an active, unexpired CHALLENGE
+    authority grant scoped to the decision's registry_name/
+    decision_class_id, evaluated before the challenge is raised so a
+    failure leaves nothing persisted. See the Universal Attestation
+    section header above for the shared shape every attest_and_* function
+    follows.
+    """
+    challenge_input = attested_input.challenge_input
+    attestation_input = attested_input.attestation_input
+
+    with db.transaction() as cursor:
+        decision = decisions_repo.fetch_decision(
+            cursor,
+            registry_name=challenge_input.registry_name,
+            decision_id=challenge_input.decision_id,
+        )
+        if decision is None:
+            raise DecisionNotFound(
+                f"No decision {challenge_input.registry_name}.{challenge_input.decision_id}"
+            )
+
+        _check_actor_active(cursor, attestation_input.actor_id)
+        _check_claim_recognized_and_scoped(
+            cursor,
+            claim_id=attestation_input.identity_claim_id,
+            actor_id=attestation_input.actor_id,
+            required_purpose_scope=_CHALLENGE_RAISING_PURPOSE_SCOPE,
+        )
+
+        authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            authority=_CHALLENGE_AUTHORITY,
+            scope_registry_name=challenge_input.registry_name,
+            scope_decision_class_id=decision["decision_class_id"],
+            at_time=datetime.now(UTC),
+        )
+        if authority_result == "fail":
+            raise AuthorityNotGranted(authority_failure_reason)
+
+        challenge_result = _raise_challenge_for_decision_in_transaction(cursor, challenge_input)
+
+        attestation, authority_evaluation = _persist_attestation_and_authority(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            identity_claim_id=attestation_input.identity_claim_id,
+            governed_act_type="challenge_raised",
+            governed_act_registry_name=challenge_input.registry_name,
+            governed_act_decision_id=challenge_input.decision_id,
+            governed_act_ref_id=challenge_result["challenge"]["challenge_id"],
+            attestation_method=attestation_input.attestation_method,
+            credential_reference=attestation_input.credential_reference,
+            issued_at=attestation_input.issued_at,
+            required_authority=_CHALLENGE_AUTHORITY,
+            matched_authority_grant_id=matched_grant_id,
+        )
+
+    return {
+        **challenge_result,
+        "attestation": attestation,
+        "authority_evaluation": authority_evaluation,
+    }
+
+
+@dataclass(frozen=True)
+class AttestedAdjudicationInput:
+    adjudication_input: AdjudicationInput
+    attestation_input: AttestationInput
+
+
+def attest_and_adjudicate_challenge(attested_input: AttestedAdjudicationInput) -> dict[str, Any]:
+    """Attest a challenge-adjudication act to an actor, then adjudicate the
+    challenge. Requires a recognized identity claim scoped to
+    'challenge_adjudication' and an active, unexpired ADJUDICATE authority
+    grant -- see attest_and_raise_challenge's docstring for the shared
+    shape."""
+    adjudication_input = attested_input.adjudication_input
+    attestation_input = attested_input.attestation_input
+
+    with db.transaction() as cursor:
+        decision = decisions_repo.fetch_decision(
+            cursor,
+            registry_name=adjudication_input.registry_name,
+            decision_id=adjudication_input.decision_id,
+        )
+        if decision is None:
+            raise DecisionNotFound(
+                f"No decision {adjudication_input.registry_name}.{adjudication_input.decision_id}"
+            )
+
+        _check_actor_active(cursor, attestation_input.actor_id)
+        _check_claim_recognized_and_scoped(
+            cursor,
+            claim_id=attestation_input.identity_claim_id,
+            actor_id=attestation_input.actor_id,
+            required_purpose_scope=_CHALLENGE_ADJUDICATION_PURPOSE_SCOPE,
+        )
+
+        authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            authority=_ADJUDICATE_AUTHORITY,
+            scope_registry_name=adjudication_input.registry_name,
+            scope_decision_class_id=decision["decision_class_id"],
+            at_time=datetime.now(UTC),
+        )
+        if authority_result == "fail":
+            raise AuthorityNotGranted(authority_failure_reason)
+
+        adjudication_result = _adjudicate_challenge_in_transaction(cursor, adjudication_input)
+
+        attestation, authority_evaluation = _persist_attestation_and_authority(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            identity_claim_id=attestation_input.identity_claim_id,
+            governed_act_type="challenge_adjudicated",
+            governed_act_registry_name=adjudication_input.registry_name,
+            governed_act_decision_id=adjudication_input.decision_id,
+            governed_act_ref_id=adjudication_result["adjudication"]["adjudication_id"],
+            attestation_method=attestation_input.attestation_method,
+            credential_reference=attestation_input.credential_reference,
+            issued_at=attestation_input.issued_at,
+            required_authority=_ADJUDICATE_AUTHORITY,
+            matched_authority_grant_id=matched_grant_id,
+        )
+
+    return {
+        **adjudication_result,
+        "attestation": attestation,
+        "authority_evaluation": authority_evaluation,
+    }
+
+
+@dataclass(frozen=True)
+class AttestedExecutionAuthorizationInput:
+    authorization_input: ExecutionAuthorizationInput
+    attestation_input: AttestationInput
+
+
+def attest_and_authorize_execution(
+    attested_input: AttestedExecutionAuthorizationInput,
+) -> dict[str, Any]:
+    """Attest an execution-authorization act to an actor, then authorize
+    execution. Requires a recognized identity claim scoped to
+    'execution_authorization' and an active, unexpired AUTHORIZE_EXECUTION
+    authority grant -- see attest_and_raise_challenge's docstring for the
+    shared shape."""
+    authorization_input = attested_input.authorization_input
+    attestation_input = attested_input.attestation_input
+
+    with db.transaction() as cursor:
+        decision = decisions_repo.fetch_decision(
+            cursor,
+            registry_name=authorization_input.registry_name,
+            decision_id=authorization_input.decision_id,
+        )
+        if decision is None:
+            raise DecisionNotFound(
+                f"No decision {authorization_input.registry_name}."
+                f"{authorization_input.decision_id}"
+            )
+
+        _check_actor_active(cursor, attestation_input.actor_id)
+        _check_claim_recognized_and_scoped(
+            cursor,
+            claim_id=attestation_input.identity_claim_id,
+            actor_id=attestation_input.actor_id,
+            required_purpose_scope=_EXECUTION_AUTHORIZATION_PURPOSE_SCOPE,
+        )
+
+        authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            authority=_AUTHORIZE_EXECUTION_AUTHORITY,
+            scope_registry_name=authorization_input.registry_name,
+            scope_decision_class_id=decision["decision_class_id"],
+            at_time=datetime.now(UTC),
+        )
+        if authority_result == "fail":
+            raise AuthorityNotGranted(authority_failure_reason)
+
+        authorization_result = _authorize_execution_in_transaction(cursor, authorization_input)
+
+        attestation, authority_evaluation = _persist_attestation_and_authority(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            identity_claim_id=attestation_input.identity_claim_id,
+            governed_act_type="execution_authorized",
+            governed_act_registry_name=authorization_input.registry_name,
+            governed_act_decision_id=authorization_input.decision_id,
+            governed_act_ref_id=authorization_result["authorization"]["authorization_id"],
+            attestation_method=attestation_input.attestation_method,
+            credential_reference=attestation_input.credential_reference,
+            issued_at=attestation_input.issued_at,
+            required_authority=_AUTHORIZE_EXECUTION_AUTHORITY,
+            matched_authority_grant_id=matched_grant_id,
+        )
+
+    return {
+        **authorization_result,
+        "attestation": attestation,
+        "authority_evaluation": authority_evaluation,
+    }
+
+
+@dataclass(frozen=True)
+class AttestedExecutionRecordInput:
+    execution_input: ExecutionRecordInput
+    attestation_input: AttestationInput
+
+
+def attest_and_record_execution_attempt(
+    attested_input: AttestedExecutionRecordInput,
+) -> dict[str, Any]:
+    """Attest an execution-recording act to an actor, then record the
+    execution attempt. Requires a recognized identity claim scoped to
+    'execution_recording' and an active, unexpired RECORD authority grant
+    -- see attest_and_raise_challenge's docstring for the shared shape."""
+    execution_input = attested_input.execution_input
+    attestation_input = attested_input.attestation_input
+
+    with db.transaction() as cursor:
+        decision = decisions_repo.fetch_decision(
+            cursor,
+            registry_name=execution_input.registry_name,
+            decision_id=execution_input.decision_id,
+        )
+        if decision is None:
+            raise DecisionNotFound(
+                f"No decision {execution_input.registry_name}.{execution_input.decision_id}"
+            )
+
+        _check_actor_active(cursor, attestation_input.actor_id)
+        _check_claim_recognized_and_scoped(
+            cursor,
+            claim_id=attestation_input.identity_claim_id,
+            actor_id=attestation_input.actor_id,
+            required_purpose_scope=_EXECUTION_RECORDING_PURPOSE_SCOPE,
+        )
+
+        authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            authority=_RECORD_AUTHORITY,
+            scope_registry_name=execution_input.registry_name,
+            scope_decision_class_id=decision["decision_class_id"],
+            at_time=datetime.now(UTC),
+        )
+        if authority_result == "fail":
+            raise AuthorityNotGranted(authority_failure_reason)
+
+        execution_result = _record_execution_attempt_in_transaction(cursor, execution_input)
+
+        attestation, authority_evaluation = _persist_attestation_and_authority(
+            cursor,
+            actor_id=attestation_input.actor_id,
+            identity_claim_id=attestation_input.identity_claim_id,
+            governed_act_type="execution_recorded",
+            governed_act_registry_name=execution_input.registry_name,
+            governed_act_decision_id=execution_input.decision_id,
+            governed_act_ref_id=execution_result["execution_record"]["execution_id"],
+            attestation_method=attestation_input.attestation_method,
+            credential_reference=attestation_input.credential_reference,
+            issued_at=attestation_input.issued_at,
+            required_authority=_RECORD_AUTHORITY,
+            matched_authority_grant_id=matched_grant_id,
+        )
+
+    return {
+        **execution_result,
         "attestation": attestation,
         "authority_evaluation": authority_evaluation,
     }

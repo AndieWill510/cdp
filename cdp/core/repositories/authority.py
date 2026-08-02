@@ -152,17 +152,22 @@ def insert_evaluation_result(
     matched_authority_grant_id: uuid.UUID | None,
     result: str,
     failure_reason: str | None,
+    governed_act_ref_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
+    """governed_act_ref_id disambiguates which sub-record (challenge,
+    adjudication, authorization, execution) this evaluation covers when a
+    decision can have more than one -- see 012-universal-attestation.sql.
+    NULL for decision_created."""
     cursor.execute(
         """
         INSERT INTO cdp_core.authority_evaluation_result (
             actor_id, required_authority, governed_act_type,
-            governed_act_registry_name, governed_act_decision_id,
+            governed_act_registry_name, governed_act_decision_id, governed_act_ref_id,
             matched_authority_grant_id, result, failure_reason
         )
         VALUES (
             %(actor_id)s, %(required_authority)s, %(governed_act_type)s,
-            %(governed_act_registry_name)s, %(governed_act_decision_id)s,
+            %(governed_act_registry_name)s, %(governed_act_decision_id)s, %(governed_act_ref_id)s,
             %(matched_authority_grant_id)s, %(result)s, %(failure_reason)s
         )
         RETURNING *
@@ -173,6 +178,7 @@ def insert_evaluation_result(
             "governed_act_type": governed_act_type,
             "governed_act_registry_name": governed_act_registry_name,
             "governed_act_decision_id": governed_act_decision_id,
+            "governed_act_ref_id": governed_act_ref_id,
             "matched_authority_grant_id": matched_authority_grant_id,
             "result": result,
             "failure_reason": failure_reason,

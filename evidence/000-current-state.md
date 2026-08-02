@@ -1,6 +1,6 @@
 # Current State
 
-Status: Draft v0.1 — as of 2026-07-31
+Status: Draft v0.1 — as of 2026-08-01, session 029 (Universal Attestation) working tree, building on PR #43 head `b29e75a`
 
 This document classifies each governance step against the evidence levels
 defined in [`README.md`](README.md). Classification follows the *strongest
@@ -45,6 +45,12 @@ rating, not two different systems:
 | Step | Classification | Evidence |
 |---|---|---|
 | Authority and Delegation (RFC-CDP-032), scoped to SS19 Minimal Compliance | Integration Tested (E4) | DDL: `db/ddl/011-authority-and-delegation.sql` (`cdp_core.authority_grant`, `cdp_core.authority_evaluation_result`, seeded bounded `cdp_authority_grant_issuer` actor). Repository: `cdp/core/repositories/authority.py`. Service: `grant_authority`, `revoke_authority`, and an Authority gate added to `attest_and_create_decision` (`cdp/core/services.py`). Routes: `POST /authority-grants`, `GET /authority-grants/{grant_id}`, `POST /authority-grants/{grant_id}/revoke` (`cdp/api/authority.py`), `GET /decisions/{registry_name}/{decision_id}/authority-evaluations` (`cdp/api/decisions.py`). Tests: `tests/authority/test_authority_grant_service.py` (9 cases, including the anti-delete trigger actually firing), `tests/authority/test_authority_grant_api.py` (8 cases), plus 6 Authority-gate cases added to `tests/identify_attest_standing/test_attestation_service.py` and 3 to `test_identity_attestation_api.py`. Confirmed passing in CI job `full-cdp-slice-tests`: run `30707515976`, PR #43 head commit `b29e75a`, 2026-08-01T16:09:37Z, conclusion `success`. This is not delegation, quorum, presence, emergency/repair/sovereignty authority, or separation-of-duties enforcement -- see the DDL header's constitutional scope note. |
+
+## Universal Attestation (RFC-CDP-031 §2)
+
+| Step | Classification | Evidence |
+|---|---|---|
+| Attested challenge, adjudication, execution authorization, execution record | Integration Tested (E4) | DDL: `db/ddl/012-universal-attestation.sql` (additive `governed_act_ref_id` column on `cdp_core.attestation_record` and `cdp_core.authority_evaluation_result`, four new `governed_act_type` vocabulary values). Service: `attest_and_raise_challenge`, `attest_and_adjudicate_challenge`, `attest_and_authorize_execution`, `attest_and_record_execution_attempt` (`cdp/core/services.py`), each reusing the shared `_check_actor_active`/`_check_claim_recognized_and_scoped`/`_evaluate_authority`/`_persist_attestation_and_authority` helpers `attest_and_create_decision` was refactored onto. Routes: `POST /decisions/{registry_name}/{decision_id}/attested-challenges`, `.../challenges/{challenge_id}/attested-adjudications`, `.../attested-execution-authorizations`, `.../attested-execution-records` (`cdp/api/decisions.py`). Tests: `tests/migration/test_migration_012_universal_attestation.py` (7 static + 1 Postgres smoke), `tests/universal_attestation/test_universal_attestation_service.py` (14 cases), `tests/universal_attestation/test_universal_attestation_api.py` (5 cases). Initial corrected proof: run `30729045854` on commit `4d0e7b8` (dispatched via `workflow_dispatch` while PR #44 was still stacked on unmerged PR #43), 2026-08-02T02:32:40Z, conclusion `success`. Current PR-head verification, after PR #43 merged to main (`c508c6d`) and PR #44 was rebased onto it: run `30729249209` on commit `2c9d5fb` (this branch's actual head), 2026-08-02T02:39:41Z, conclusion `success`, alongside the full pre-existing suite with no regressions. Does not reach Test, Legitimize, Learn, or the Identity/Attestation/Authority slices' own mutations — see `docs/session-029-universal-attestation.md` §1 for the scope note. |
 
 ## Decision Lifecycle (RFC-CDP-040–048)
 

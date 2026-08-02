@@ -25,7 +25,15 @@ from cdp.core.repositories import attestations as attestations_repo
 from cdp.core.repositories import authority as authority_repo
 from cdp.core.repositories import decisions as decisions_repo
 from cdp.core.services import (
+    ActorNotActive,
+    ActorNotFound,
     AdjudicationInput,
+    AttestationInput,
+    AttestedAdjudicationInput,
+    AttestedChallengeInput,
+    AttestedExecutionAuthorizationInput,
+    AttestedExecutionRecordInput,
+    AuthorityNotGranted,
     ChallengeInput,
     ChallengeNotAdjudicable,
     ChallengeNotFound,
@@ -40,8 +48,15 @@ from cdp.core.services import (
     ExecutionAuthorizationNotPermitted,
     ExecutionNotPermitted,
     ExecutionRecordInput,
+    IdentityClaimActorMismatch,
+    IdentityClaimNotRecognized,
+    IdentityClaimScopeInsufficient,
     WorkflowStageNotConfigured,
     adjudicate_challenge,
+    attest_and_adjudicate_challenge,
+    attest_and_authorize_execution,
+    attest_and_raise_challenge,
+    attest_and_record_execution_attempt,
     authorize_execution,
     create_decision_with_workflow,
     raise_challenge_for_decision,
@@ -202,6 +217,77 @@ def create_challenge(
         raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
+class AttestedChallengeCreateRequest(BaseModel):
+    challenge_text: str
+    challenge_type: str = "other"
+    metadata: dict[str, Any] | None = None
+
+    submitted_by_actor_id: str
+    identity_claim_id: uuid.UUID
+    attestation_method: str
+    credential_reference: str
+    issued_at: datetime
+
+
+@router.post("/decisions/{registry_name}/{decision_id}/attested-challenges", status_code=201)
+def create_attested_challenge(
+    registry_name: str, decision_id: str, request: AttestedChallengeCreateRequest
+) -> dict[str, Any]:
+    """Universal Attestation proof path for RFC-CDP-042 Challenge (session
+    029) -- see attest_and_raise_challenge's docstring in
+    cdp/core/services.py. Additive to POST .../challenges above, which is
+    unchanged."""
+    payload = request.model_dump()
+    challenge_input = ChallengeInput(
+        registry_name=registry_name,
+        decision_id=decision_id,
+        raised_by_actor_id=payload["submitted_by_actor_id"],
+        challenge_text=payload["challenge_text"],
+        challenge_type=payload["challenge_type"],
+        metadata=payload["metadata"],
+    )
+    attestation_input = AttestationInput(
+        actor_id=payload["submitted_by_actor_id"],
+        identity_claim_id=payload["identity_claim_id"],
+        attestation_method=payload["attestation_method"],
+        credential_reference=payload["credential_reference"],
+        issued_at=payload["issued_at"],
+    )
+    try:
+        return attest_and_raise_challenge(
+            AttestedChallengeInput(
+                challenge_input=challenge_input, attestation_input=attestation_input
+            )
+        )
+    except DecisionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Decision not found") from exc
+    except ActorNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ActorNotActive as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimActorMismatch as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimNotRecognized as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimScopeInsufficient as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except AuthorityNotGranted as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ChallengeNotPermitted as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (
+        psycopg.errors.ForeignKeyViolation,
+        psycopg.errors.RaiseException,
+        psycopg.errors.CheckViolation,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="The challenge references unregistered or invalid identifiers",
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
 class ExecutionAuthorizationCreateRequest(BaseModel):
     authorized_by_actor_id: str
     rationale: str
@@ -223,6 +309,83 @@ def create_execution_authorization(
         return authorize_execution(authorization_input)
     except DecisionNotFound as exc:
         raise HTTPException(status_code=404, detail="Decision not found") from exc
+    except ExecutionAlreadyAuthorized as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ExecutionAuthorizationNotPermitted as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except psycopg.errors.UniqueViolation as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="This decision has already received execution authorization",
+        ) from exc
+    except (
+        psycopg.errors.ForeignKeyViolation,
+        psycopg.errors.RaiseException,
+        psycopg.errors.CheckViolation,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="The authorization references unregistered or invalid identifiers",
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
+class AttestedExecutionAuthorizationCreateRequest(BaseModel):
+    rationale: str
+
+    submitted_by_actor_id: str
+    identity_claim_id: uuid.UUID
+    attestation_method: str
+    credential_reference: str
+    issued_at: datetime
+
+
+@router.post(
+    "/decisions/{registry_name}/{decision_id}/attested-execution-authorizations",
+    status_code=201,
+)
+def create_attested_execution_authorization(
+    registry_name: str, decision_id: str, request: AttestedExecutionAuthorizationCreateRequest
+) -> dict[str, Any]:
+    """Universal Attestation proof path for execution authorization
+    (session 029) -- see attest_and_authorize_execution's docstring in
+    cdp/core/services.py. Additive to POST .../execution-authorizations
+    above, which is unchanged."""
+    payload = request.model_dump()
+    authorization_input = ExecutionAuthorizationInput(
+        registry_name=registry_name,
+        decision_id=decision_id,
+        authorized_by_actor_id=payload["submitted_by_actor_id"],
+        rationale=payload["rationale"],
+    )
+    attestation_input = AttestationInput(
+        actor_id=payload["submitted_by_actor_id"],
+        identity_claim_id=payload["identity_claim_id"],
+        attestation_method=payload["attestation_method"],
+        credential_reference=payload["credential_reference"],
+        issued_at=payload["issued_at"],
+    )
+    try:
+        return attest_and_authorize_execution(
+            AttestedExecutionAuthorizationInput(
+                authorization_input=authorization_input, attestation_input=attestation_input
+            )
+        )
+    except DecisionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Decision not found") from exc
+    except ActorNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ActorNotActive as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimActorMismatch as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimNotRecognized as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimScopeInsufficient as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except AuthorityNotGranted as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ExecutionAlreadyAuthorized as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ExecutionAuthorizationNotPermitted as exc:
@@ -294,6 +457,92 @@ def create_execution_record(
         raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
+class AttestedExecutionRecordCreateRequest(BaseModel):
+    execution_status: Literal["succeeded", "failed", "partial"]
+    result_summary: str
+    attempted_at: datetime
+    completed_at: datetime
+
+    submitted_by_actor_id: str
+    identity_claim_id: uuid.UUID
+    attestation_method: str
+    credential_reference: str
+    issued_at: datetime
+
+
+@router.post(
+    "/decisions/{registry_name}/{decision_id}/attested-execution-records",
+    status_code=201,
+)
+def create_attested_execution_record(
+    registry_name: str, decision_id: str, request: AttestedExecutionRecordCreateRequest
+) -> dict[str, Any]:
+    """Universal Attestation proof path for execution recording (session
+    029) -- see attest_and_record_execution_attempt's docstring in
+    cdp/core/services.py. Additive to POST .../execution-records above,
+    which is unchanged."""
+    payload = request.model_dump()
+    execution_input = ExecutionRecordInput(
+        registry_name=registry_name,
+        decision_id=decision_id,
+        executed_by_actor_id=payload["submitted_by_actor_id"],
+        execution_status=payload["execution_status"],
+        result_summary=payload["result_summary"],
+        attempted_at=payload["attempted_at"],
+        completed_at=payload["completed_at"],
+    )
+    attestation_input = AttestationInput(
+        actor_id=payload["submitted_by_actor_id"],
+        identity_claim_id=payload["identity_claim_id"],
+        attestation_method=payload["attestation_method"],
+        credential_reference=payload["credential_reference"],
+        issued_at=payload["issued_at"],
+    )
+    try:
+        return attest_and_record_execution_attempt(
+            AttestedExecutionRecordInput(
+                execution_input=execution_input, attestation_input=attestation_input
+            )
+        )
+    except DecisionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Decision not found") from exc
+    except ActorNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ActorNotActive as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimActorMismatch as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimNotRecognized as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimScopeInsufficient as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except AuthorityNotGranted as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except DecisionNotAuthorizedForExecution as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ExecutionNotPermitted as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ExecutionAlreadySucceeded as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except psycopg.errors.UniqueViolation as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="This authorization already has a succeeded execution record",
+        ) from exc
+    except (
+        ValueError,
+        psycopg.errors.ForeignKeyViolation,
+        psycopg.errors.RaiseException,
+        psycopg.errors.CheckViolation,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="The execution record references unregistered or invalid identifiers",
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
 class AdjudicationCreateRequest(BaseModel):
     adjudicated_by_actor_id: str
     outcome: Literal["sustained", "not_sustained", "deferred", "referred_to_repair"]
@@ -320,6 +569,85 @@ def create_adjudication(
         return adjudicate_challenge(adjudication_input)
     except DecisionNotFound as exc:
         raise HTTPException(status_code=404, detail="Decision not found") from exc
+    except ChallengeNotFound as exc:
+        raise HTTPException(status_code=404, detail="Challenge not found") from exc
+    except ChallengeNotAdjudicable as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (
+        ValueError,
+        psycopg.errors.ForeignKeyViolation,
+        psycopg.errors.RaiseException,
+        psycopg.errors.CheckViolation,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="The adjudication references unregistered or invalid identifiers",
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
+class AttestedAdjudicationCreateRequest(BaseModel):
+    outcome: Literal["sustained", "not_sustained", "deferred", "referred_to_repair"]
+    rationale: str
+
+    submitted_by_actor_id: str
+    identity_claim_id: uuid.UUID
+    attestation_method: str
+    credential_reference: str
+    issued_at: datetime
+
+
+@router.post(
+    "/decisions/{registry_name}/{decision_id}/challenges/{challenge_id}/attested-adjudications",
+    status_code=201,
+)
+def create_attested_adjudication(
+    registry_name: str,
+    decision_id: str,
+    challenge_id: uuid.UUID,
+    request: AttestedAdjudicationCreateRequest,
+) -> dict[str, Any]:
+    """Universal Attestation proof path for challenge adjudication (session
+    029) -- see attest_and_adjudicate_challenge's docstring in
+    cdp/core/services.py. Additive to POST .../adjudications above, which
+    is unchanged."""
+    payload = request.model_dump()
+    adjudication_input = AdjudicationInput(
+        registry_name=registry_name,
+        decision_id=decision_id,
+        challenge_id=challenge_id,
+        adjudicated_by_actor_id=payload["submitted_by_actor_id"],
+        outcome=payload["outcome"],
+        rationale=payload["rationale"],
+    )
+    attestation_input = AttestationInput(
+        actor_id=payload["submitted_by_actor_id"],
+        identity_claim_id=payload["identity_claim_id"],
+        attestation_method=payload["attestation_method"],
+        credential_reference=payload["credential_reference"],
+        issued_at=payload["issued_at"],
+    )
+    try:
+        return attest_and_adjudicate_challenge(
+            AttestedAdjudicationInput(
+                adjudication_input=adjudication_input, attestation_input=attestation_input
+            )
+        )
+    except DecisionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Decision not found") from exc
+    except ActorNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ActorNotActive as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimActorMismatch as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimNotRecognized as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IdentityClaimScopeInsufficient as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except AuthorityNotGranted as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ChallengeNotFound as exc:
         raise HTTPException(status_code=404, detail="Challenge not found") from exc
     except ChallengeNotAdjudicable as exc:

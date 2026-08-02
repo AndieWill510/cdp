@@ -1,6 +1,6 @@
 # Demonstrated Capabilities
 
-Status: Draft v0.1 — as of 2026-07-31
+Status: Draft v0.1 — as of 2026-08-01, session 029 (Universal Attestation) working tree, building on PR #43 head `b29e75a`
 
 This document describes only capabilities that have cleared at least E2
 (Structurally Tested) per [`README.md`](README.md). It contains no roadmap,
@@ -151,6 +151,57 @@ authority, or separation-of-duties enforcement, and the grant issuer is a
 single hardcoded actor, not a delegable role. See
 `db/ddl/011-authority-and-delegation.sql`'s header and
 `docs/session-028-authority-and-delegation.md` for the full scope
+statement.
+
+## Universal Attestation
+
+The same attest-then-authorize proof path `attest_and_create_decision`
+established for decision creation now also covers four more mutating
+acts: raising a challenge (`POST .../attested-challenges`), adjudicating
+one (`POST .../challenges/{challenge_id}/attested-adjudications`),
+authorizing execution (`POST .../attested-execution-authorizations`), and
+recording an execution attempt (`POST .../attested-execution-records`).
+Each requires the same shape of proof decision creation already required
+-- a registered, active actor holding a recognized, in-scope identity
+claim, plus an active, unexpired, correctly-scoped Authority Grant for
+that specific act (`CHALLENGE`, `ADJUDICATE`, `AUTHORIZE_EXECUTION`, or
+`RECORD` respectively, each evaluated against its own `purpose_scope`
+string) -- and each writes its own `attestation_record` and
+`authority_evaluation_result` row, disambiguated from any other
+challenge/adjudication/authorization/execution on the same decision by
+the new `governed_act_ref_id` column
+(`db/ddl/012-universal-attestation.sql`).
+
+The four underlying unattested routes (`POST .../challenges`, `POST
+.../adjudications`, `POST .../execution-authorizations`, `POST
+.../execution-records`) remain untouched and fully functional on their
+own -- attestation is additive here exactly as it was for decision
+creation, not a replacement.
+
+Demonstrated by `tests/universal_attestation/test_universal_attestation_service.py`
+(14 cases: actor/claim/authority fail-closed coverage per act type, plus
+a forced-failure rollback test for challenge-raising asserting zero rows
+persisted) and `tests/universal_attestation/test_universal_attestation_api.py`
+(5 cases: one full round trip per act type, plus a missing-authority
+`403`), exercised through a live `uvicorn` process and Postgres, alongside
+`tests/migration/test_migration_012_universal_attestation.py` (7 static +
+1 Postgres smoke test proving 001 through 012 apply cleanly and 012 is
+rerun-safe). All 283 tests in the combined suite (this session's new
+tests plus every test from sessions 020-028) pass locally against a live
+Docker Compose stack with zero regressions, and are confirmed passing in
+CI job `full-cdp-slice-tests`. Initial corrected proof: run `30729045854`
+on commit `4d0e7b8` (2026-08-02T02:32:40Z, conclusion `success`). Current
+PR-head verification, after PR #44 was rebased onto main following PR
+#43's merge: run `30729249209` on commit `2c9d5fb` (this branch's actual
+head), 2026-08-02T02:39:41Z, conclusion `success`.
+
+This does not reach Test, Legitimize, or Learn (RFC-CDP-043/045/048) --
+no service function exists for those acts yet -- and it deliberately does
+not attest the Identity/Attestation/Authority slices' own mutations
+(registering an actor, submitting or deciding an identity claim, granting
+or revoking authority): those are the foundation this capability depends
+on, not acts it can be layered on top of. See
+`docs/session-029-universal-attestation.md` §1 for the full scope
 statement.
 
 ## Audit trail
