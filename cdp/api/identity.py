@@ -140,6 +140,8 @@ class IdentityClaimCreateRequest(BaseModel):
     purpose_scope: str
     evidence_refs: list[Any] | None = None
     supersedes_claim_id: uuid.UUID | None = None
+    scope_registry_name: str | None = None
+    scope_decision_class_id: str | None = None
 
 
 @router.post("/identity-claims", status_code=201)

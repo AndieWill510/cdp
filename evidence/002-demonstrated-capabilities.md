@@ -1,6 +1,6 @@
 # Demonstrated Capabilities
 
-Status: Draft v0.1 — as of 2026-08-01, session 029 (Universal Attestation) working tree, building on PR #43 head `b29e75a`
+Status: Draft v0.1 — as of 2026-08-02, session 030 (Identity Claim Scope) working tree, building on main `680f0f4`
 
 This document describes only capabilities that have cleared at least E2
 (Structurally Tested) per [`README.md`](README.md). It contains no roadmap,
@@ -203,6 +203,48 @@ or revoking authority): those are the foundation this capability depends
 on, not acts it can be layered on top of. See
 `docs/session-029-universal-attestation.md` §1 for the full scope
 statement.
+
+## Identity Claim Scope
+
+An Identity Claim may optionally declare a two-level scope --
+`scope_registry_name` (exact-match) plus a nullable
+`scope_decision_class_id` (wildcard within that registry) -- the same
+shape `authority_grant` already has (session 028). `POST
+/identity-claims` accepts the two new fields
+(`db/ddl/013-identity-claim-scope.sql`), and the shared
+`_check_claim_recognized_and_scoped` helper every `attest_and_*` proof
+path calls now also enforces them when a claim sets
+`scope_registry_name`: exact registry match required, exact-or-wildcard
+decision-class match required. A claim that omits both fields (every
+claim submitted before this migration) is unaffected -- `purpose_scope`
+alone continues to govern its coverage, exactly as before.
+
+Demonstrated by `tests/migration/test_migration_013_identity_claim_scope.py`
+(7 static + 1 Postgres smoke test, including a direct assertion that the
+CHECK constraint forbidding a decision-class scope without a registry
+scope fires on an actual `INSERT`, not just DDL text inspection), 4 new
+cases in `tests/identify_attest_standing/test_identity_claim_service.py`
+(persist both fields, registry-only wildcard, both omitted leaves both
+`NULL`, class-without-registry rejected by the database), 3 new cases in
+`test_attestation_service.py` (wrong registry, wrong decision class,
+matching registry with wildcard class -- against
+`attest_and_create_decision`), 2 new cases in
+`tests/universal_attestation/test_universal_attestation_service.py`
+(wrong registry, matching registry with wildcard class -- against
+`attest_and_raise_challenge`, proving the shared helper's check applies
+beyond decision creation), and 2 new cases in
+`test_identity_attestation_api.py` (matching-scope claim succeeds with
+`201`, wrong-registry claim returns `409`). All 259 tests in the combined
+suite (this session's new tests plus every test from sessions 020-029)
+pass locally against a live Docker Compose stack with zero regressions.
+**Not yet confirmed in CI** -- see `000-current-state.md` for why this
+capability is rated E3, not E4, pending a GitHub Actions run on this
+branch's head commit.
+
+This is still not RFC-CDP-032 Authority's model or a general governed
+scope grammar -- it composes the same two fixed dimensions (registry,
+decision class) `authority_grant` already does. See
+`docs/session-030-identity-claim-scope.md` for the full scope statement.
 
 ## Audit trail
 

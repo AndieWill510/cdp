@@ -82,7 +82,13 @@ def _register_actor(prefix: str, **overrides):
     return actor_id
 
 
-def _submit_and_recognize_claim(actor_id: str, *, purpose_scope: str):
+def _submit_and_recognize_claim(
+    actor_id: str,
+    *,
+    purpose_scope: str,
+    scope_registry_name: str | None = None,
+    scope_decision_class_id: str | None = None,
+):
     from cdp.core.services import (
         IdentityClaimDecisionInput,
         IdentityClaimInput,
@@ -96,6 +102,8 @@ def _submit_and_recognize_claim(actor_id: str, *, purpose_scope: str):
             claimant_actor_id=actor_id,
             claimed_identity_descriptor="Continuity for universal-attestation tests.",
             purpose_scope=purpose_scope,
+            scope_registry_name=scope_registry_name,
+            scope_decision_class_id=scope_decision_class_id,
         )
     )["identity_claim"]
     recognize_identity_claim(
@@ -313,6 +321,70 @@ class AttestAndRaiseChallengeTests(unittest.TestCase):
                     attestation_input=_make_attestation_input(actor_id, claim_id),
                 )
             )
+
+    def test_claim_scoped_to_a_different_registry_fails_closed(self) -> None:
+        from cdp.core.services import (
+            AttestedChallengeInput,
+            ChallengeInput,
+            IdentityClaimScopeInsufficient,
+            attest_and_raise_challenge,
+        )
+
+        subject_id = _register_actor("ua-challenge-wrongregistry-subject")
+        decision_id = _unique("ua-challenge-wrongregistry-decision")
+        _create_plain_decision(decision_id, subject_id)
+
+        actor_id = _register_actor("ua-challenge-wrongregistry-actor")
+        # Right purpose_scope, but this claim is scoped to a registry that
+        # is not the decision's registry -- session 030's richer scope
+        # semantics (db/ddl/013-identity-claim-scope.sql) apply here too,
+        # since attest_and_raise_challenge reuses the same
+        # _check_claim_recognized_and_scoped helper attest_and_create_decision
+        # does.
+        claim_id = _submit_and_recognize_claim(
+            actor_id, purpose_scope="challenge_raising", scope_registry_name="some_other_registry"
+        )
+        _grant_authority(actor_id, "CHALLENGE")
+
+        with self.assertRaises(IdentityClaimScopeInsufficient):
+            attest_and_raise_challenge(
+                AttestedChallengeInput(
+                    challenge_input=ChallengeInput(
+                        registry_name=REGISTRY_NAME,
+                        decision_id=decision_id,
+                        raised_by_actor_id=actor_id,
+                        challenge_text="Should not be created.",
+                    ),
+                    attestation_input=_make_attestation_input(actor_id, claim_id),
+                )
+            )
+
+    def test_claim_with_registry_scope_and_wildcard_class_succeeds(self) -> None:
+        from cdp.core.services import AttestedChallengeInput, ChallengeInput, attest_and_raise_challenge
+
+        subject_id = _register_actor("ua-challenge-wildcard-subject")
+        decision_id = _unique("ua-challenge-wildcard-decision")
+        _create_plain_decision(decision_id, subject_id)
+
+        actor_id = _register_actor("ua-challenge-wildcard-actor")
+        claim_id = _submit_and_recognize_claim(
+            actor_id, purpose_scope="challenge_raising", scope_registry_name=REGISTRY_NAME
+        )
+        _grant_authority(actor_id, "CHALLENGE")
+
+        result = attest_and_raise_challenge(
+            AttestedChallengeInput(
+                challenge_input=ChallengeInput(
+                    registry_name=REGISTRY_NAME,
+                    decision_id=decision_id,
+                    raised_by_actor_id=actor_id,
+                    challenge_text="Wildcard-scoped claim challenge test.",
+                ),
+                attestation_input=_make_attestation_input(actor_id, claim_id),
+            )
+        )
+
+        self.assertEqual(result["challenge"]["raised_by_actor_id"], actor_id)
 
     def test_unknown_actor_fails_closed(self) -> None:
         from cdp.core.services import (

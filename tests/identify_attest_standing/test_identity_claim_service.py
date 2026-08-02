@@ -440,6 +440,72 @@ class IdentityClaimTests(unittest.TestCase):
             self.assertEqual(row["recognition_status"], "pending")
             self.assertEqual(row["supersedes_claim_id"], original["claim_id"])
 
+    def test_submit_claim_with_registry_and_class_scope_persists_both(self) -> None:
+        from cdp.core.services import IdentityClaimInput, submit_identity_claim
+
+        actor_id = _register_actor("iaa-claim-scoped")
+        claim = submit_identity_claim(
+            IdentityClaimInput(
+                actor_id=actor_id,
+                claimant_actor_id=actor_id,
+                claimed_identity_descriptor="Scoped claim.",
+                purpose_scope="decision_creation",
+                scope_registry_name="sample_attorney_demo",
+                scope_decision_class_id="claim_approval",
+            )
+        )["identity_claim"]
+
+        self.assertEqual(claim["scope_registry_name"], "sample_attorney_demo")
+        self.assertEqual(claim["scope_decision_class_id"], "claim_approval")
+
+    def test_submit_claim_with_registry_scope_and_no_class_scope_is_a_wildcard(self) -> None:
+        from cdp.core.services import IdentityClaimInput, submit_identity_claim
+
+        actor_id = _register_actor("iaa-claim-wildcard")
+        claim = submit_identity_claim(
+            IdentityClaimInput(
+                actor_id=actor_id,
+                claimant_actor_id=actor_id,
+                claimed_identity_descriptor="Registry-wide claim.",
+                purpose_scope="decision_creation",
+                scope_registry_name="sample_attorney_demo",
+            )
+        )["identity_claim"]
+
+        self.assertEqual(claim["scope_registry_name"], "sample_attorney_demo")
+        self.assertIsNone(claim["scope_decision_class_id"])
+
+    def test_submit_claim_without_scope_fields_leaves_both_null(self) -> None:
+        from cdp.core.services import IdentityClaimInput, submit_identity_claim
+
+        actor_id = _register_actor("iaa-claim-unscoped")
+        claim = submit_identity_claim(
+            IdentityClaimInput(
+                actor_id=actor_id,
+                claimant_actor_id=actor_id,
+                claimed_identity_descriptor="Unscoped claim, purpose_scope only.",
+                purpose_scope="decision_creation",
+            )
+        )["identity_claim"]
+
+        self.assertIsNone(claim["scope_registry_name"])
+        self.assertIsNone(claim["scope_decision_class_id"])
+
+    def test_submit_claim_with_class_scope_but_no_registry_scope_is_rejected(self) -> None:
+        from cdp.core.services import IdentityClaimInput, submit_identity_claim
+
+        actor_id = _register_actor("iaa-claim-badscope")
+        with self.assertRaises(psycopg.errors.CheckViolation):
+            submit_identity_claim(
+                IdentityClaimInput(
+                    actor_id=actor_id,
+                    claimant_actor_id=actor_id,
+                    claimed_identity_descriptor="Should be rejected by the DB CHECK.",
+                    purpose_scope="decision_creation",
+                    scope_decision_class_id="claim_approval",
+                )
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

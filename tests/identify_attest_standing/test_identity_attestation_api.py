@@ -101,17 +101,26 @@ def _register_actor(display_mode: str = "public") -> str:
     return actor_id
 
 
-def _submit_claim(actor_id: str, *, purpose_scope: str = "decision_creation") -> str:
-    status, body = _post_json(
-        f"{API_URL}/identity-claims",
-        {
-            "actor_id": actor_id,
-            "claimant_actor_id": actor_id,
-            "claimed_identity_descriptor": "API round-trip descriptor for this actor.",
-            "purpose_scope": purpose_scope,
-            "evidence_refs": ["evidence-ref-api-1"],
-        },
-    )
+def _submit_claim(
+    actor_id: str,
+    *,
+    purpose_scope: str = "decision_creation",
+    scope_registry_name: str | None = None,
+    scope_decision_class_id: str | None = None,
+) -> str:
+    payload = {
+        "actor_id": actor_id,
+        "claimant_actor_id": actor_id,
+        "claimed_identity_descriptor": "API round-trip descriptor for this actor.",
+        "purpose_scope": purpose_scope,
+        "evidence_refs": ["evidence-ref-api-1"],
+    }
+    if scope_registry_name is not None:
+        payload["scope_registry_name"] = scope_registry_name
+    if scope_decision_class_id is not None:
+        payload["scope_decision_class_id"] = scope_decision_class_id
+
+    status, body = _post_json(f"{API_URL}/identity-claims", payload)
     assert status == 201, f"expected 201, got {status}: {body}"
     return body["identity_claim"]["claim_id"]
 
@@ -336,6 +345,36 @@ def test_attested_decision_without_authority_grant_returns_403() -> None:
         f"{API_URL}/attested-decisions", _attested_decision_payload(actor_id, claim_id, decision_id)
     )
     assert status == 403, f"expected 403, got {status}: {body}"
+
+    get_status, _ = _get_json(f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}")
+    assert get_status == 404, "no decision should have been created"
+
+
+def test_attested_decision_with_matching_registry_scoped_claim_succeeds() -> None:
+    actor_id = _register_actor()
+    claim_id = _submit_claim(actor_id, scope_registry_name=REGISTRY_NAME)
+    _recognize_claim(claim_id)
+    _grant_propose_authority(actor_id)
+    decision_id = _unique("iaa-api-decision-scoped")
+
+    status, body = _post_json(
+        f"{API_URL}/attested-decisions", _attested_decision_payload(actor_id, claim_id, decision_id)
+    )
+    assert status == 201, f"expected 201, got {status}: {body}"
+    assert body["decision"]["decision_id"] == decision_id
+
+
+def test_attested_decision_with_wrong_registry_scoped_claim_returns_409() -> None:
+    actor_id = _register_actor()
+    claim_id = _submit_claim(actor_id, scope_registry_name="some_other_registry")
+    _recognize_claim(claim_id)
+    _grant_propose_authority(actor_id)
+    decision_id = _unique("iaa-api-decision-wrongscope")
+
+    status, body = _post_json(
+        f"{API_URL}/attested-decisions", _attested_decision_payload(actor_id, claim_id, decision_id)
+    )
+    assert status == 409, f"expected 409, got {status}: {body}"
 
     get_status, _ = _get_json(f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}")
     assert get_status == 404, "no decision should have been created"
