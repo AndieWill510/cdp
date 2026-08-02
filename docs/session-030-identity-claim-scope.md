@@ -1,10 +1,10 @@
 # Session 030 — Richer Scope Semantics for Identity Claims
 
 Status: implementation complete, verified locally against a live Docker
-Compose stack (fresh migration apply, live `uvicorn`, live Postgres). CI
-run pending on this PR's head commit. Not yet reviewed/merged. This file
-documents what already exists in the working tree, not a plan for future
-work.
+Compose stack (fresh migration apply, live `uvicorn`, live Postgres), and
+confirmed passing in CI (run `30730450515` on head commit `77f29c9`, see
+§5). Not yet reviewed/merged (PR #46). This file documents what already
+exists in the working tree, not a plan for future work.
 
 Scope: extends Identity Claim's coverage model from a flat `purpose_scope`
 string-equality check to an optional two-level (registry + decision-class
@@ -142,15 +142,17 @@ migration apply, live Postgres, live `uvicorn`):
   API (full-cdp-slice-tests' exact list) = 259 tests, zero regressions.
 - `ruff check cdp` -- passes with no findings.
 
-**GitHub Actions:** pending -- see `evidence/000-current-state.md` for
-the citation once this PR's CI run passes.
+**GitHub Actions:** confirmed. Both jobs (`pr-guard`,
+`full-cdp-slice-tests`) passed on the first run: run `30730450515`,
+commit `77f29c9` (this branch's head), 2026-08-02T03:20:23Z, conclusion
+`success`.
 
 ## 6. Evidence level reached
 
-Not yet updated in `evidence/000-current-state.md` pending a passing CI
-run on this PR's head commit -- this document intentionally does not
-pre-claim E4 before that exists, matching the discipline sessions
-026-029 followed.
+**Integration Tested (E4)**, per `evidence/000-current-state.md`, cited
+to CI run `30730450515` on commit `77f29c9` -- the same discipline
+sessions 026-029 followed: E4 specifically means CI-confirmed, not
+locally-confirmed.
 
 ## 7. Known limitations
 

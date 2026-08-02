@@ -236,10 +236,10 @@ beyond decision creation), and 2 new cases in
 `test_identity_attestation_api.py` (matching-scope claim succeeds with
 `201`, wrong-registry claim returns `409`). All 259 tests in the combined
 suite (this session's new tests plus every test from sessions 020-029)
-pass locally against a live Docker Compose stack with zero regressions.
-**Not yet confirmed in CI** -- see `000-current-state.md` for why this
-capability is rated E3, not E4, pending a GitHub Actions run on this
-branch's head commit.
+pass locally against a live Docker Compose stack with zero regressions,
+and are confirmed passing in CI job `full-cdp-slice-tests`, run
+`30730450515` on this branch's head commit `77f29c9`,
+2026-08-02T03:20:23Z, conclusion `success`.
 
 This is still not RFC-CDP-032 Authority's model or a general governed
 scope grammar -- it composes the same two fixed dimensions (registry,

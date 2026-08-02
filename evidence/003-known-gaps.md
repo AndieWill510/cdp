@@ -249,9 +249,9 @@ of that scope, not a claim that RFC-CDP-031 §2 is implemented in full:
 ## Identity Claim Scope -- known limitations of the session 030 slice
 
 Session 030 rates the optional registry/decision-class scope on Identity
-Claims at Runtime Tested (E3), pending CI confirmation, in
-`000-current-state.md` -- not yet E4. The items below are the honest
-boundaries of this slice regardless of where CI lands it:
+Claims at Integration Tested (E4) in `000-current-state.md`, cited to CI
+run `30730450515` on commit `77f29c9`. The items below are the honest
+boundaries of that scope, not a claim of anything broader:
 
 - **Optional, not mandatory.** A claim can still be submitted with
   neither `scope_registry_name` nor `scope_decision_class_id` set, in
