@@ -2,10 +2,11 @@
 
 Status: implementation complete, verified locally against a live Docker
 Compose stack (fresh migration apply, live `uvicorn`, live Postgres), and
-confirmed passing in CI (run `30729045854` on head commit `4d0e7b8`, see
-§5). Not yet reviewed/merged (PR #44, stacked on unmerged PR #43). This
-file documents what already exists in the working tree, not a plan for
-future work.
+confirmed passing in CI (run `30729249209` on head commit `2c9d5fb`, see
+§5). PR #43 (session 028) has since merged to main and PR #44 has been
+rebased onto it, so PR #44 is no longer stacked. Not yet reviewed/merged.
+This file documents what already exists in the working tree, not a plan
+for future work.
 
 Scope: **Universal Attestation** (RFC-CDP-031 §2: "All mutating acts MUST
 be attested"), extending the attest+authority proof path sessions 027/028
@@ -186,22 +187,26 @@ Combined total this session verified locally: **283 tests pass** (240
 static/Postgres/service including the 15 new ones, 43 API including the 5
 new ones).
 
-**GitHub Actions:** confirmed. PR #44 is stacked on unmerged PR #43
-(`session-028-authority-and-delegation`), and its base was changed from
-that branch to `main` after opening — since the CDP CI workflow only
-triggers `pull_request` events for PRs targeting `main`, and a base-branch
-edit does not itself fire `synchronize`/`opened`, CI was triggered via
-`gh workflow run cdp-ci.yml --ref session-029-universal-attestation`
-(`workflow_dispatch`) instead. Both jobs (`pr-guard`,
-`full-cdp-slice-tests`) passed: run `30729045854`, commit `4d0e7b8` (this
-branch's head), 2026-08-02T02:32:40Z, conclusion `success`.
+**GitHub Actions:** confirmed. PR #44 was originally opened stacked on
+unmerged PR #43 (`session-028-authority-and-delegation`); its base was
+changed to `main` after opening, and since a base-branch edit does not
+itself fire `synchronize`/`opened`, CI was first triggered via `gh
+workflow run cdp-ci.yml --ref session-029-universal-attestation`
+(`workflow_dispatch`) — run `30729045854` on commit `4d0e7b8`,
+2026-08-02T02:32:40Z, conclusion `success`. PR #43 was then merged to
+main (`c508c6d`) and PR #44 was rebased cleanly (no conflicts) onto the
+updated main, producing new commit SHAs `c229cc6`/`2c9d5fb`. The
+force-push triggered a genuine `pull_request` CI run on the rebased,
+now-unstacked branch: run `30729249209` on commit `2c9d5fb` (this
+branch's actual head), 2026-08-02T02:39:41Z, conclusion `success`. Both
+jobs (`pr-guard`, `full-cdp-slice-tests`) passed on both runs.
 
 ## 6. Evidence level reached
 
 **Integration Tested (E4)**, per `evidence/000-current-state.md`, cited
-to CI run `30729045854` on commit `4d0e7b8` — the same discipline
-sessions 026–028 followed: E4 specifically means CI-confirmed, not
-locally-confirmed.
+to CI run `30729249209` on commit `2c9d5fb` (PR #44's current, unstacked
+head) — the same discipline sessions 026–028 followed: E4 specifically
+means CI-confirmed, not locally-confirmed.
 
 ## 7. Known limitations (see `evidence/003-known-gaps.md` for the full list)
 

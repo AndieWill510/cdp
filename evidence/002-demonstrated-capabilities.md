@@ -189,8 +189,11 @@ persisted) and `tests/universal_attestation/test_universal_attestation_api.py`
 rerun-safe). All 283 tests in the combined suite (this session's new
 tests plus every test from sessions 020-028) pass locally against a live
 Docker Compose stack with zero regressions, and are confirmed passing in
-CI job `full-cdp-slice-tests`, run `30729045854` on this branch's head
-commit `4d0e7b8` (2026-08-02T02:32:40Z, conclusion `success`).
+CI job `full-cdp-slice-tests`. Initial corrected proof: run `30729045854`
+on commit `4d0e7b8` (2026-08-02T02:32:40Z, conclusion `success`). Current
+PR-head verification, after PR #44 was rebased onto main following PR
+#43's merge: run `30729249209` on commit `2c9d5fb` (this branch's actual
+head), 2026-08-02T02:39:41Z, conclusion `success`.
 
 This does not reach Test, Legitimize, or Learn (RFC-CDP-043/045/048) --
 no service function exists for those acts yet -- and it deliberately does

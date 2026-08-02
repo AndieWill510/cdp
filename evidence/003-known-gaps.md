@@ -210,8 +210,9 @@ claim that RFC-CDP-032 is implemented in full:
 ## Universal Attestation (RFC-CDP-031 §2) -- known limitations of the session 029 slice
 
 Session 029 rates the four new attested proof paths at Integration Tested
-(E4) in `000-current-state.md`, cited to CI run `30729045854` on this
-branch's head commit `4d0e7b8`. The items below are the honest boundaries
+(E4) in `000-current-state.md`, cited to CI run `30729249209` on this
+branch's current head commit `2c9d5fb` (after rebasing PR #44 onto main
+following PR #43's merge). The items below are the honest boundaries
 of that scope, not a claim that RFC-CDP-031 §2 is implemented in full:
 
 - **Does not reach Test, Legitimize, or Learn.** No service function
