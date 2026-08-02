@@ -1,6 +1,6 @@
 # Demonstrated Capabilities
 
-Status: Draft v0.1 — as of 2026-08-02, session 030 (Identity Claim Scope) working tree, building on main `680f0f4`
+Status: Draft v0.1 — as of 2026-08-02, session 031 (RFC-CDP-030/031 spec updates) working tree, building on main `680f0f4`
 
 This document describes only capabilities that have cleared at least E2
 (Structurally Tested) per [`README.md`](README.md). It contains no roadmap,
