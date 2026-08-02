@@ -1,8 +1,10 @@
 # Session 031 — RFC-CDP-030/031 Spec Updates
 
-Status: implementation complete (documentation-only, no code changes).
-Not yet reviewed/merged. This file documents what already exists in the
-working tree, not a plan for future work.
+Status: implementation complete (documentation-only, no code changes),
+confirmed passing in CI (`RFC Index Integrity` run `30747550527` and
+`CDP CI` run `30747550523`, both on head commit `28c42ef`, see §5). Not
+yet reviewed/merged (PR #47). This file documents what already exists in
+the working tree, not a plan for future work.
 
 Scope: bring RFC-CDP-030 (Identify Protocol) and RFC-CDP-031 (Attest
 Protocol) up to date with what four development sessions (027-030) have
@@ -103,11 +105,14 @@ No `cdp/` code changed, so `ruff check cdp` and the full local test
 suite are unaffected; not re-run for this session since there is nothing
 in this diff for them to exercise.
 
-**GitHub Actions:** pending -- the relevant CI check for this session is
+**GitHub Actions:** confirmed. The relevant CI check for this session is
 `.github/workflows/rfc-index-integrity.yml` (triggers on any push/PR
 touching `rfc/**`), not `cdp-ci.yml`'s `full-cdp-slice-tests` (no
-Postgres/API-touching change exists to run). `pr-guard` will also run
-(cheap, static) as it does for every PR push.
+Postgres/API-touching change exists to run, and it correctly did not
+run since this PR carries no `run-full-ci` label). Both checks passed on
+the first run: `RFC Index Integrity` run `30747550527` and `CDP CI`
+(`pr-guard` only) run `30747550523`, both on head commit `28c42ef`,
+2026-08-02T12:18:29Z, conclusion `success`.
 
 ## 6. Evidence level reached
 
