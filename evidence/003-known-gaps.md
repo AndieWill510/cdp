@@ -1,6 +1,6 @@
 # Known Gaps
 
-Status: Draft v0.4 -- as of 2026-08-01, session 029 (Universal Attestation) working tree, building on PR #43 head `b29e75a`
+Status: Draft v0.4 -- as of 2026-08-02, session 030 (Identity Claim Scope) working tree, building on main `680f0f4`
 
 This document describes known gaps, limitations, and evidence boundaries:
 capabilities the constitutional or architecture layer expects but that are
@@ -133,13 +133,15 @@ discipline:
   root explicitly warns against, but there is no authority-grant,
   delegation, expiry, quorum, or separation-of-duties model, and widening
   who may hold this role requires a code change, not a governed act.
-- **Purpose scope is a simple string equality check, not a governed scope
-  language.** `attest_and_create_decision` requires an identity claim's
-  `purpose_scope` to equal the literal string `"decision_creation"` --
-  there is no hierarchy, wildcard, or composable scope grammar, and
-  extending coverage to other governed acts (see above) would need either
-  more literal scope strings or a real scope language, neither of which
-  exists yet.
+- **Purpose scope is a simple string equality check.** Every
+  `attest_and_*` proof path still requires an identity claim's
+  `purpose_scope` to equal one specific literal string per act type
+  (`"decision_creation"`, `"challenge_raising"`, etc.) -- there is no
+  hierarchy, wildcard, or composable grammar on this axis, and it remains
+  unchanged by session 030 below. Session 030 adds a genuinely richer,
+  independent second axis (registry + decision-class scope, optional),
+  not a replacement for this one -- see the Identity Claim Scope section
+  below.
 - **A separate `cdp_actor_type` registry, not a retrofit of the legacy
   `actor_type` registry `decision_registry` already uses.** A compatibility
   mapping in `cdp/core/repositories/actors.py`
@@ -242,6 +244,30 @@ of that scope, not a claim that RFC-CDP-031 §2 is implemented in full:
   here to four new literal strings -- `challenge_raising`,
   `challenge_adjudication`, `execution_authorization`,
   `execution_recording` -- not a scope language).
+- **No production deployment evidence exists for this slice.**
+
+## Identity Claim Scope -- known limitations of the session 030 slice
+
+Session 030 rates the optional registry/decision-class scope on Identity
+Claims at Integration Tested (E4) in `000-current-state.md`, cited to CI
+run `30730450515` on commit `77f29c9`. The items below are the honest
+boundaries of that scope, not a claim of anything broader:
+
+- **Optional, not mandatory.** A claim can still be submitted with
+  neither `scope_registry_name` nor `scope_decision_class_id` set, in
+  which case `purpose_scope` alone governs coverage exactly as it did
+  before this session. This is a deliberate backward-compatibility
+  choice, not an oversight -- see
+  `db/ddl/013-identity-claim-scope.sql`'s header -- but it does mean the
+  richer scope is opt-in per claim, not enforced claim-wide.
+- **Still two fixed dimensions, not a general scope grammar.** The same
+  limitation already named for `authority_grant`'s scope model above:
+  no jurisdiction, risk-level, environment, or affected-parties
+  dimension -- `scope_registry_name`/`scope_decision_class_id` only.
+- **Does not touch `authority_grant` or RFC-CDP-032 Authority at all.**
+  Identity Claim's scope and Authority Grant's scope are two
+  independent, unlinked columns on two different tables, each with its
+  own two-level model -- there is no shared scope object between them.
 - **No production deployment evidence exists for this slice.**
 
 ## RFC index/manifest verification -- known limitation of a working check

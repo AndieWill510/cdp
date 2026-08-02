@@ -27,16 +27,20 @@ def insert_claim(
     purpose_scope: str,
     evidence_refs: list[Any] | None = None,
     supersedes_claim_id: uuid.UUID | None = None,
+    scope_registry_name: str | None = None,
+    scope_decision_class_id: str | None = None,
 ) -> dict[str, Any]:
     cursor.execute(
         """
         INSERT INTO cdp_core.identity_claim (
             actor_id, claimant_actor_id, claimed_identity_descriptor,
-            purpose_scope, evidence_refs, supersedes_claim_id
+            purpose_scope, evidence_refs, supersedes_claim_id,
+            scope_registry_name, scope_decision_class_id
         )
         VALUES (
             %(actor_id)s, %(claimant_actor_id)s, %(claimed_identity_descriptor)s,
-            %(purpose_scope)s, %(evidence_refs)s, %(supersedes_claim_id)s
+            %(purpose_scope)s, %(evidence_refs)s, %(supersedes_claim_id)s,
+            %(scope_registry_name)s, %(scope_decision_class_id)s
         )
         RETURNING *
         """,
@@ -47,6 +51,8 @@ def insert_claim(
             "purpose_scope": purpose_scope,
             "evidence_refs": Jsonb(evidence_refs or []),
             "supersedes_claim_id": supersedes_claim_id,
+            "scope_registry_name": scope_registry_name,
+            "scope_decision_class_id": scope_decision_class_id,
         },
     )
     row = cursor.fetchone()

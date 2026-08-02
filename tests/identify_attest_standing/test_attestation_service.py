@@ -103,7 +103,13 @@ def _register_actor(prefix: str, **overrides):
     return actor_id
 
 
-def _submit_and_recognize_claim(actor_id: str, *, purpose_scope: str = "decision_creation"):
+def _submit_and_recognize_claim(
+    actor_id: str,
+    *,
+    purpose_scope: str = "decision_creation",
+    scope_registry_name: str | None = None,
+    scope_decision_class_id: str | None = None,
+):
     from cdp.core.services import (
         IdentityClaimDecisionInput,
         IdentityClaimInput,
@@ -117,6 +123,8 @@ def _submit_and_recognize_claim(actor_id: str, *, purpose_scope: str = "decision
             claimant_actor_id=actor_id,
             claimed_identity_descriptor="Continuity for attestation tests.",
             purpose_scope=purpose_scope,
+            scope_registry_name=scope_registry_name,
+            scope_decision_class_id=scope_decision_class_id,
         )
     )["identity_claim"]
     recognize_identity_claim(
@@ -403,6 +411,72 @@ class AttestAndCreateDecisionTests(unittest.TestCase):
                 )
             )
         self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 0)
+
+    def test_claim_scoped_to_a_different_registry_fails_closed(self) -> None:
+        from cdp.core.services import (
+            AttestedDecisionInput,
+            IdentityClaimScopeInsufficient,
+            attest_and_create_decision,
+        )
+
+        actor_id = _register_actor("iaa-attest-claimwrongregistry")
+        _grant_propose_authority(actor_id)
+        claim_id = _submit_and_recognize_claim(
+            actor_id, scope_registry_name="some_other_registry"
+        )
+        decision_id = _unique("iaa-attested-decision-claimwrongregistry")
+
+        with self.assertRaises(IdentityClaimScopeInsufficient):
+            attest_and_create_decision(
+                AttestedDecisionInput(
+                    decision_input=_make_decision_input(decision_id, actor_id),
+                    attestation_input=_make_attestation_input(actor_id, claim_id),
+                )
+            )
+        self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 0)
+
+    def test_claim_scoped_to_a_different_decision_class_fails_closed(self) -> None:
+        from cdp.core.services import (
+            AttestedDecisionInput,
+            IdentityClaimScopeInsufficient,
+            attest_and_create_decision,
+        )
+
+        actor_id = _register_actor("iaa-attest-claimwrongclass")
+        _grant_propose_authority(actor_id)
+        claim_id = _submit_and_recognize_claim(
+            actor_id,
+            scope_registry_name=REGISTRY_NAME,
+            scope_decision_class_id="some_other_decision_class",
+        )
+        decision_id = _unique("iaa-attested-decision-claimwrongclass")
+
+        with self.assertRaises(IdentityClaimScopeInsufficient):
+            attest_and_create_decision(
+                AttestedDecisionInput(
+                    decision_input=_make_decision_input(decision_id, actor_id),
+                    attestation_input=_make_attestation_input(actor_id, claim_id),
+                )
+            )
+        self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 0)
+
+    def test_claim_with_registry_scope_and_wildcard_class_succeeds(self) -> None:
+        from cdp.core.services import AttestedDecisionInput, attest_and_create_decision
+
+        actor_id = _register_actor("iaa-attest-claimwildcard")
+        _grant_propose_authority(actor_id)
+        claim_id = _submit_and_recognize_claim(actor_id, scope_registry_name=REGISTRY_NAME)
+        decision_id = _unique("iaa-attested-decision-claimwildcard")
+
+        result = attest_and_create_decision(
+            AttestedDecisionInput(
+                decision_input=_make_decision_input(decision_id, actor_id),
+                attestation_input=_make_attestation_input(actor_id, claim_id),
+            )
+        )
+
+        self.assertEqual(result["decision"]["decision_id"], decision_id)
+        self.assertEqual(_decision_row_count(REGISTRY_NAME, decision_id), 1)
 
     def test_claim_belonging_to_a_different_actor_fails_closed(self) -> None:
         from cdp.core.services import (

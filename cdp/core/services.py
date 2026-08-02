@@ -182,7 +182,9 @@ class IdentityClaimNotRecognized(Exception):
 
 
 class IdentityClaimScopeInsufficient(Exception):
-    """The identity claim's purpose_scope does not cover the requested governed act."""
+    """The identity claim's purpose_scope, or (session 030) its optional
+    registry/decision-class scope, does not cover the requested governed
+    act."""
 
 
 class AuthorityGrantIssuerRequired(Exception):
@@ -1058,6 +1060,12 @@ class IdentityClaimInput:
     purpose_scope: str
     evidence_refs: list[Any] | None = None
     supersedes_claim_id: uuid.UUID | None = None
+    # Optional registry/decision-class scope (session 030) -- see
+    # db/ddl/013-identity-claim-scope.sql's header. Omitting both (the
+    # default) preserves every pre-session-030 claim's exact behavior:
+    # purpose_scope alone governs coverage.
+    scope_registry_name: str | None = None
+    scope_decision_class_id: str | None = None
 
 
 def submit_identity_claim(claim_input: IdentityClaimInput) -> dict[str, Any]:
@@ -1096,6 +1104,8 @@ def submit_identity_claim(claim_input: IdentityClaimInput) -> dict[str, Any]:
             purpose_scope=claim_input.purpose_scope,
             evidence_refs=claim_input.evidence_refs,
             supersedes_claim_id=claim_input.supersedes_claim_id,
+            scope_registry_name=claim_input.scope_registry_name,
+            scope_decision_class_id=claim_input.scope_decision_class_id,
         )
 
         audit_repo.append_event(
@@ -1411,12 +1421,30 @@ def _check_actor_active(cursor: Any, actor_id: str) -> dict[str, Any]:
 
 
 def _check_claim_recognized_and_scoped(
-    cursor: Any, *, claim_id: uuid.UUID, actor_id: str, required_purpose_scope: str
+    cursor: Any,
+    *,
+    claim_id: uuid.UUID,
+    actor_id: str,
+    required_purpose_scope: str,
+    scope_registry_name: str,
+    scope_decision_class_id: str,
 ) -> dict[str, Any]:
     """Shared identity-claim ownership/recognition/scope check used by
     every attest_and_* function. Raises IdentityClaimActorMismatch /
     IdentityClaimNotRecognized / IdentityClaimScopeInsufficient; returns
-    the claim row on success."""
+    the claim row on success.
+
+    Beyond the purpose_scope check, if the claim itself carries a
+    scope_registry_name (nullable -- see
+    db/ddl/013-identity-claim-scope.sql), the governed act's
+    scope_registry_name/scope_decision_class_id (the same values the
+    caller separately passes to _evaluate_authority) must also match:
+    exact registry, and exact decision class unless the claim's
+    scope_decision_class_id is NULL (wildcard). A claim with
+    scope_registry_name NULL is not scoped to any particular registry, so
+    this additional check is skipped -- purpose_scope alone governs, the
+    same behavior every claim had before session 030.
+    """
     claim = identity_claims_repo.fetch_claim(cursor, claim_id=claim_id)
     if claim is None or claim["actor_id"] != actor_id:
         raise IdentityClaimActorMismatch(
@@ -1431,6 +1459,23 @@ def _check_claim_recognized_and_scoped(
             f"Identity claim {claim_id} has purpose_scope {claim['purpose_scope']!r}, "
             f"which does not cover {required_purpose_scope!r}"
         )
+    if claim["scope_registry_name"] is not None:
+        if claim["scope_registry_name"] != scope_registry_name:
+            raise IdentityClaimScopeInsufficient(
+                f"Identity claim {claim_id} is scoped to registry "
+                f"{claim['scope_registry_name']!r}, which does not cover "
+                f"{scope_registry_name!r}"
+            )
+        if (
+            claim["scope_decision_class_id"] is not None
+            and claim["scope_decision_class_id"] != scope_decision_class_id
+        ):
+            raise IdentityClaimScopeInsufficient(
+                f"Identity claim {claim_id} is scoped to decision class "
+                f"{claim['scope_decision_class_id']!r} within registry "
+                f"{claim['scope_registry_name']!r}, which does not cover "
+                f"{scope_decision_class_id!r}"
+            )
     return claim
 
 
@@ -1590,6 +1635,8 @@ def attest_and_create_decision(attested_input: AttestedDecisionInput) -> dict[st
             claim_id=attestation_input.identity_claim_id,
             actor_id=attestation_input.actor_id,
             required_purpose_scope=_DECISION_CREATION_PURPOSE_SCOPE,
+            scope_registry_name=decision_input.registry_name,
+            scope_decision_class_id=decision_input.decision_class_id,
         )
 
         authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
@@ -1706,6 +1753,8 @@ def attest_and_raise_challenge(attested_input: AttestedChallengeInput) -> dict[s
             claim_id=attestation_input.identity_claim_id,
             actor_id=attestation_input.actor_id,
             required_purpose_scope=_CHALLENGE_RAISING_PURPOSE_SCOPE,
+            scope_registry_name=challenge_input.registry_name,
+            scope_decision_class_id=decision["decision_class_id"],
         )
 
         authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
@@ -1775,6 +1824,8 @@ def attest_and_adjudicate_challenge(attested_input: AttestedAdjudicationInput) -
             claim_id=attestation_input.identity_claim_id,
             actor_id=attestation_input.actor_id,
             required_purpose_scope=_CHALLENGE_ADJUDICATION_PURPOSE_SCOPE,
+            scope_registry_name=adjudication_input.registry_name,
+            scope_decision_class_id=decision["decision_class_id"],
         )
 
         authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
@@ -1847,6 +1898,8 @@ def attest_and_authorize_execution(
             claim_id=attestation_input.identity_claim_id,
             actor_id=attestation_input.actor_id,
             required_purpose_scope=_EXECUTION_AUTHORIZATION_PURPOSE_SCOPE,
+            scope_registry_name=authorization_input.registry_name,
+            scope_decision_class_id=decision["decision_class_id"],
         )
 
         authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
@@ -1917,6 +1970,8 @@ def attest_and_record_execution_attempt(
             claim_id=attestation_input.identity_claim_id,
             actor_id=attestation_input.actor_id,
             required_purpose_scope=_EXECUTION_RECORDING_PURPOSE_SCOPE,
+            scope_registry_name=execution_input.registry_name,
+            scope_decision_class_id=decision["decision_class_id"],
         )
 
         authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
