@@ -9,6 +9,12 @@ retrofit of the existing one. The request's submitted_by_actor_id (the
 attestor) is independent of subject_actor_id (who/what the decision is
 about) -- see AttestedDecisionCreateRequest below.
 
+As of the Authority slice (RFC-CDP-032, session 028), POST
+/attested-decisions also requires submitted_by_actor_id to hold an active,
+unexpired PROPOSE authority grant scoped to the decision's registry_name/
+decision_class_id -- see cdp/api/authority.py for how a grant is issued,
+and AuthorityNotGranted -> 403 below.
+
 POST /identity-claims/{claim_id}/{recognize,deny,contest} require
 decided_by_actor_id to be the single seeded recognition-authority actor
 and reject an actor deciding its own claim, both with 403 -- see
@@ -43,6 +49,7 @@ from cdp.core.services import (
     ActorNotFound,
     AttestationInput,
     AttestedDecisionInput,
+    AuthorityNotGranted,
     DecisionClassNotConfigured,
     DecisionInput,
     IdentityClaimActorMismatch,
@@ -311,6 +318,8 @@ def create_attested_decision(request: AttestedDecisionCreateRequest) -> dict[str
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except IdentityClaimScopeInsufficient as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except AuthorityNotGranted as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except (DecisionClassNotConfigured, WorkflowStageNotConfigured) as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except psycopg.errors.UniqueViolation as exc:

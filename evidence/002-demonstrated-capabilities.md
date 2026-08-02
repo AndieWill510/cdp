@@ -87,19 +87,70 @@ independently rejected), and by
 cases, including a full actor/claim/attestation/decision round trip, a
 protected-actor redaction check, and the Alice-attests/Bob-is-the-subject
 proof) exercised through a live `uvicorn` process and Postgres. Confirmed
-passing in CI job `full-cdp-slice-tests`, run `30704929899` (PR #41 head
-commit `f8ae3d0`, 2026-08-01T14:59:19Z, conclusion `success`, the
-v0.2-corrected model), alongside the full pre-existing suite with no
-regressions.
+passing in CI job `full-cdp-slice-tests`, run `30704929899` on commit
+`f8ae3d0` (2026-08-01T14:59:19Z, conclusion `success`, the v0.2-corrected
+code), re-confirmed unchanged by run `30705068165` on `46afc46` (PR #41's
+actual merged head -- only evidence-doc text differed between the two
+commits), alongside the full pre-existing suite with no regressions.
 
-This is not authentication, authorization, or personhood: no password,
-token, or key material is stored; "verified" means the actor is active and
-holds a recognized, in-scope claim, not cryptographic proof; and no
-Authority, Standing, Legitimize, or Repair object is written by any
-function in this slice -- including the recognition-authority check, which
-is a single hardcoded seeded actor, not a grant/delegation model. See
+This is not authentication or personhood: no password, token, or key
+material is stored; "verified" means the actor is active and holds a
+recognized, in-scope claim, not cryptographic proof. No Standing,
+Legitimize, or Repair object is written by any function in this slice --
+including the recognition-authority check, which is a single hardcoded
+seeded actor, not a grant/delegation model. (As of session 028, described
+below, `attest_and_create_decision` does additionally evaluate and write
+a bounded Authority record -- that extension belongs to the Authority
+slice, not this one, and does not change anything stated above about
+Identity/Attestation's own scope.) See
 `db/ddl/010-identity-and-attestation.sql`'s header and
 `docs/session-027-identity-and-attestation.md` for the full scope
+statement.
+
+## Authority
+
+`attest_and_create_decision` (`cdp/core/services.py`) additionally
+evaluates whether the attesting actor holds an active, unexpired
+`PROPOSE` Authority Grant scoped to the decision's registry_name/
+decision_class_id (exact match, or a registry-wide wildcard grant) before
+creating the decision -- completing the ordering
+`architecture/001-canonical-governance-workflow.md` SS4.0 prescribes
+(Identify + Attest -> Authority -> ... -> Propose) for this one proof
+path. A grant is issued via `POST /authority-grants` and revoked via
+`POST /authority-grants/{grant_id}/revoke`, both restricted to a single
+seeded bounded actor (`cdp_authority_grant_issuer`) -- an arbitrary
+registered actor cannot issue or revoke authority, the same discipline
+the Identity and Attestation slice's v0.2 review correction established
+for identity-claim recognition, applied here from the start.
+`GET /decisions/{registry_name}/{decision_id}/authority-evaluations`
+makes whether (and how) authority was evaluated for a decision
+discoverable directly from the decision.
+
+Scope is a real two-level hierarchy (registry + decision class, with an
+explicit `NULL`-means-wildcard rule for decision class), not a flat
+string-equality check -- see `db/ddl/011-authority-and-delegation.sql`'s
+"Scope model" note. `expires_at` is mandatory on every grant: RFC-CDP-032
+SS9 states "CDP assumes authority decays unless policy states otherwise,"
+so nothing can be granted "forever" by omission.
+
+Demonstrated by `tests/authority/test_authority_grant_service.py` (9
+cases, including a direct assertion that `DELETE FROM
+cdp_core.authority_grant` itself raises) and
+`tests/authority/test_authority_grant_api.py` (8 cases), plus 6
+authority-gate cases added to
+`tests/identify_attest_standing/test_attestation_service.py` (missing
+grant, wrong registry scope, wrong decision-class scope, wildcard-scope
+success, expired grant, revoked grant) and 3 to
+`test_identity_attestation_api.py`. Confirmed passing in CI job
+`full-cdp-slice-tests`, run `30707515976` (PR #43 head commit `b29e75a`,
+2026-08-01T16:09:37Z, conclusion `success`), alongside the full
+pre-existing suite with no regressions.
+
+This is not delegation, quorum, presence, emergency/repair/sovereignty
+authority, or separation-of-duties enforcement, and the grant issuer is a
+single hardcoded actor, not a delegable role. See
+`db/ddl/011-authority-and-delegation.sql`'s header and
+`docs/session-028-authority-and-delegation.md` for the full scope
 statement.
 
 ## Audit trail
