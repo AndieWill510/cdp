@@ -1,6 +1,6 @@
 # Known Gaps
 
-Status: Draft v0.3 -- as of 2026-08-01, session 028 (Authority and Delegation) working tree, building on PR #41 head `46afc46`
+Status: Draft v0.4 -- as of 2026-08-01, session 029 (Universal Attestation) working tree, building on PR #43 head `b29e75a`
 
 This document describes known gaps, limitations, and evidence boundaries:
 capabilities the constitutional or architecture layer expects but that are
@@ -117,10 +117,13 @@ discipline:
   *actor* is recognized for a purpose; this is about whether the *caller*
   making the HTTP request is who it says it is, which nothing in this
   slice checks.
-- **Only decision creation is attested.** `governed_act_type` is seeded
-  with only `decision_created`. Attesting any other mutating act (a
-  challenge, an adjudication, an execution authorization) is not
-  implemented.
+- **Only decision creation, challenge-raising, challenge-adjudication,
+  execution authorization, and execution recording are attested** (the
+  last four added in session 029 -- see the Universal Attestation section
+  below). `governed_act_type` still does not cover Test, Legitimize, or
+  Learn (no service function exists for those acts to attest), or the
+  Identity/Attestation/Authority slices' own mutations (deliberately, to
+  avoid circularity -- see the Universal Attestation section).
 - **Recognition authority is a single hardcoded actor, not RFC-CDP-032
   Authority.** `decided_by_actor_id` must equal the one seeded
   `cdp_identity_recognition_authority` actor (v0.2 review correction,
@@ -202,6 +205,42 @@ claim that RFC-CDP-032 is implemented in full:
   to `POST /authority-grants`: `issued_by_actor_id` and
   `revoked_by_actor_id` are accepted at face value, not proven to be the
   HTTP caller.
+- **No production deployment evidence exists for this slice.**
+
+## Universal Attestation (RFC-CDP-031 §2) -- known limitations of the session 029 slice
+
+Session 029 rates the four new attested proof paths at Runtime Tested
+(E3), pending CI confirmation, in `000-current-state.md` -- not yet E4.
+The items below are the honest boundaries of this slice regardless of
+where CI lands it:
+
+- **Does not reach Test, Legitimize, or Learn.** No service function
+  exists for RFC-CDP-043/045/048 yet, so there is nothing for this slice
+  to attest.
+- **Does not attest the Identity/Attestation/Authority slices' own
+  mutations.** Registering an actor, submitting or deciding an identity
+  claim, and granting or revoking authority remain unattested,
+  deliberately -- they are the foundation this slice's attestation checks
+  depend on (an identity claim cannot be recognized by presenting a
+  recognized identity claim for the recognizing act), not acts
+  attestation can be layered on top of.
+- **`governed_act_ref_id` is an un-FK-enforced polymorphic reference.**
+  It disambiguates which challenge/adjudication/authorization/execution
+  an attestation or authority-evaluation row refers to, but its target
+  table depends on `governed_act_type` and nothing in the database
+  enforces that correspondence -- it is a service-layer guarantee (each
+  `attest_and_*` function passes the ID from its own governed act's
+  result), not a database-enforced one. See
+  `db/ddl/012-universal-attestation.sql`'s header for the reasoning.
+- **Every limitation already named for Identity/Attestation and Authority
+  above applies identically here**, since this slice reuses those slices'
+  objects and checks unchanged: claim-based not cryptographic
+  verification, no caller authentication, single hardcoded seeded actors
+  for recognition/grant-issuance, no delegation/quorum/
+  separation-of-duties, purpose scope as flat string equality (extended
+  here to four new literal strings -- `challenge_raising`,
+  `challenge_adjudication`, `execution_authorization`,
+  `execution_recording` -- not a scope language).
 - **No production deployment evidence exists for this slice.**
 
 ## RFC index/manifest verification -- known limitation of a working check

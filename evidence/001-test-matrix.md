@@ -1,6 +1,6 @@
 # Test Matrix
 
-Status: Draft v0.1 — as of 2026-07-31
+Status: Draft v0.1 — as of 2026-08-01, session 029 (Universal Attestation) working tree, building on PR #43 head `b29e75a`
 
 This matrix lists, for each governance step or capability, which categories
 of test actually exist in the repository. A cell is left blank when no
@@ -50,6 +50,7 @@ directly under `tests/`. Folders containing test files:
 - `tests/migration/`
 - `tests/nemawashi/`
 - `tests/misc/`
+- `tests/universal_attestation/`
 
 Folders that exist as placeholders (containing only `.gitkeep`, no test files
 yet) for governance steps with no code or coverage:
@@ -89,6 +90,7 @@ governance steps lack coverage rather than omitting them.
 | Attest (Attestation Record) | `tests/migration/test_migration_010_identity_and_attestation.py::Migration010StaticTests` | `tests/identify_attest_standing/test_attestation_service.py`; `tests/migration/test_migration_010_identity_and_attestation.py::Migration010PostgresSmokeTests` | `tests/identify_attest_standing/test_identity_attestation_api.py` (attested-decision portions) | Same CI run as the Identify row above, success | Healthy | `db/ddl/010-identity-and-attestation.sql` | Covers the fail-closed proof path against decision creation: unknown actor, inactive actor, unrecognized claim, wrong-scope claim, claim-belongs-to-different-actor, and forced-failure rollback, each asserting zero rows persisted; plus (v0.2) that the attestor and the decision's subject may independently differ and both remain correctly, separately attributed. |
 | Standing and Recusal (RFC-CDP-033) | | | | | N/A | | No code, no tests. Not implemented by the Identity and Attestation slice -- see Non-Goals in `docs/session-027-identity-and-attestation.md`. |
 | Authority and Delegation (RFC-CDP-032), SS19 Minimal Compliance | `tests/migration/test_migration_011_authority_and_delegation.py::Migration011StaticTests` | `tests/authority/test_authority_grant_service.py`; `tests/migration/test_migration_011_authority_and_delegation.py::Migration011PostgresSmokeTests`; 6 authority-gate cases added to `tests/identify_attest_standing/test_attestation_service.py` | `tests/authority/test_authority_grant_api.py`; 3 authority-gate cases added to `tests/identify_attest_standing/test_identity_attestation_api.py` | CI job `full-cdp-slice-tests`, run `30707515976`, PR #43 head commit `b29e75a`, success | Healthy | `db/ddl/011-authority-and-delegation.sql` | Includes the anti-delete trigger on `authority_grant` actually firing, wildcard-vs-exact scope matching, and expired/revoked grants both failing closed. |
+| Universal Attestation (RFC-CDP-031 §2) — challenge/adjudication/execution-authorization/execution-record | `tests/migration/test_migration_012_universal_attestation.py::Migration012StaticTests` | `tests/universal_attestation/test_universal_attestation_service.py`; `tests/migration/test_migration_012_universal_attestation.py::Migration012PostgresSmokeTests` | `tests/universal_attestation/test_universal_attestation_api.py` | Not yet run in CI — verified locally against a live Docker Compose stack only (283 tests total, zero regressions) | Not exercised in CI | `db/ddl/012-universal-attestation.sql` | Reuses the shared actor/claim/authority-check helpers `attest_and_create_decision` was refactored onto (session 027/028's own rows). Rated "Not exercised in CI" rather than "Healthy" solely because no GitHub Actions run has confirmed it yet — the tests themselves include a forced-failure rollback case for challenge-raising, matching the pattern in the other attested proof paths. |
 | Appeals / Repair (RFC-CDP-070 series) | | | | | N/A | | No code, no tests. |
 | Worker / queue consumption | | | | | N/A | `cdp/worker/main.py` | Process runs (no-op loop, per its own docstring) but there is nothing for a test to exercise. |
 | Self-canonicalizing ingestion | `tests/misc/test_self_canonicalizing_ingestion.py` (all classes; no live dependency required) | | | | Known gaps | | The tested code is a reference implementation embedded in the test file itself, not a `cdp/` module — see [`000-current-state.md`](000-current-state.md#execution-substrate). A passing suite here provides zero coverage of any production ingestion path, because none exists. Its fixture-lookup path was also broken by the 2026-07-31 reorg and fixed the same day (commit `7b6efae`). |
