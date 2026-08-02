@@ -188,9 +188,9 @@ persisted) and `tests/universal_attestation/test_universal_attestation_api.py`
 1 Postgres smoke test proving 001 through 012 apply cleanly and 012 is
 rerun-safe). All 283 tests in the combined suite (this session's new
 tests plus every test from sessions 020-028) pass locally against a live
-Docker Compose stack with zero regressions. **Not yet confirmed in CI** --
-see `000-current-state.md` for why this capability is rated E3, not E4,
-pending a GitHub Actions run on this branch's head commit.
+Docker Compose stack with zero regressions, and are confirmed passing in
+CI job `full-cdp-slice-tests`, run `30729045854` on this branch's head
+commit `4d0e7b8` (2026-08-02T02:32:40Z, conclusion `success`).
 
 This does not reach Test, Legitimize, or Learn (RFC-CDP-043/045/048) --
 no service function exists for those acts yet -- and it deliberately does

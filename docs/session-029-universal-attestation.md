@@ -1,10 +1,11 @@
 # Session 029 — Universal Attestation
 
 Status: implementation complete, verified locally against a live Docker
-Compose stack (fresh migration apply, live `uvicorn`, live Postgres). CI
-run pending on this PR's head commit. Not yet reviewed/merged. This file
-documents what already exists in the working tree, not a plan for future
-work.
+Compose stack (fresh migration apply, live `uvicorn`, live Postgres), and
+confirmed passing in CI (run `30729045854` on head commit `4d0e7b8`, see
+§5). Not yet reviewed/merged (PR #44, stacked on unmerged PR #43). This
+file documents what already exists in the working tree, not a plan for
+future work.
 
 Scope: **Universal Attestation** (RFC-CDP-031 §2: "All mutating acts MUST
 be attested"), extending the attest+authority proof path sessions 027/028
@@ -185,16 +186,22 @@ Combined total this session verified locally: **283 tests pass** (240
 static/Postgres/service including the 15 new ones, 43 API including the 5
 new ones).
 
-**GitHub Actions:** pending — see `evidence/000-current-state.md` for the
-citation once this PR's CI run passes.
+**GitHub Actions:** confirmed. PR #44 is stacked on unmerged PR #43
+(`session-028-authority-and-delegation`), and its base was changed from
+that branch to `main` after opening — since the CDP CI workflow only
+triggers `pull_request` events for PRs targeting `main`, and a base-branch
+edit does not itself fire `synchronize`/`opened`, CI was triggered via
+`gh workflow run cdp-ci.yml --ref session-029-universal-attestation`
+(`workflow_dispatch`) instead. Both jobs (`pr-guard`,
+`full-cdp-slice-tests`) passed: run `30729045854`, commit `4d0e7b8` (this
+branch's head), 2026-08-02T02:32:40Z, conclusion `success`.
 
 ## 6. Evidence level reached
 
-Not yet updated in `evidence/000-current-state.md` pending a passing CI
-run on this PR's head commit — this document intentionally does not
-pre-claim E4 before that exists, per this repository's rule that E4
-specifically means CI-confirmed, not locally-confirmed (the same
-discipline sessions 026–028 followed).
+**Integration Tested (E4)**, per `evidence/000-current-state.md`, cited
+to CI run `30729045854` on commit `4d0e7b8` — the same discipline
+sessions 026–028 followed: E4 specifically means CI-confirmed, not
+locally-confirmed.
 
 ## 7. Known limitations (see `evidence/003-known-gaps.md` for the full list)
 
