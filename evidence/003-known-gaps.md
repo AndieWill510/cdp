@@ -1,6 +1,6 @@
 # Known Gaps
 
-Status: Draft v0.4 -- as of 2026-08-02, session 030 (Identity Claim Scope) working tree, building on main `680f0f4`
+Status: Draft v0.4 -- as of 2026-08-02, session 031 (RFC-CDP-030/031 spec updates) working tree, building on main `680f0f4`
 
 This document describes known gaps, limitations, and evidence boundaries:
 capabilities the constitutional or architecture layer expects but that are
@@ -90,16 +90,27 @@ honest boundaries of that E4 capability, not evidence of an unimplemented
 one -- named here rather than left implicit, per this document's own
 discipline:
 
-- **RFC-CDP-030 and RFC-CDP-031 remain underspecified relative to the
-  implemented schema.** Both are Draft v0.3, roughly 40 lines each, and
-  specify no persistence schema. The `cdp_core.actor`,
+- **RFC-CDP-030 and RFC-CDP-031 still specify no persistence schema in
+  their original requirement sections.** As of session 031, both are
+  Draft v0.4 (~40 lines of original §§1-5/1-6 spec text, unchanged, plus
+  a new Implementation Status section each) and their previously stale
+  internal headers (`RFC-CDP-012`/`RFC-CDP-011`, left over from before
+  the identity band was renumbered) are corrected -- but the original
+  spec sections still specify no persistence schema, by design; session
+  031 documented an interpretation in a new section, it did not add a
+  schema to the RFCs' own normative text. The `cdp_core.actor`,
   `cdp_core.identity_claim`, and `cdp_core.attestation_record` schemas in
-  `db/ddl/010-identity-and-attestation.sql` are a documented interpretation
-  composing those RFCs' minimal required-properties lists with
-  RFC-CDP-033 §11.2's existence/recognition/scope distinction and §11.6's
-  non-erasure rule -- not a direct implementation of a schema either RFC
-  actually specifies. See the DDL file's header and
-  `docs/session-027-identity-and-attestation.md` for the full reasoning.
+  `db/ddl/010-identity-and-attestation.sql` remain a documented
+  interpretation composing those RFCs' minimal required-properties lists
+  with RFC-CDP-033 §11.2's existence/recognition/scope distinction and
+  §11.6's non-erasure rule -- not a direct implementation of a schema
+  either RFC's original text actually specifies. See the DDL file's
+  header, `docs/session-027-identity-and-attestation.md`, and
+  `docs/session-031-rfc-spec-updates.md` for the full reasoning.
+  RFC-CDP-031 §7 (added in session 031) also states plainly that §4's
+  cryptographic verification requirements are not implemented by this
+  slice -- see the next bullet, which now duplicates less and cites the
+  RFC directly.
 - **Verification is claim-based, not cryptographic.**
   `attest_and_create_decision`'s verification means the actor is active
   and holds a recognized, in-scope identity claim -- it does not check a
