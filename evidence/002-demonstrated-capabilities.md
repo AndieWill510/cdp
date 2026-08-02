@@ -263,7 +263,10 @@ presenting no token, an unknown token, or a different actor's valid
 token is rejected (401/403) before the underlying act is ever attempted
 -- nothing is persisted. `POST /actors/{actor_id}/tokens/revoke` lets an
 actor revoke its own token, self-service, by presenting that same
-current token; the revoked row is preserved, never deleted
+current token; the response is redacted to `{actor_id, token_id, status,
+revoked_at}` (a review correction before merging PR #48 -- the full row,
+including `token_hash`, previously crossed the API boundary
+unnecessarily). The revoked row itself is preserved, never deleted
 (`cdp_core.actor_bearer_token`'s anti-delete trigger).
 
 This is real in the sense that closes RFC-CDP-030 §6 and RFC-CDP-031
@@ -274,12 +277,30 @@ request signing (RFC-CDP-031 §4 remains unmet), and has no token
 rotation -- see `docs/session-032-caller-authentication.md` for the full
 scope statement.
 
+**Review correction before merging PR #48:** an earlier version of this
+capability seeded the two bounded system actors'
+(`cdp_identity_recognition_authority`, `cdp_authority_grant_issuer`)
+local/dev/test tokens directly inside `db/ddl/014-caller-authentication.sql`
+-- the canonical migration path -- meaning any deployment applying the
+normal migrations unmodified was born with known, active, privileged
+credentials. That seeding now lives only in
+`db/seed/dev-caller-authentication-tokens.sql`, applied solely by the
+local Docker Compose init hook and by CI's test job, never by `db/ddl/`.
+Applying `db/ddl/014` alone now leaves both bounded actors with zero
+tokens. Review also flagged that `verify_bearer_token` opens and
+completes its own transaction, separate from the governed mutation it
+authorizes -- a check/use gap recorded in
+`evidence/003-known-gaps.md`'s Caller Authentication section rather than
+fixed in this session; see that section for the full reasoning.
+
 Demonstrated by `tests/migration/test_migration_014_caller_authentication.py`
-(9 static + 1 Postgres smoke test, including a direct assertion that the
-partial unique index rejects a second active token for the same actor
-and that the published seed-token plaintext for the two bounded system
-actors actually hashes to the value stored in the migration), 8 new
-cases in `tests/identify_attest_standing/test_actor_service.py`'s
+(now asserting the migration seeds *no* tokens, and that applying it
+alone leaves both bounded actors with zero active tokens) and the new
+`tests/migration/test_dev_seed_caller_authentication_tokens.py` (static
++ Postgres smoke, including a direct assertion that the published
+seed-token plaintext actually hashes to the value stored in that file,
+and that applying it activates both bounded actors' tokens), 8 new cases
+in `tests/identify_attest_standing/test_actor_service.py`'s
 `CallerAuthenticationTests` (token issued as hash-only,
 `verify_bearer_token` success/missing/invalid/mismatch,
 revoke-then-verify-fails, revoke-with-nothing-to-revoke, anti-delete
@@ -288,13 +309,14 @@ trigger firing), and every existing API test across
 `test_universal_attestation_api.py` -- updated to present the correct
 actor's token rather than added alongside untouched tests, since
 `verify_bearer_token` now gates the routes those tests already
-exercised -- plus 12 new cases covering missing/mismatched tokens and
-the revoke round trip. All 288 tests in the combined suite (this
-session's new and updated tests plus every unaffected test from sessions
-020-031) pass locally against a live Docker Compose stack with zero
-unexplained regressions, and are confirmed passing in CI job
-`full-cdp-slice-tests`, run `30751140549` on this branch's head commit
-`29c5cdb`, 2026-08-02T14:00:14Z, conclusion `success`.
+exercised -- plus new cases covering missing/mismatched tokens, the
+revoke round trip, and (added in the pre-merge review pass) a direct
+assertion that the revoke response never contains `token_hash`. The full
+combined suite (this session's new and updated tests plus every
+unaffected test from sessions 020-031) passes locally against a live
+Docker Compose stack with zero unexplained regressions -- see
+`000-current-state.md` for the CI citation on the reviewed, final
+commit.
 
 ## Audit trail
 

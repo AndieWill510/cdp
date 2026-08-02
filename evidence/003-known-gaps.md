@@ -295,12 +295,14 @@ boundaries of that scope, not a claim of anything broader:
 
 ## Caller Authentication -- known limitations of the session 032 slice
 
-Session 032 rates bearer-token caller binding at Integration Tested (E4)
-in `000-current-state.md`, cited to CI run `30751140549` on commit
-`29c5cdb`. The items below are the honest boundaries of that scope, not
-a claim that this reaches OAuth/OIDC or cryptographic signing; see
-`docs/session-032-caller-authentication.md` §1 and §7
-for the full statement:
+Session 032 rated bearer-token caller binding at Integration Tested (E4)
+before a pre-merge review pass (PR #48) identified a deployment-blocking
+issue and two hardening issues; `000-current-state.md` currently rates
+it E3 pending CI re-confirmation of the corrected commits. The items
+below are the honest boundaries of that scope, not a claim that this
+reaches OAuth/OIDC or cryptographic signing; see
+`docs/session-032-caller-authentication.md` §1 and §7 for the full
+statement:
 
 - **Not OAuth/OIDC/SSO, not cryptographic signing.** A bearer token is
   presented, not signed over per-request -- RFC-CDP-031 §4's signature-
@@ -314,10 +316,47 @@ for the full statement:
   intercepts it, the standard bearer-token risk. This repository's local
   Docker Compose stack runs over plain HTTP.
 - **The two bounded system actors' seed tokens are published in
-  plaintext in version control** (`db/ddl/014-caller-authentication.sql`'s
+  plaintext in version control** (`db/seed/dev-caller-authentication-tokens.sql`'s
   header) -- explicit, not an oversight, but zero secrecy for any
   deployment that matters, and there is no rotation mechanism (see
-  above) to replace them.
+  above) to replace them. **Review correction before merging PR #48:**
+  an earlier version of this slice seeded these same two tokens directly
+  inside `db/ddl/014-caller-authentication.sql`, the canonical migration
+  path -- meaning any deployment applying the normal migrations
+  unmodified was born with known, active, privileged credentials for
+  `cdp_identity_recognition_authority` and `cdp_authority_grant_issuer`.
+  A "provide zero secrecy" warning in a comment does not make that a
+  safe default. The seed INSERT now lives only in `db/seed/`, applied
+  solely by the local Docker Compose init hook and by CI's test job --
+  never by `db/ddl/`. `db/ddl/014` alone now leaves both bounded actors
+  with zero tokens (see
+  `tests/migration/test_migration_014_caller_authentication.py`'s
+  `test_migration_does_not_seed_any_tokens` and the Postgres smoke
+  test's explicit zero-token assertion). A real deployment must still
+  provision credentials for these two actors through its own out-of-band
+  mechanism, which this repository does not provide.
+- **Caller-binding verification runs in a separate transaction from the
+  governed mutation it authorizes -- a check/use gap.**
+  `verify_bearer_token` opens and completes its own `db.transaction()`
+  (see `cdp/core/services.py`); the route then calls the underlying
+  mutating service function, which opens its own, separate transaction.
+  A token that is valid at the moment `verify_bearer_token` checks it
+  could be revoked by a concurrent request before the governed mutation
+  actually commits, so in principle the audit record could show an
+  authenticated actor performing an act using a credential that was no
+  longer active at the mutation's real transaction boundary. This is a
+  narrow window (a revocation racing a mutation for the same actor,
+  within the gap between two transactions on the same request) and is
+  not fixed in this session -- deliberately: closing it would mean
+  threading a token/cursor through every one of the nine protected
+  routes' underlying service functions (`submit_identity_claim`,
+  `recognize/deny/contest_identity_claim`, `attest_and_create_decision`,
+  `grant_authority`, `revoke_authority`, and all four Universal
+  Attestation `attest_and_*` functions), reversing the deliberate design
+  choice that kept `verify_bearer_token` standalone specifically so none
+  of their ~150 existing service-layer tests needed to change (see
+  `docs/session-032-caller-authentication.md` §2.3). Recorded here
+  rather than fixed, per review before merging PR #48.
 - **Not every mutating route is covered.** `POST /actors` itself
   (registration) and every plain/unattested route (`POST /decisions`,
   and every challenge/adjudication/execution-authorization/execution-

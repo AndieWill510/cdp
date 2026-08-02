@@ -62,6 +62,7 @@ jobs:
             tests/migration/test_migration_012_universal_attestation.py::Migration012StaticTests \
             tests/migration/test_migration_013_identity_claim_scope.py::Migration013StaticTests \
             tests/migration/test_migration_014_caller_authentication.py::Migration014StaticTests \
+            tests/migration/test_dev_seed_caller_authentication_tokens.py::DevSeedCallerAuthenticationTokensStaticTests \
             tests/nemawashi/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLStaticTests \
             tests/db/test_postgres_init_contract.py::test_postgres_init_files_have_single_ordered_owner \
             tests/db/test_postgres_init_contract.py::test_bootstrap_sql_enforces_idempotent_smoke_marker \
@@ -146,6 +147,18 @@ jobs:
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
           done
 
+      - name: Seed dev/test-only data (never a deployment path)
+        run: |
+          # db/seed/ is deliberately not part of the canonical db/ddl/
+          # migration path -- see db/seed/dev-caller-authentication-tokens.sql's
+          # header. Applied here, in its own step, only so this job's tests
+          # can exercise caller-binding against the two bounded system
+          # actors seeded by db/ddl/010 and db/ddl/011.
+          for f in db/seed/*.sql; do
+            echo "Applying $f"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+          done
+
       - name: Migration/DDL and service tests (require live Postgres)
         run: |
           python -m pytest \
@@ -160,6 +173,7 @@ jobs:
             tests/migration/test_migration_012_universal_attestation.py::Migration012PostgresSmokeTests \
             tests/migration/test_migration_013_identity_claim_scope.py::Migration013PostgresSmokeTests \
             tests/migration/test_migration_014_caller_authentication.py::Migration014PostgresSmokeTests \
+            tests/migration/test_dev_seed_caller_authentication_tokens.py::DevSeedCallerAuthenticationTokensPostgresSmokeTests \
             tests/nemawashi/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLPostgresSmokeTests \
             tests/db/test_postgres_init_contract.py::test_postgres_bootstrap_runtime_marker_is_unique \
             tests/db/test_db_ddl_runtime.py \

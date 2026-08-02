@@ -589,6 +589,10 @@ def test_revoke_token_then_reuse_returns_401() -> None:
         f"{API_URL}/actors/{actor_id}/tokens/revoke", {}, token=token
     )
     assert revoke_status == 200, f"expected 200, got {revoke_status}: {revoke_body}"
+    assert revoke_body["actor_id"] == actor_id
+    assert revoke_body["status"] == "revoked"
+    assert revoke_body["revoked_at"] is not None
+    assert "token_hash" not in revoke_body, "token_hash must never cross the API boundary"
 
     status, body = _post_json(
         f"{API_URL}/identity-claims",

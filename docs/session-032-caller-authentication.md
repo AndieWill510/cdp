@@ -3,8 +3,10 @@
 Status: implementation complete, verified locally against a live Docker
 Compose stack (fresh migration apply, live `uvicorn`, live Postgres), and
 confirmed passing in CI (run `30751140549` on head commit `29c5cdb`, see
-§5). Not yet reviewed/merged (PR #48). This file documents what already
-exists in the working tree, not a plan for future work.
+§5). Reviewed before merging PR #48 -- two corrections applied (§2.1,
+§2.5) and one gap recorded rather than fixed (§7's transaction-boundary
+bullet). This file documents what already exists in the working tree,
+not a plan for future work.
 
 Scope: binds an HTTP caller to the actor_id it asserts on every mutating
 route that accepts one, closing the gap every prior session (027-031)
@@ -44,17 +46,29 @@ hex digest -- the plaintext is never stored), `status` (`active` /
 `revoked`, mirroring `identity_claim`/`authority_grant`'s anti-erasure
 discipline -- a revoked token's row is preserved, never deleted, enforced
 by a `BEFORE DELETE` trigger), a partial unique index enforcing at most
-one active token per actor at a time, and `issued_at`/`revoked_at`.
+one active token per actor at a time, and `issued_at`/`revoked_at`. **This
+migration seeds no tokens.**
 
-The two bounded system actors that already exist only via direct SQL
-seed rows (`cdp_identity_recognition_authority`,
-`cdp_authority_grant_issuer` -- sessions 027/028) never went through
-`register_actor`, so they had no token from that path. The migration
-seeds fixed, **published-in-plaintext** tokens for both, explicitly
-documented in the file's header as local/dev/test use only, providing
-zero secrecy, and requiring rotation before any deployment that matters
--- a real production system would need a different bootstrapping story
-for these two actors' credentials, which this slice does not provide.
+**Review correction before merging PR #48:** the two bounded system
+actors that already exist only via direct SQL seed rows
+(`cdp_identity_recognition_authority`, `cdp_authority_grant_issuer` --
+sessions 027/028) never went through `register_actor`, so they have no
+token from that path. An earlier version of this migration seeded fixed,
+published-in-plaintext tokens for both directly inside `db/ddl/014`,
+documented as local/dev/test use only -- but review correctly identified
+that this meant any deployment applying the canonical migration path
+unmodified was born with known, active, privileged credentials for two
+system actors that can recognize any Identity Claim and issue/revoke any
+Authority Grant. A comment saying "provide zero secrecy" does not turn
+that into a safe default. The seed INSERT now lives in a new file,
+`db/seed/dev-caller-authentication-tokens.sql`, which is deliberately
+**not** part of the `db/ddl/` migration path -- it is applied only by the
+local Docker Compose init hook
+(`docker/postgres/init/02_initialize_repository.sh`'s existing `db/seed`
+step, previously unused) and by CI's `full-cdp-slice-tests` job's own
+dedicated seeding step, never by a path a real deployment would run. A
+real deployment must provision credentials for these two actors through
+its own out-of-band mechanism, which this slice still does not provide.
 
 ### 2.2 Token issuance: `register_actor` (additive)
 
@@ -115,11 +129,23 @@ already present that exact actor's own current active token (checked via
 there is no separate revoking-authority role. Raises `NoActiveBearerToken`
 (`404`) if the actor has no active token to revoke.
 
+**Review correction before merging PR #48:** the route originally
+returned the service layer's full `actor_bearer_token` row, including
+`token_hash`. Review correctly flagged that a credential verifier --
+even a one-way hash -- has no reason to cross the API boundary. The
+route now redacts the response to `{actor_id, token_id, status,
+revoked_at}`; the service function `revoke_actor_bearer_token` itself is
+unchanged and still returns the full row (used internally and by the
+service-layer tests in §5).
+
 ## 3. Objects added
 
 `db/ddl/014-caller-authentication.sql`: one new table,
 `cdp_core.actor_bearer_token`, plus its controlled-vocabulary status
-registry (`active`, `revoked`).
+registry (`active`, `revoked`). No rows are seeded by this migration --
+see §2.1. `db/seed/dev-caller-authentication-tokens.sql` (new, not part
+of the migration path): the two bounded system actors' local/dev/test
+tokens, applied separately (§2.1).
 
 ## 4. Routes added or changed
 
@@ -135,14 +161,21 @@ migration apply, live Postgres, live `uvicorn`):
 
 - **Static** (no DB):
   `tests/migration/test_migration_014_caller_authentication.py::Migration014StaticTests`
-  -- 9/9 pass, including a direct assertion that the two seed tokens'
-  published plaintext actually hashes to the value stored in the
-  migration (catching transcription drift between the header comment and
-  the real `INSERT`).
-- **Postgres/service**: `Migration014PostgresSmokeTests` (1, including a
-  direct assertion that the partial unique index actually rejects a
-  second active token for the same actor, not just DDL text inspection)
-  + 8 new cases in
+  (9/9, now including `test_migration_does_not_seed_any_tokens`, added in
+  the pre-merge review pass, in place of the removed
+  `test_seeded_tokens_match_the_published_plaintext`) and the new
+  `tests/migration/test_dev_seed_caller_authentication_tokens.py::DevSeedCallerAuthenticationTokensStaticTests`
+  (4/4, including the seed-token-plaintext-matches-hash assertion moved
+  from 014, and a direct assertion that the file lives outside `db/ddl/`
+  and its header warns unmistakably against deployment use) -- all pass.
+- **Postgres/service**: `Migration014PostgresSmokeTests` (1, now
+  asserting applying 001-014 alone leaves *zero* tokens for either
+  bounded system actor -- the property the review required -- and still
+  asserting the partial unique index rejects a second active token for a
+  synthetic actor) +
+  `DevSeedCallerAuthenticationTokensPostgresSmokeTests` (1, asserting the
+  seed file actually activates both bounded actors' tokens and is
+  rerun-safe) + 8 new cases in
   `tests/identify_attest_standing/test_actor_service.py`'s new
   `CallerAuthenticationTests` class (token issued as hash-only, `verify_bearer_token`
   success/missing/invalid/mismatch, revoke-then-verify-fails,
@@ -153,31 +186,48 @@ migration apply, live Postgres, live `uvicorn`):
   `tests/universal_attestation/test_universal_attestation_api.py` was
   updated to present the correct actor's token (`_register_actor` now
   returns `(actor_id, token)`; the two bounded system actors use their
-  published seed tokens) -- plus 12 new cases across the three files
-  covering missing token (401), wrong actor's valid token (403), and the
-  revoke-then-reuse round trip. All pass.
+  published seed tokens, now sourced from `db/seed/`) -- plus 12 new
+  cases across the three files covering missing token (401), wrong
+  actor's valid token (403), and the revoke-then-reuse round trip, plus
+  a direct assertion (added in the pre-merge review pass) that the
+  revoke response never contains `token_hash`. All pass.
 - **Full combined suite, unchanged**: every test from sessions 020-031
-  continues to pass -- 114 static (pr-guard's exact list) + 118
+  continues to pass -- 118 static (pr-guard's exact list) + 119
   Postgres/service (full-cdp-slice-tests' exact list) + 56 API
-  (full-cdp-slice-tests' exact list) = 288 tests, zero regressions in any
-  test that did not need updating for the new auth requirement.
+  (full-cdp-slice-tests' exact list) = 293 tests, zero regressions in any
+  test that did not need updating for the new auth requirement. The
+  Postgres/service tier's `test_apply_001_through_013_then_014_twice_is_idempotent`
+  fails when run against this developer's long-lived local Postgres
+  (which still holds the two bounded actors' tokens from before this
+  review pass, seeded before the fix); run against a genuinely fresh
+  database (`CREATE DATABASE`, apply 001-014, no `db/seed/`) it passes,
+  as does the full `test_migration_014_caller_authentication.py` +
+  `test_dev_seed_caller_authentication_tokens.py` set (15/15) -- CI's
+  Postgres service container is always fresh per run, so this is a local
+  dev-environment artifact, not a defect the fix commit introduces.
 - `ruff check cdp` -- passes with no findings.
 
-**GitHub Actions:** confirmed. Both jobs (`pr-guard`,
-`full-cdp-slice-tests`) passed: run `30751140549`, commit `29c5cdb`
-(this branch's head), 2026-08-02T14:00:14Z, conclusion `success`. (The
-first attempt failed only on a transient Docker Hub registry timeout
-pulling `pgvector/pgvector:pg16` inside GitHub's runner infrastructure,
-unrelated to this change; a rerun of the same commit passed cleanly.)
-`RFC Index Integrity` also ran (no `rfc/` files touched this session)
-and passed.
+**GitHub Actions:** the citations below (`30751140549` on `29c5cdb`)
+confirm the pre-review implementation. The three review-correction
+commits (§2.1, §2.5, and this section's own updates) are re-verified
+against CI separately -- see `evidence/000-current-state.md` for the
+citation on the reviewed, final commit once that run passes. Both jobs
+(`pr-guard`, `full-cdp-slice-tests`) passed on the pre-review commit:
+run `30751140549`, commit `29c5cdb`, 2026-08-02T14:00:14Z, conclusion
+`success`. (The first attempt at that commit failed only on a transient
+Docker Hub registry timeout pulling `pgvector/pgvector:pg16` inside
+GitHub's runner infrastructure, unrelated to this change; a rerun of the
+same commit passed cleanly.) `RFC Index Integrity` also ran (no `rfc/`
+files touched this session) and passed.
 
 ## 6. Evidence level reached
 
-**Integration Tested (E4)**, per `evidence/000-current-state.md`, cited
-to CI run `30751140549` on commit `29c5cdb` -- the same discipline
-sessions 026-030 followed: E4 specifically means CI-confirmed, not
-locally-confirmed.
+**Integration Tested (E4)** as of the pre-review commit `29c5cdb`
+(`evidence/000-current-state.md`, CI run `30751140549`). The
+review-correction commits are re-verified against CI before merge --
+see `evidence/000-current-state.md` for the citation once that run
+passes, matching the discipline sessions 026-030 followed: E4
+specifically means CI-confirmed, not locally-confirmed.
 
 ## 7. Known limitations
 
@@ -195,10 +245,29 @@ locally-confirmed.
   deployment would need to terminate TLS in front of this API, which is
   outside this repository's current scope.
 - **The two bounded system actors' seed tokens are published in
-  plaintext in version control.** See `db/ddl/014-caller-authentication.sql`'s
-  header -- explicit, not an oversight, but a real limitation for any
-  deployment that matters. There is no rotation mechanism to replace
-  them (see the first bullet above).
+  plaintext in version control.** See
+  `db/seed/dev-caller-authentication-tokens.sql`'s header -- explicit,
+  not an oversight, but a real limitation for any deployment that
+  matters. There is no rotation mechanism to replace them (see the first
+  bullet above). As of the pre-merge review pass, this seed data no
+  longer lives in the canonical `db/ddl/` migration path -- see §2.1.
+- **Caller-binding verification runs in a separate transaction from the
+  governed mutation it authorizes -- a check/use gap, flagged in review
+  before merging PR #48 and recorded here rather than fixed.**
+  `verify_bearer_token` opens and completes its own transaction; the
+  route then calls the underlying mutating service function, which opens
+  its own, separate transaction. A token valid at the moment
+  `verify_bearer_token` checks it could be revoked by a concurrent
+  request before the governed mutation actually commits -- in principle,
+  the audit record could show an authenticated actor performing an act
+  using a credential no longer active at the mutation's real transaction
+  boundary. Closing this would mean threading a token/cursor through
+  every one of the nine protected routes' underlying service functions,
+  reversing the deliberate design choice (§2.3) that kept
+  `verify_bearer_token` standalone specifically so none of their ~150
+  existing service-layer tests needed to change. Not fixed in this
+  session, deliberately -- see `evidence/003-known-gaps.md`'s Caller
+  Authentication section for the fuller statement.
 - **`ActorNotFound` is no longer directly reachable through the HTTP
   surface on caller-bound routes for an actor that was never
   registered** -- since no token could ever exist for such an actor,

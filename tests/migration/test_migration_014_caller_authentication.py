@@ -8,11 +8,19 @@ test_migration_013_identity_claim_scope.py:
    CDP_TEST_DATABASE_URL is set, that proves 001 -> ... -> 013 -> 014
    apply cleanly and that re-running 014 is a no-op (idempotent,
    rerun-safe).
+
+Review correction (before merging PR #48): this migration no longer
+seeds any tokens itself -- see 014's file header ("No privileged tokens
+are seeded here") and db/seed/dev-caller-authentication-tokens.sql,
+which is not part of this migration and is covered by
+test_dev_seed_caller_authentication_tokens.py instead. Applying only
+001-014 (this file's own DDL_FILES list) must leave the two bounded
+system actors with zero tokens -- see
+test_apply_001_through_013_then_014_twice_is_idempotent below.
 """
 
 from __future__ import annotations
 
-import hashlib
 import os
 import re
 import unittest
@@ -37,11 +45,6 @@ DDL_FILES = [
     "014-caller-authentication.sql",
 ]
 DDL_014 = REPO_ROOT / "db" / "ddl" / "014-caller-authentication.sql"
-
-RECOGNITION_AUTHORITY_SEED_TOKEN = (
-    "seed-token-recognition-authority-local-dev-only-do-not-use-in-production"
-)
-GRANT_ISSUER_SEED_TOKEN = "seed-token-grant-issuer-local-dev-only-do-not-use-in-production"
 
 
 def read_sql(path: Path) -> str:
@@ -96,18 +99,13 @@ class Migration014StaticTests(unittest.TestCase):
         for statement in forbidden_statements:
             self.assertNotIn(statement, self.executable_sql)
 
-    def test_seeded_tokens_match_the_published_plaintext(self) -> None:
-        """The migration's file header publishes two plaintext seed tokens
-        (local/dev/test use only). This test proves the hash actually
-        stored in the migration matches sha256(that exact plaintext) --
-        catching any transcription drift between the header comment and
-        the real INSERT value."""
-        recognition_hash = hashlib.sha256(
-            RECOGNITION_AUTHORITY_SEED_TOKEN.encode("utf-8")
-        ).hexdigest()
-        grant_issuer_hash = hashlib.sha256(GRANT_ISSUER_SEED_TOKEN.encode("utf-8")).hexdigest()
-        self.assertIn(recognition_hash, self.sql)
-        self.assertIn(grant_issuer_hash, self.sql)
+    def test_migration_does_not_seed_any_tokens(self) -> None:
+        """The canonical migration path must never insert a row into
+        actor_bearer_token -- a deployment applying only db/ddl/*.sql
+        must not be born with any bearer token, privileged or otherwise.
+        See this file's header for the review correction that established
+        this rule (PR #48)."""
+        self.assertNotIn("INSERT INTO cdp_core.actor_bearer_token", self.executable_sql)
 
     def test_no_other_secret_bearing_columns_in_migration(self) -> None:
         column_def_pattern = re.compile(
@@ -148,21 +146,18 @@ class Migration014PostgresSmokeTests(unittest.TestCase):
             )
             self.assertIsNotNone(cursor.fetchone(), "missing actor_bearer_token.token_hash")
 
-            # Exactly one seeded, active token each for the two bounded
-            # system actors -- rerunning 014 must not duplicate them
-            # (ON CONFLICT (token_hash) DO NOTHING).
+            # Applying only 001-014 (no db/seed/) must leave the two
+            # bounded system actors with zero tokens -- the migration
+            # itself provisions no privileged credentials. This is the
+            # property the PR #48 review required.
             cursor.execute(
-                "SELECT actor_id, status FROM cdp_core.actor_bearer_token "
-                "WHERE actor_id IN ('cdp_identity_recognition_authority', 'cdp_authority_grant_issuer') "
-                "ORDER BY actor_id"
+                "SELECT count(*) FROM cdp_core.actor_bearer_token "
+                "WHERE actor_id IN ('cdp_identity_recognition_authority', 'cdp_authority_grant_issuer')"
             )
-            rows = cursor.fetchall()
             self.assertEqual(
-                rows,
-                [
-                    ("cdp_authority_grant_issuer", "active"),
-                    ("cdp_identity_recognition_authority", "active"),
-                ],
+                cursor.fetchone()[0],
+                0,
+                "db/ddl/014 alone must not seed any token for either bounded system actor",
             )
 
             # Unrelated configured workflow_definition rows must be untouched.
@@ -178,15 +173,20 @@ class Migration014PostgresSmokeTests(unittest.TestCase):
             self.assertEqual(applies_to_decision_class_id, "claim_approval")
 
             # The partial unique index actually enforces one active token
-            # per actor -- inserting a second active row for an actor that
-            # already has one must fail. Run last: this aborts the
-            # transaction, so nothing after it can execute on this
-            # connection.
+            # per actor. actor_bearer_token.actor_id's FK to
+            # identifier_registry is DEFERRABLE INITIALLY DEFERRED and
+            # this whole test rolls back without ever committing, so a
+            # synthetic actor_id with no matching identifier_registry row
+            # is fine here.
+            cursor.execute(
+                "INSERT INTO cdp_core.actor_bearer_token (actor_id, token_hash) "
+                "VALUES ('mig014-smoke-actor', 'mig014-smoke-first-hash')"
+            )
             with self.assertRaises(Exception):
                 nested = conn.cursor()
                 nested.execute(
                     "INSERT INTO cdp_core.actor_bearer_token (actor_id, token_hash) "
-                    "VALUES ('cdp_authority_grant_issuer', 'mig014-smoke-duplicate-hash')"
+                    "VALUES ('mig014-smoke-actor', 'mig014-smoke-second-hash')"
                 )
         finally:
             conn.rollback()

@@ -35,22 +35,27 @@
 -- status, and their anti-erasure discipline -- a revoked token's row is
 -- never deleted, only marked revoked (BEFORE DELETE trigger below).
 --
--- Seeded actor tokens (local/dev/test use only -- see the block below):
+-- No privileged tokens are seeded here (review correction, PR #48):
 --   The two bounded system actors that already exist only via direct SQL
 --   seed rows (cdp_identity_recognition_authority,
 --   cdp_authority_grant_issuer -- db/ddl/010, 011) were never created
---   through register_actor, so they have no token from that path. Fixed,
---   published plaintext tokens are seeded here so the bounded-actor
---   routes those two actors alone may call (claim recognition, authority
---   grant issuance/revocation) can also be caller-bound. THESE ARE
---   PUBLISHED IN THIS FILE, IN PLAINTEXT, IN VERSION CONTROL -- they
---   provide zero secrecy and MUST NOT be treated as credentials in any
---   deployment that matters. They exist so this repository's own tests
---   and local Docker stack can exercise the caller-binding check against
---   these two bounded actors without a chicken-and-egg problem. A real
---   deployment would need to rotate these before going anywhere near
---   production -- and this slice provides no rotation mechanism to do so
---   (see the "what this closes" note above).
+--   through register_actor, so this migration alone leaves them with no
+--   token, and every caller-bound route those two actors alone may call
+--   (claim recognition, authority grant issuance/revocation) is
+--   unreachable through the HTTP API until one is provisioned. This is
+--   intentional: an earlier version of this migration seeded fixed,
+--   published-plaintext tokens for both directly in this file, but any
+--   deployment that applied the canonical migration path unmodified
+--   would then be born with known, active, privileged credentials --
+--   "provide zero secrecy" documentation cannot make that a safe
+--   default. Local/dev/test bootstrapping of these two actors' tokens
+--   now lives in `db/seed/dev-caller-authentication-tokens.sql`, applied
+--   only by the local Docker Compose init hook
+--   (docker/postgres/init/02_initialize_repository.sh's `db/seed`
+--   step) and by CI's test job -- never by this canonical `db/ddl/`
+--   path. A real deployment must provision credentials for these two
+--   actors through its own out-of-band mechanism (see that file's
+--   header for the same warning restated at the point of use).
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -166,19 +171,7 @@ CREATE TRIGGER trg_actor_bearer_token_forbid_delete
     FOR EACH ROW
     EXECUTE FUNCTION cdp_core.forbid_actor_bearer_token_delete();
 
--- -----------------------------------------------------------------------------
--- Seeded tokens for the two bounded system actors (local/dev/test use
--- only -- see the file header's "Seeded actor tokens" note above).
--- -----------------------------------------------------------------------------
-
-INSERT INTO cdp_core.actor_bearer_token (actor_id, token_hash)
-VALUES
-    -- cdp_identity_recognition_authority
-    -- plaintext (local/dev/test only, published, not a secret):
-    -- seed-token-recognition-authority-local-dev-only-do-not-use-in-production
-    ('cdp_identity_recognition_authority', '5809bb38a5cb422495b2ff3915df4cc96f48f2dc193c47c758a0f67ee065d68c'),
-    -- cdp_authority_grant_issuer
-    -- plaintext (local/dev/test only, published, not a secret):
-    -- seed-token-grant-issuer-local-dev-only-do-not-use-in-production
-    ('cdp_authority_grant_issuer', '42d009f04ee5e8a531669e3af23a0b193683b9b8d39c30004a03559948a9fe2f')
-ON CONFLICT (token_hash) DO NOTHING;
+-- No rows are seeded here. See this file's header ("No privileged
+-- tokens are seeded here") and db/seed/dev-caller-authentication-tokens.sql
+-- for local/dev/test bootstrapping of the two bounded system actors'
+-- tokens.

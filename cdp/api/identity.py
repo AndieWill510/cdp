@@ -166,11 +166,24 @@ def revoke_actor_token(
     """
     _require_caller(authorization, actor_id)
     try:
-        return revoke_actor_bearer_token(actor_id)
+        result = revoke_actor_bearer_token(actor_id)
     except NoActiveBearerToken as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover - defensive fallback
         raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+    # Redact token_hash (review correction, PR #48): a credential
+    # verifier -- even a one-way hash -- has no reason to cross the API
+    # boundary. The service layer's full row (including token_hash)
+    # remains available internally/in tests; only the HTTP response is
+    # narrowed here.
+    token = result["actor_bearer_token"]
+    return {
+        "actor_id": token["actor_id"],
+        "token_id": token["token_id"],
+        "status": token["status"],
+        "revoked_at": token["revoked_at"],
+    }
 
 
 class IdentityClaimCreateRequest(BaseModel):
