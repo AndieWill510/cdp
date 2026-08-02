@@ -292,9 +292,9 @@ exercised -- plus 12 new cases covering missing/mismatched tokens and
 the revoke round trip. All 288 tests in the combined suite (this
 session's new and updated tests plus every unaffected test from sessions
 020-031) pass locally against a live Docker Compose stack with zero
-unexplained regressions. **Not yet confirmed in CI** -- see
-`000-current-state.md` for why this capability is rated E3, not E4,
-pending a GitHub Actions run on this branch's head commit.
+unexplained regressions, and are confirmed passing in CI job
+`full-cdp-slice-tests`, run `30751140549` on this branch's head commit
+`29c5cdb`, 2026-08-02T14:00:14Z, conclusion `success`.
 
 ## Audit trail
 

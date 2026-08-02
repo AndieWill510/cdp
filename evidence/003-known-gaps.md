@@ -295,10 +295,11 @@ boundaries of that scope, not a claim of anything broader:
 
 ## Caller Authentication -- known limitations of the session 032 slice
 
-Session 032 rates bearer-token caller binding at Runtime Tested (E3),
-pending CI confirmation, in `000-current-state.md` -- not yet E4. The
-items below are the honest boundaries of this slice regardless of where
-CI lands it; see `docs/session-032-caller-authentication.md` §1 and §7
+Session 032 rates bearer-token caller binding at Integration Tested (E4)
+in `000-current-state.md`, cited to CI run `30751140549` on commit
+`29c5cdb`. The items below are the honest boundaries of that scope, not
+a claim that this reaches OAuth/OIDC or cryptographic signing; see
+`docs/session-032-caller-authentication.md` §1 and §7
 for the full statement:
 
 - **Not OAuth/OIDC/SSO, not cryptographic signing.** A bearer token is

@@ -1,10 +1,10 @@
 # Session 032 — Real Authentication / Caller Binding
 
 Status: implementation complete, verified locally against a live Docker
-Compose stack (fresh migration apply, live `uvicorn`, live Postgres). CI
-run pending on this PR's head commit. Not yet reviewed/merged. This file
-documents what already exists in the working tree, not a plan for future
-work.
+Compose stack (fresh migration apply, live `uvicorn`, live Postgres), and
+confirmed passing in CI (run `30751140549` on head commit `29c5cdb`, see
+§5). Not yet reviewed/merged (PR #48). This file documents what already
+exists in the working tree, not a plan for future work.
 
 Scope: binds an HTTP caller to the actor_id it asserts on every mutating
 route that accepts one, closing the gap every prior session (027-031)
@@ -163,15 +163,21 @@ migration apply, live Postgres, live `uvicorn`):
   test that did not need updating for the new auth requirement.
 - `ruff check cdp` -- passes with no findings.
 
-**GitHub Actions:** pending -- see `evidence/000-current-state.md` for
-the citation once this PR's CI run passes.
+**GitHub Actions:** confirmed. Both jobs (`pr-guard`,
+`full-cdp-slice-tests`) passed: run `30751140549`, commit `29c5cdb`
+(this branch's head), 2026-08-02T14:00:14Z, conclusion `success`. (The
+first attempt failed only on a transient Docker Hub registry timeout
+pulling `pgvector/pgvector:pg16` inside GitHub's runner infrastructure,
+unrelated to this change; a rerun of the same commit passed cleanly.)
+`RFC Index Integrity` also ran (no `rfc/` files touched this session)
+and passed.
 
 ## 6. Evidence level reached
 
-Not yet updated in `evidence/000-current-state.md` pending a passing CI
-run on this PR's head commit -- matching the discipline sessions 026-030
-followed (session 031 was documentation-only and used the RFC-integrity
-check instead).
+**Integration Tested (E4)**, per `evidence/000-current-state.md`, cited
+to CI run `30751140549` on commit `29c5cdb` -- the same discipline
+sessions 026-030 followed: E4 specifically means CI-confirmed, not
+locally-confirmed.
 
 ## 7. Known limitations
 
