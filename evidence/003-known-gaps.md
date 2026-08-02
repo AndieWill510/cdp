@@ -1,6 +1,6 @@
 # Known Gaps
 
-Status: Draft v0.4 -- as of 2026-08-02, session 031 (RFC-CDP-030/031 spec updates) working tree, building on main `680f0f4`
+Status: Draft v0.4 -- as of 2026-08-02, session 032 (Caller Authentication) working tree, building on main `680f0f4`
 
 This document describes known gaps, limitations, and evidence boundaries:
 capabilities the constitutional or architecture layer expects but that are
@@ -37,19 +37,24 @@ No code exists under a canonical implementation path (`cdp/`) for these:
   `tests/misc/test_self_canonicalizing_ingestion.py` itself. That file's docstring
   states the embedded code is meant to "prove the contract, not a production
   loader." No module under `cdp/` implements ingestion.
-- **Application authentication and a general policy engine.** No caller
-  authentication, session model, or OAuth/OIDC/SAML exists in the
-  canonical `cdp/` path. `README-control-plane-v0.1.md` states the same of
-  the (dormant) `src/cdp_control_plane` prototype: "No auth. No UI. No
+- **A general policy engine, session model, and OAuth/OIDC/SAML do not
+  exist.** `README-control-plane-v0.1.md` states the same of the
+  (dormant) `src/cdp_control_plane` prototype: "No auth. No UI. No
   policy engine. No migration framework." A bounded RFC-CDP-032 Authority
   Grant/evaluation mechanism now exists (session 028 -- see the Authority
   section below), but it is not a general authorization system: it
-  evaluates exactly one authority type (`PROPOSE`) for exactly one
-  governed act (decision creation), grants can only be issued or revoked
-  by a single hardcoded seeded actor, and nothing in it authenticates an
-  HTTP caller's identity -- every actor_id in every request is accepted at
-  face value. Likewise, the seeded identity-recognition authority added in
-  PR #41 (`cdp_identity_recognition_authority`) remains a single hardcoded,
+  evaluates only the specific authority type each Universal Attestation
+  proof path names, grants can only be issued or revoked by a single
+  hardcoded seeded actor. As of session 032, an HTTP caller asserting an
+  actor_id on the nine mutating routes that accept one is no longer
+  simply believed -- a matching bearer token is required (see the Caller
+  Authentication section below) -- but this remains a bearer-token check,
+  not OAuth/OIDC/SAML, has no rotation mechanism, and every plain/
+  unattested route (`POST /decisions`, `POST /actors` itself, and every
+  non-`attested-` challenge/adjudication/execution route) remains
+  unauthenticated exactly as before. Likewise, the seeded
+  identity-recognition authority added in PR #41
+  (`cdp_identity_recognition_authority`) remains a single hardcoded,
   bounded guardrail against ambient identity-claim recognition, not a
   general authorization system.
 
@@ -120,14 +125,18 @@ discipline:
   but not written by this slice's synchronous service path, which fails
   closed via exception instead (see
   `cdp/core/repositories/attestations.py`'s docstring).
-- **Caller authentication does not exist.** The API accepts a submitted
-  `actor_id` (for registration, claims, decisions, or claim decisions) at
-  face value -- there is no session, token, or credential proving the HTTP
-  caller actually controls the actor_id it is asserting. This is distinct
-  from the claim-based verification point above: that governs whether an
-  *actor* is recognized for a purpose; this is about whether the *caller*
-  making the HTTP request is who it says it is, which nothing in this
-  slice checks.
+- **Caller authentication is now bearer-token based (session 032), not
+  absent, but still narrower than a session/credential system.** Claim
+  submission, claim decisions, and attested-decision creation all
+  require an `Authorization: Bearer` header matching the asserted
+  actor_id's active token (`verify_bearer_token`,
+  `db/ddl/014-caller-authentication.sql`) -- see the Caller
+  Authentication section below for the full boundary. `POST /actors`
+  itself remains unauthenticated (no token exists before registration).
+  This is distinct from the claim-based verification point above: that
+  governs whether an *actor* is recognized for a purpose; caller
+  authentication is about whether the *caller* making the HTTP request
+  controls the actor_id it asserts.
 - **Only decision creation, challenge-raising, challenge-adjudication,
   execution authorization, and execution recording are attested** (the
   last four added in session 029 -- see the Universal Attestation section
@@ -213,11 +222,12 @@ claim that RFC-CDP-032 is implemented in full:
   documented limitation session 027 v0.2 accepted for the identity
   recognition authority, applied here from the start. Widening it
   requires a code change, not a governed act.
-- **Caller authentication does not exist here either** -- the same gap
-  named in the Identity and Attestation section above applies identically
-  to `POST /authority-grants`: `issued_by_actor_id` and
-  `revoked_by_actor_id` are accepted at face value, not proven to be the
-  HTTP caller.
+- **Caller authentication is bearer-token based as of session 032, using
+  the same seeded, published, local/dev/test-only token as the grant
+  issuer identity itself** -- see the Caller Authentication section
+  below. `POST /authority-grants` and `.../revoke` both require the
+  caller to present `cdp_authority_grant_issuer`'s own token, not merely
+  assert that actor_id in the request body.
 - **No production deployment evidence exists for this slice.**
 
 ## Universal Attestation (RFC-CDP-031 §2) -- known limitations of the session 029 slice
@@ -249,12 +259,14 @@ of that scope, not a claim that RFC-CDP-031 §2 is implemented in full:
 - **Every limitation already named for Identity/Attestation and Authority
   above applies identically here**, since this slice reuses those slices'
   objects and checks unchanged: claim-based not cryptographic
-  verification, no caller authentication, single hardcoded seeded actors
-  for recognition/grant-issuance, no delegation/quorum/
-  separation-of-duties, purpose scope as flat string equality (extended
-  here to four new literal strings -- `challenge_raising`,
-  `challenge_adjudication`, `execution_authorization`,
-  `execution_recording` -- not a scope language).
+  verification, single hardcoded seeded actors for recognition/grant-
+  issuance, no delegation/quorum/separation-of-duties, purpose scope as
+  flat string equality (extended here to four new literal strings --
+  `challenge_raising`, `challenge_adjudication`, `execution_authorization`,
+  `execution_recording` -- not a scope language). As of session 032, all
+  four attested proof paths here also require bearer-token caller
+  binding on `submitted_by_actor_id` -- see the Caller Authentication
+  section below.
 - **No production deployment evidence exists for this slice.**
 
 ## Identity Claim Scope -- known limitations of the session 030 slice
@@ -279,6 +291,94 @@ boundaries of that scope, not a claim of anything broader:
   Identity Claim's scope and Authority Grant's scope are two
   independent, unlinked columns on two different tables, each with its
   own two-level model -- there is no shared scope object between them.
+- **No production deployment evidence exists for this slice.**
+
+## Caller Authentication -- known limitations of the session 032 slice
+
+Session 032 rates bearer-token caller binding at Integration Tested (E4)
+in `000-current-state.md`, cited to CI run `30770996059` on commit
+`ba8f5a9` -- the reviewed and corrected commit, after a pre-merge review
+pass (PR #48) identified a deployment-blocking issue and two hardening
+issues, fixed or recorded below. The items below are the honest
+boundaries of that scope, not a claim that this reaches OAuth/OIDC or
+cryptographic signing; see `docs/session-032-caller-authentication.md`
+§1 and §7 for the full statement:
+
+- **Not OAuth/OIDC/SSO, not cryptographic signing.** A bearer token is
+  presented, not signed over per-request -- RFC-CDP-031 §4's signature-
+  validity requirement remains unmet, exactly as session 031 already
+  documented.
+- **No token rotation.** A revoked token's actor cannot obtain a
+  replacement in this system; the only path back is registering a new
+  actor. There is no "forgot my token" recovery flow.
+- **No transport-security guarantee.** This slice adds nothing about
+  TLS; a bearer token intercepted in transit is fully usable by whoever
+  intercepts it, the standard bearer-token risk. This repository's local
+  Docker Compose stack runs over plain HTTP.
+- **The two bounded system actors' seed tokens are published in
+  plaintext in version control** (`db/seed/dev-caller-authentication-tokens.sql`'s
+  header) -- explicit, not an oversight, but zero secrecy for any
+  deployment that matters, and there is no rotation mechanism (see
+  above) to replace them. **Review correction before merging PR #48:**
+  an earlier version of this slice seeded these same two tokens directly
+  inside `db/ddl/014-caller-authentication.sql`, the canonical migration
+  path -- meaning any deployment applying the normal migrations
+  unmodified was born with known, active, privileged credentials for
+  `cdp_identity_recognition_authority` and `cdp_authority_grant_issuer`.
+  A "provide zero secrecy" warning in a comment does not make that a
+  safe default. The seed INSERT now lives only in `db/seed/`, applied
+  solely by the local Docker Compose init hook and by CI's test job --
+  never by `db/ddl/`. `db/ddl/014`'s SQL text contains no `INSERT INTO
+  cdp_core.actor_bearer_token` at all (see
+  `tests/migration/test_migration_014_caller_authentication.py`'s
+  `test_migration_does_not_seed_any_tokens`, a static, database-state-
+  independent assertion; the accompanying Postgres smoke test asserts
+  the weaker but portable claim that rerunning 014 never changes the
+  bounded actors' token count, since the shared test database it runs
+  against may already have `db/seed/` applied for other tests in the
+  same CI/local run). A real deployment must still provision credentials
+  for these two actors through its own out-of-band mechanism, which this
+  repository does not provide.
+- **Caller-binding verification runs in a separate transaction from the
+  governed mutation it authorizes -- a check/use gap.**
+  `verify_bearer_token` opens and completes its own `db.transaction()`
+  (see `cdp/core/services.py`); the route then calls the underlying
+  mutating service function, which opens its own, separate transaction.
+  A token that is valid at the moment `verify_bearer_token` checks it
+  could be revoked by a concurrent request before the governed mutation
+  actually commits, so in principle the audit record could show an
+  authenticated actor performing an act using a credential that was no
+  longer active at the mutation's real transaction boundary. This is a
+  narrow window (a revocation racing a mutation for the same actor,
+  within the gap between two transactions on the same request) and is
+  not fixed in this session -- deliberately: closing it would mean
+  threading a token/cursor through every one of the nine protected
+  routes' underlying service functions (`submit_identity_claim`,
+  `recognize/deny/contest_identity_claim`, `attest_and_create_decision`,
+  `grant_authority`, `revoke_authority`, and all four Universal
+  Attestation `attest_and_*` functions), reversing the deliberate design
+  choice that kept `verify_bearer_token` standalone specifically so none
+  of their ~150 existing service-layer tests needed to change (see
+  `docs/session-032-caller-authentication.md` §2.3). Recorded here
+  rather than fixed, per review before merging PR #48.
+- **Not every mutating route is covered.** `POST /actors` itself
+  (registration) and every plain/unattested route (`POST /decisions`,
+  and every challenge/adjudication/execution-authorization/execution-
+  record route without the `attested-` prefix) remain unauthenticated,
+  exactly as in every prior session -- see
+  `docs/session-032-caller-authentication.md` §2.3's "Not covered,
+  deliberately" note.
+- **`ActorNotFound` is no longer directly reachable through the HTTP
+  surface on caller-bound routes for an actor that was never
+  registered** -- a documented, deliberate consequence, not a defect:
+  since no token could ever exist for an unregistered actor, caller-
+  binding (checked first) always intercepts with 401/403 before the
+  service-layer `ActorNotFound` check would be reached. `ActorNotFound`
+  remains directly exercised at the service layer, which this session
+  does not change (`verify_bearer_token` is never called from inside any
+  other service function).
+- **No rate limiting, no session/cookie model, no authentication of GET
+  routes** (all reads remain open, unchanged).
 - **No production deployment evidence exists for this slice.**
 
 ## RFC index/manifest verification -- known limitation of a working check

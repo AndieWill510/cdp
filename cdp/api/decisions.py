@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Any, Literal
 
 import psycopg
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
 
 from cdp.core import db
@@ -34,6 +34,9 @@ from cdp.core.services import (
     AttestedExecutionAuthorizationInput,
     AttestedExecutionRecordInput,
     AuthorityNotGranted,
+    BearerTokenActorMismatch,
+    BearerTokenInvalid,
+    BearerTokenMissing,
     ChallengeInput,
     ChallengeNotAdjudicable,
     ChallengeNotFound,
@@ -61,9 +64,21 @@ from cdp.core.services import (
     create_decision_with_workflow,
     raise_challenge_for_decision,
     record_execution_attempt,
+    verify_bearer_token,
 )
 
 router = APIRouter(tags=["decisions"])
+
+
+def _require_caller(authorization: str | None, expected_actor_id: str) -> None:
+    """Caller authentication (session 032) -- see cdp/api/identity.py's
+    module docstring for the full boundary statement."""
+    try:
+        verify_bearer_token(authorization_header=authorization, expected_actor_id=expected_actor_id)
+    except (BearerTokenMissing, BearerTokenInvalid) as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except BearerTokenActorMismatch as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 class DecisionCreateRequest(BaseModel):
@@ -231,12 +246,16 @@ class AttestedChallengeCreateRequest(BaseModel):
 
 @router.post("/decisions/{registry_name}/{decision_id}/attested-challenges", status_code=201)
 def create_attested_challenge(
-    registry_name: str, decision_id: str, request: AttestedChallengeCreateRequest
+    registry_name: str,
+    decision_id: str,
+    request: AttestedChallengeCreateRequest,
+    authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
     """Universal Attestation proof path for RFC-CDP-042 Challenge (session
     029) -- see attest_and_raise_challenge's docstring in
     cdp/core/services.py. Additive to POST .../challenges above, which is
     unchanged."""
+    _require_caller(authorization, request.submitted_by_actor_id)
     payload = request.model_dump()
     challenge_input = ChallengeInput(
         registry_name=registry_name,
@@ -346,12 +365,16 @@ class AttestedExecutionAuthorizationCreateRequest(BaseModel):
     status_code=201,
 )
 def create_attested_execution_authorization(
-    registry_name: str, decision_id: str, request: AttestedExecutionAuthorizationCreateRequest
+    registry_name: str,
+    decision_id: str,
+    request: AttestedExecutionAuthorizationCreateRequest,
+    authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
     """Universal Attestation proof path for execution authorization
     (session 029) -- see attest_and_authorize_execution's docstring in
     cdp/core/services.py. Additive to POST .../execution-authorizations
     above, which is unchanged."""
+    _require_caller(authorization, request.submitted_by_actor_id)
     payload = request.model_dump()
     authorization_input = ExecutionAuthorizationInput(
         registry_name=registry_name,
@@ -475,12 +498,16 @@ class AttestedExecutionRecordCreateRequest(BaseModel):
     status_code=201,
 )
 def create_attested_execution_record(
-    registry_name: str, decision_id: str, request: AttestedExecutionRecordCreateRequest
+    registry_name: str,
+    decision_id: str,
+    request: AttestedExecutionRecordCreateRequest,
+    authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
     """Universal Attestation proof path for execution recording (session
     029) -- see attest_and_record_execution_attempt's docstring in
     cdp/core/services.py. Additive to POST .../execution-records above,
     which is unchanged."""
+    _require_caller(authorization, request.submitted_by_actor_id)
     payload = request.model_dump()
     execution_input = ExecutionRecordInput(
         registry_name=registry_name,
@@ -607,11 +634,13 @@ def create_attested_adjudication(
     decision_id: str,
     challenge_id: uuid.UUID,
     request: AttestedAdjudicationCreateRequest,
+    authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
     """Universal Attestation proof path for challenge adjudication (session
     029) -- see attest_and_adjudicate_challenge's docstring in
     cdp/core/services.py. Additive to POST .../adjudications above, which
     is unchanged."""
+    _require_caller(authorization, request.submitted_by_actor_id)
     payload = request.model_dump()
     adjudication_input = AdjudicationInput(
         registry_name=registry_name,

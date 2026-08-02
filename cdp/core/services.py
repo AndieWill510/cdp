@@ -58,6 +58,8 @@ boundary statement.
 
 from __future__ import annotations
 
+import hashlib
+import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -66,6 +68,7 @@ from typing import Any
 import psycopg
 
 from cdp.core import db
+from cdp.core.repositories import actor_tokens as actor_tokens_repo
 from cdp.core.repositories import actors as actors_repo
 from cdp.core.repositories import adjudications as adjudications_repo
 from cdp.core.repositories import attestations as attestations_repo
@@ -147,6 +150,22 @@ class ExecutionAlreadySucceeded(Exception):
 
 class ActorAlreadyRegistered(Exception):
     """An actor with this actor_id is already registered."""
+
+
+class BearerTokenMissing(Exception):
+    """No (or a malformed) Authorization: Bearer header was presented."""
+
+
+class BearerTokenInvalid(Exception):
+    """The presented bearer token does not match any active token."""
+
+
+class BearerTokenActorMismatch(Exception):
+    """The presented bearer token belongs to a different actor than asserted."""
+
+
+class NoActiveBearerToken(Exception):
+    """The actor has no active bearer token to revoke."""
 
 
 class ActorNotFound(Exception):
@@ -1014,13 +1033,29 @@ class ActorInput:
     description: str | None = None
 
 
+def _generate_bearer_token() -> tuple[str, str]:
+    """Return (plaintext_token, sha256_hex_digest). The plaintext is
+    generated here and returned to the caller exactly once (by
+    register_actor, below); only the digest is ever persisted -- see
+    db/ddl/014-caller-authentication.sql's header."""
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    return token, token_hash
+
+
 def register_actor(actor_input: ActorInput) -> dict[str, Any]:
     """Register a new governed actor.
 
     Runs inside exactly one transaction: the underlying identifier_registry
-    row, the cdp_core.actor row, and the audit event all commit or roll
+    row, the cdp_core.actor row, a bearer token (session 032, see
+    verify_bearer_token below), and the audit event all commit or roll
     back together. Raises ActorAlreadyRegistered if actor_id is already
     registered.
+
+    The returned dict's "bearer_token" key holds the plaintext token --
+    this is the only time it is ever available. Callers must record it
+    immediately; this system stores only its SHA-256 hash and cannot
+    recover the plaintext later.
     """
     with db.transaction() as cursor:
         try:
@@ -1037,6 +1072,11 @@ def register_actor(actor_input: ActorInput) -> dict[str, Any]:
                 f"Actor {actor_input.actor_id!r} is already registered"
             ) from exc
 
+        bearer_token, token_hash = _generate_bearer_token()
+        actor_tokens_repo.insert_token(
+            cursor, actor_id=actor_input.actor_id, token_hash=token_hash
+        )
+
         audit_repo.append_event(
             cursor,
             event_type="actor.registered",
@@ -1049,7 +1089,72 @@ def register_actor(actor_input: ActorInput) -> dict[str, Any]:
             },
         )
 
-    return {"actor": actor}
+    return {"actor": actor, "bearer_token": bearer_token}
+
+
+# ---------------------------------------------------------------------------
+# Caller Authentication (session 032): binds an HTTP caller to the
+# actor_id it asserts in a mutating request, closing the gap RFC-CDP-030
+# SS6 and RFC-CDP-031 SS7 both name -- every prior session's proof paths
+# accepted a submitted actor_id at face value. verify_bearer_token is a
+# standalone boundary check, deliberately not called from inside any
+# other service function (register_actor, submit_identity_claim,
+# recognize/deny/contest_identity_claim, grant_authority, revoke_authority,
+# or any attest_and_* function) so none of their existing signatures,
+# behavior, or tests change. Callers -- the API layer, in
+# cdp/api/identity.py, authority.py, and decisions.py -- call this first,
+# before the underlying service function, on every route that accepts an
+# actor-asserting field. See db/ddl/014-caller-authentication.sql and
+# docs/session-032-caller-authentication.md for the full boundary
+# statement, including what this does and does not prove.
+# ---------------------------------------------------------------------------
+
+
+def verify_bearer_token(*, authorization_header: str | None, expected_actor_id: str) -> None:
+    """Verify authorization_header carries a valid, active bearer token
+    belonging to expected_actor_id. Raises BearerTokenMissing,
+    BearerTokenInvalid, or BearerTokenActorMismatch; returns None on
+    success."""
+    if not authorization_header or not authorization_header.startswith("Bearer "):
+        raise BearerTokenMissing("Missing or malformed Authorization header")
+
+    token = authorization_header[len("Bearer ") :].strip()
+    if not token:
+        raise BearerTokenMissing("Missing bearer token")
+
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    with db.transaction() as cursor:
+        token_row = actor_tokens_repo.fetch_token_by_hash(cursor, token_hash=token_hash)
+
+    if token_row is None or token_row["status"] != "active":
+        raise BearerTokenInvalid("Bearer token is invalid or has been revoked")
+
+    if token_row["actor_id"] != expected_actor_id:
+        raise BearerTokenActorMismatch(
+            f"Bearer token does not belong to actor {expected_actor_id!r}"
+        )
+
+
+def revoke_actor_bearer_token(actor_id: str) -> dict[str, Any]:
+    """Revoke actor_id's currently active bearer token. Callers must
+    verify_bearer_token(expected_actor_id=actor_id) first -- only an
+    actor presenting its own current token may revoke it (self-service,
+    like a logout); this function itself performs no caller check.
+    Raises NoActiveBearerToken if the actor has no active token."""
+    with db.transaction() as cursor:
+        token = actor_tokens_repo.revoke_active_token_for_actor(cursor, actor_id=actor_id)
+        if token is None:
+            raise NoActiveBearerToken(f"Actor {actor_id!r} has no active bearer token")
+
+        audit_repo.append_event(
+            cursor,
+            event_type="actor_bearer_token.revoked",
+            aggregate_type="actor",
+            aggregate_id=actor_id,
+            payload={"actor_id": actor_id, "token_id": str(token["token_id"])},
+        )
+
+    return {"actor_bearer_token": token}
 
 
 @dataclass(frozen=True)

@@ -5,8 +5,14 @@ Follows the pattern in tests/identify_attest_standing/test_identity_attestation_
 assumes the local Docker stack (`make up-build`) is already running, and
 talks to it over plain HTTP with no cdp import required.
 
-Requires 001, 004, 010, 011, and 012 already applied to the database
-cdp-api is using.
+Requires 001, 004, 010, 011, 012, and 014 already applied to the
+database cdp-api is using.
+
+Caller authentication (session 032): each attested-* route now also
+requires an Authorization: Bearer <token> header matching
+submitted_by_actor_id's own active token -- see
+_submit_and_recognize_claim's returned tuple and _attestation_fields
+below.
 """
 
 from __future__ import annotations
@@ -27,12 +33,23 @@ DECISION_CLASS_ID = "claim_approval"
 RECOGNITION_AUTHORITY_ACTOR_ID = "cdp_identity_recognition_authority"
 GRANT_ISSUER_ACTOR_ID = "cdp_authority_grant_issuer"
 
+# Fixed seed tokens for the two bounded system actors above, published in
+# db/ddl/014-caller-authentication.sql's header for local/dev/test use --
+# never use these outside a local/test/demo environment.
+RECOGNITION_AUTHORITY_TOKEN = (
+    "seed-token-recognition-authority-local-dev-only-do-not-use-in-production"
+)
+GRANT_ISSUER_TOKEN = "seed-token-grant-issuer-local-dev-only-do-not-use-in-production"
 
-def _request(method: str, url: str, payload: dict | None = None) -> tuple[int, dict]:
+
+def _request(
+    method: str, url: str, payload: dict | None = None, *, token: str | None = None
+) -> tuple[int, dict]:
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
-    request = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json"}, method=method
-    )
+    headers = {"Content-Type": "application/json"}
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    request = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
             return response.status, json.loads(response.read().decode("utf-8"))
@@ -42,8 +59,8 @@ def _request(method: str, url: str, payload: dict | None = None) -> tuple[int, d
         pytest.fail(f"Could not reach {url}. Is the local Docker stack running? {exc}")
 
 
-def _post_json(url: str, payload: dict) -> tuple[int, dict]:
-    return _request("POST", url, payload)
+def _post_json(url: str, payload: dict, *, token: str | None = None) -> tuple[int, dict]:
+    return _request("POST", url, payload, token=token)
 
 
 def _get_json(url: str) -> tuple[int, dict]:
@@ -54,17 +71,17 @@ def _unique(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:12]}"
 
 
-def _register_actor() -> str:
+def _register_actor() -> tuple[str, str]:
     actor_id = _unique("ua-api-actor")
     status, body = _post_json(
         f"{API_URL}/actors",
         {"actor_id": actor_id, "actor_type": "human", "display_label": f"UA test actor {actor_id}"},
     )
     assert status == 201, f"expected 201, got {status}: {body}"
-    return actor_id
+    return actor_id, body["bearer_token"]
 
 
-def _submit_and_recognize_claim(actor_id: str, purpose_scope: str) -> str:
+def _submit_and_recognize_claim(actor_id: str, token: str, purpose_scope: str) -> str:
     status, body = _post_json(
         f"{API_URL}/identity-claims",
         {
@@ -73,6 +90,7 @@ def _submit_and_recognize_claim(actor_id: str, purpose_scope: str) -> str:
             "claimed_identity_descriptor": "UA API round-trip descriptor.",
             "purpose_scope": purpose_scope,
         },
+        token=token,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
     claim_id = body["identity_claim"]["claim_id"]
@@ -80,6 +98,7 @@ def _submit_and_recognize_claim(actor_id: str, purpose_scope: str) -> str:
     status, body = _post_json(
         f"{API_URL}/identity-claims/{claim_id}/recognize",
         {"decided_by_actor_id": RECOGNITION_AUTHORITY_ACTOR_ID, "rationale": "Looks good."},
+        token=RECOGNITION_AUTHORITY_TOKEN,
     )
     assert status == 200, f"expected 200, got {status}: {body}"
     return claim_id
@@ -97,6 +116,7 @@ def _grant_authority(actor_id: str, authority: str) -> None:
             "issued_by_actor_id": GRANT_ISSUER_ACTOR_ID,
             "basis": "policy",
         },
+        token=GRANT_ISSUER_TOKEN,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
 
@@ -133,12 +153,12 @@ def _attestation_fields(actor_id: str, claim_id: str) -> dict:
 
 
 def test_attested_challenge_round_trip_succeeds() -> None:
-    subject_id = _register_actor()
+    subject_id, _subject_token = _register_actor()
     decision_id = _unique("ua-api-challenge-decision")
     _create_plain_decision(decision_id, subject_id)
 
-    actor_id = _register_actor()
-    claim_id = _submit_and_recognize_claim(actor_id, "challenge_raising")
+    actor_id, token = _register_actor()
+    claim_id = _submit_and_recognize_claim(actor_id, token, "challenge_raising")
     _grant_authority(actor_id, "CHALLENGE")
 
     status, body = _post_json(
@@ -148,6 +168,7 @@ def test_attested_challenge_round_trip_succeeds() -> None:
             "challenge_type": "policy",
             **_attestation_fields(actor_id, claim_id),
         },
+        token=token,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
     assert body["challenge"]["raised_by_actor_id"] == actor_id
@@ -162,12 +183,12 @@ def test_attested_challenge_round_trip_succeeds() -> None:
 
 
 def test_attested_challenge_without_authority_grant_returns_403() -> None:
-    subject_id = _register_actor()
+    subject_id, _subject_token = _register_actor()
     decision_id = _unique("ua-api-challenge-noauth-decision")
     _create_plain_decision(decision_id, subject_id)
 
-    actor_id = _register_actor()
-    claim_id = _submit_and_recognize_claim(actor_id, "challenge_raising")
+    actor_id, token = _register_actor()
+    claim_id = _submit_and_recognize_claim(actor_id, token, "challenge_raising")
 
     status, body = _post_json(
         f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}/attested-challenges",
@@ -175,12 +196,34 @@ def test_attested_challenge_without_authority_grant_returns_403() -> None:
             "challenge_text": "Should not be created.",
             **_attestation_fields(actor_id, claim_id),
         },
+        token=token,
+    )
+    assert status == 403, f"expected 403, got {status}: {body}"
+
+
+def test_attested_challenge_with_mismatched_token_returns_403() -> None:
+    subject_id, _subject_token = _register_actor()
+    decision_id = _unique("ua-api-challenge-tokenmismatch-decision")
+    _create_plain_decision(decision_id, subject_id)
+
+    actor_id, _token = _register_actor()
+    claim_id = _submit_and_recognize_claim(actor_id, _token, "challenge_raising")
+    _grant_authority(actor_id, "CHALLENGE")
+    _other_actor_id, other_token = _register_actor()
+
+    status, body = _post_json(
+        f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}/attested-challenges",
+        {
+            "challenge_text": "Should not be created -- wrong caller token.",
+            **_attestation_fields(actor_id, claim_id),
+        },
+        token=other_token,
     )
     assert status == 403, f"expected 403, got {status}: {body}"
 
 
 def test_attested_adjudication_round_trip_succeeds() -> None:
-    subject_id = _register_actor()
+    subject_id, _subject_token = _register_actor()
     decision_id = _unique("ua-api-adjudication-decision")
     _create_plain_decision(decision_id, subject_id)
 
@@ -191,8 +234,8 @@ def test_attested_adjudication_round_trip_succeeds() -> None:
     assert plain_status == 201, f"expected 201, got {plain_status}: {plain_body}"
     challenge_id = plain_body["challenge"]["challenge_id"]
 
-    actor_id = _register_actor()
-    claim_id = _submit_and_recognize_claim(actor_id, "challenge_adjudication")
+    actor_id, token = _register_actor()
+    claim_id = _submit_and_recognize_claim(actor_id, token, "challenge_adjudication")
     _grant_authority(actor_id, "ADJUDICATE")
 
     status, body = _post_json(
@@ -202,6 +245,7 @@ def test_attested_adjudication_round_trip_succeeds() -> None:
             "rationale": "UA API attested adjudication.",
             **_attestation_fields(actor_id, claim_id),
         },
+        token=token,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
     assert body["adjudication"]["outcome"] == "not_sustained"
@@ -209,12 +253,12 @@ def test_attested_adjudication_round_trip_succeeds() -> None:
 
 
 def test_attested_execution_authorization_round_trip_succeeds() -> None:
-    subject_id = _register_actor()
+    subject_id, _subject_token = _register_actor()
     decision_id = _unique("ua-api-execauth-decision")
     _create_plain_decision(decision_id, subject_id)
 
-    actor_id = _register_actor()
-    claim_id = _submit_and_recognize_claim(actor_id, "execution_authorization")
+    actor_id, token = _register_actor()
+    claim_id = _submit_and_recognize_claim(actor_id, token, "execution_authorization")
     _grant_authority(actor_id, "AUTHORIZE_EXECUTION")
 
     status, body = _post_json(
@@ -223,13 +267,14 @@ def test_attested_execution_authorization_round_trip_succeeds() -> None:
             "rationale": "UA API attested execution authorization.",
             **_attestation_fields(actor_id, claim_id),
         },
+        token=token,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
     assert body["attestation"]["governed_act_type"] == "execution_authorized"
 
 
 def test_attested_execution_record_round_trip_succeeds() -> None:
-    subject_id = _register_actor()
+    subject_id, _subject_token = _register_actor()
     decision_id = _unique("ua-api-execrecord-decision")
     _create_plain_decision(decision_id, subject_id)
 
@@ -239,8 +284,8 @@ def test_attested_execution_record_round_trip_succeeds() -> None:
     )
     assert plain_status == 201, f"expected 201, got {plain_status}: {plain_body}"
 
-    actor_id = _register_actor()
-    claim_id = _submit_and_recognize_claim(actor_id, "execution_recording")
+    actor_id, token = _register_actor()
+    claim_id = _submit_and_recognize_claim(actor_id, token, "execution_recording")
     _grant_authority(actor_id, "RECORD")
 
     now = datetime.now(timezone.utc).isoformat()
@@ -253,6 +298,7 @@ def test_attested_execution_record_round_trip_succeeds() -> None:
             "completed_at": now,
             **_attestation_fields(actor_id, claim_id),
         },
+        token=token,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
     assert body["attestation"]["governed_act_type"] == "execution_recorded"
@@ -263,3 +309,32 @@ def test_attested_execution_record_round_trip_succeeds() -> None:
     assert eval_status == 200
     assert len(eval_body["authority_evaluations"]) == 1
     assert eval_body["authority_evaluations"][0]["required_authority"] == "RECORD"
+
+
+def test_attested_execution_record_without_token_returns_401() -> None:
+    subject_id, _subject_token = _register_actor()
+    decision_id = _unique("ua-api-execrecord-notoken-decision")
+    _create_plain_decision(decision_id, subject_id)
+
+    plain_status, _ = _post_json(
+        f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}/execution-authorizations",
+        {"authorized_by_actor_id": "user_442", "rationale": "Plain authorization for execution-record setup."},
+    )
+    assert plain_status == 201
+
+    actor_id, token = _register_actor()
+    claim_id = _submit_and_recognize_claim(actor_id, token, "execution_recording")
+    _grant_authority(actor_id, "RECORD")
+
+    now = datetime.now(timezone.utc).isoformat()
+    status, body = _post_json(
+        f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}/attested-execution-records",
+        {
+            "execution_status": "succeeded",
+            "result_summary": "Should not be created -- no token.",
+            "attempted_at": now,
+            "completed_at": now,
+            **_attestation_fields(actor_id, claim_id),
+        },
+    )
+    assert status == 401, f"expected 401, got {status}: {body}"

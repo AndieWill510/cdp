@@ -9,6 +9,14 @@ slice, `cdp_authority_grant_issuer`) -- an arbitrary registered actor
 cannot issue or revoke a grant, mirroring the recognition-authority
 discipline the Identity and Attestation slice's v0.2 review correction
 established, applied here from the start.
+
+Caller authentication (session 032, db/ddl/014-caller-authentication.sql):
+both routes also require an `Authorization: Bearer <token>` header
+matching cdp_authority_grant_issuer's own token (seeded by that
+migration for local/dev/test use -- see its header) -- previously an
+arbitrary request body could simply assert issued_by_actor_id/
+revoked_by_actor_id equal to that actor_id with nothing checking the
+caller actually controlled it.
 """
 
 from __future__ import annotations
@@ -18,7 +26,7 @@ from datetime import datetime
 from typing import Any
 
 import psycopg
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from cdp.core import db
@@ -28,13 +36,26 @@ from cdp.core.services import (
     AuthorityGrantIssuerRequired,
     AuthorityGrantNotActive,
     AuthorityGrantNotFound,
+    BearerTokenActorMismatch,
+    BearerTokenInvalid,
+    BearerTokenMissing,
     GrantAuthorityInput,
     RevokeAuthorityInput,
     grant_authority,
     revoke_authority,
+    verify_bearer_token,
 )
 
 router = APIRouter(tags=["authority"])
+
+
+def _require_caller(authorization: str | None, expected_actor_id: str) -> None:
+    try:
+        verify_bearer_token(authorization_header=authorization, expected_actor_id=expected_actor_id)
+    except (BearerTokenMissing, BearerTokenInvalid) as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except BearerTokenActorMismatch as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 class AuthorityGrantCreateRequest(BaseModel):
@@ -50,7 +71,10 @@ class AuthorityGrantCreateRequest(BaseModel):
 
 
 @router.post("/authority-grants", status_code=201)
-def create_authority_grant(request: AuthorityGrantCreateRequest) -> dict[str, Any]:
+def create_authority_grant(
+    request: AuthorityGrantCreateRequest, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
+    _require_caller(authorization, request.issued_by_actor_id)
     try:
         return grant_authority(GrantAuthorityInput(**request.model_dump()))
     except AuthorityGrantIssuerRequired as exc:
@@ -90,8 +114,11 @@ class AuthorityGrantRevokeRequest(BaseModel):
 
 @router.post("/authority-grants/{grant_id}/revoke")
 def revoke_authority_grant(
-    grant_id: uuid.UUID, request: AuthorityGrantRevokeRequest
+    grant_id: uuid.UUID,
+    request: AuthorityGrantRevokeRequest,
+    authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
+    _require_caller(authorization, request.revoked_by_actor_id)
     try:
         return revoke_authority(
             RevokeAuthorityInput(

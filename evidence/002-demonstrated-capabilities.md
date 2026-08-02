@@ -1,6 +1,6 @@
 # Demonstrated Capabilities
 
-Status: Draft v0.1 — as of 2026-08-02, session 031 (RFC-CDP-030/031 spec updates) working tree, building on main `680f0f4`
+Status: Draft v0.1 — as of 2026-08-02, session 032 (Caller Authentication) working tree, building on main `680f0f4`
 
 This document describes only capabilities that have cleared at least E2
 (Structurally Tested) per [`README.md`](README.md). It contains no roadmap,
@@ -245,6 +245,86 @@ This is still not RFC-CDP-032 Authority's model or a general governed
 scope grammar -- it composes the same two fixed dimensions (registry,
 decision class) `authority_grant` already does. See
 `docs/session-030-identity-claim-scope.md` for the full scope statement.
+
+## Caller Authentication
+
+Registering an actor (`POST /actors`) now also returns a one-time bearer
+token (`register_actor` in `cdp/core/services.py`) -- the only time its
+plaintext is ever available; only its SHA-256 hash is stored
+(`cdp_core.actor_bearer_token`, `db/ddl/014-caller-authentication.sql`).
+Nine mutating routes that accept an actor-asserting field now require an
+`Authorization: Bearer <token>` header matching that actor's active
+token, checked by `verify_bearer_token` before the underlying governed
+act runs: identity-claim submission and recognition/denial/contest,
+attested-decision creation, authority-grant issuance and revocation, and
+all four Universal Attestation proof paths (attested challenge,
+adjudication, execution authorization, execution record). A request
+presenting no token, an unknown token, or a different actor's valid
+token is rejected (401/403) before the underlying act is ever attempted
+-- nothing is persisted. `POST /actors/{actor_id}/tokens/revoke` lets an
+actor revoke its own token, self-service, by presenting that same
+current token; the response is redacted to `{actor_id, token_id, status,
+revoked_at}` (a review correction before merging PR #48 -- the full row,
+including `token_hash`, previously crossed the API boundary
+unnecessarily). The revoked row itself is preserved, never deleted
+(`cdp_core.actor_bearer_token`'s anti-delete trigger).
+
+This is real in the sense that closes RFC-CDP-030 §6 and RFC-CDP-031
+§7's named gap: a caller can no longer simply assert an actor_id it does
+not control and have every downstream check (claim recognition, scope,
+authority) proceed as if it did. It is not OAuth/OIDC, not cryptographic
+request signing (RFC-CDP-031 §4 remains unmet), and has no token
+rotation -- see `docs/session-032-caller-authentication.md` for the full
+scope statement.
+
+**Review correction before merging PR #48:** an earlier version of this
+capability seeded the two bounded system actors'
+(`cdp_identity_recognition_authority`, `cdp_authority_grant_issuer`)
+local/dev/test tokens directly inside `db/ddl/014-caller-authentication.sql`
+-- the canonical migration path -- meaning any deployment applying the
+normal migrations unmodified was born with known, active, privileged
+credentials. That seeding now lives only in
+`db/seed/dev-caller-authentication-tokens.sql`, applied solely by the
+local Docker Compose init hook and by CI's test job, never by `db/ddl/`.
+Applying only `db/ddl/001` through `014` to an otherwise-empty database
+now leaves both bounded actors with zero tokens (confirmed manually
+against a throwaway database); against the shared local/CI database,
+where `db/seed/` is intentionally applied before the test suite runs for
+the benefit of other tests, the equivalent, database-state-independent
+claim is proven at the static-analysis level instead -- `014`'s own SQL
+text contains no `INSERT INTO cdp_core.actor_bearer_token` at all. Review
+also flagged that `verify_bearer_token` opens and
+completes its own transaction, separate from the governed mutation it
+authorizes -- a check/use gap recorded in
+`evidence/003-known-gaps.md`'s Caller Authentication section rather than
+fixed in this session; see that section for the full reasoning.
+
+Demonstrated by `tests/migration/test_migration_014_caller_authentication.py`
+(a static test asserting the migration's SQL text seeds *no* tokens, plus
+a Postgres smoke test asserting rerunning the migration never changes
+the bounded actors' token count, whatever it already was) and the new
+`tests/migration/test_dev_seed_caller_authentication_tokens.py` (static
++ Postgres smoke, including a direct assertion that the published
+seed-token plaintext actually hashes to the value stored in that file,
+and that applying it activates both bounded actors' tokens), 8 new cases
+in `tests/identify_attest_standing/test_actor_service.py`'s
+`CallerAuthenticationTests` (token issued as hash-only,
+`verify_bearer_token` success/missing/invalid/mismatch,
+revoke-then-verify-fails, revoke-with-nothing-to-revoke, anti-delete
+trigger firing), and every existing API test across
+`test_identity_attestation_api.py`, `test_authority_grant_api.py`, and
+`test_universal_attestation_api.py` -- updated to present the correct
+actor's token rather than added alongside untouched tests, since
+`verify_bearer_token` now gates the routes those tests already
+exercised -- plus new cases covering missing/mismatched tokens, the
+revoke round trip, and (added in the pre-merge review pass) a direct
+assertion that the revoke response never contains `token_hash`. The full
+combined suite (this session's new and updated tests plus every
+unaffected test from sessions 020-031) passes locally against a live
+Docker Compose stack with zero unexplained regressions, and is confirmed
+passing in CI job `full-cdp-slice-tests`, run `30770996059` on this
+branch's reviewed, final head commit `ba8f5a9`, 2026-08-02T22:50:53Z,
+conclusion `success`.
 
 ## Audit trail
 
