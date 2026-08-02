@@ -321,9 +321,10 @@ revoke round trip, and (added in the pre-merge review pass) a direct
 assertion that the revoke response never contains `token_hash`. The full
 combined suite (this session's new and updated tests plus every
 unaffected test from sessions 020-031) passes locally against a live
-Docker Compose stack with zero unexplained regressions -- see
-`000-current-state.md` for the CI citation on the reviewed, final
-commit.
+Docker Compose stack with zero unexplained regressions, and is confirmed
+passing in CI job `full-cdp-slice-tests`, run `30770996059` on this
+branch's reviewed, final head commit `ba8f5a9`, 2026-08-02T22:50:53Z,
+conclusion `success`.
 
 ## Audit trail
 

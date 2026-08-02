@@ -214,27 +214,29 @@ migration apply, live Postgres, live `uvicorn`):
   count-unchanged assertion holds).
 - `ruff check cdp` -- passes with no findings.
 
-**GitHub Actions:** the citations below (`30751140549` on `29c5cdb`)
-confirm the pre-review implementation. The three review-correction
-commits (§2.1, §2.5, and this section's own updates) are re-verified
-against CI separately -- see `evidence/000-current-state.md` for the
-citation on the reviewed, final commit once that run passes. Both jobs
-(`pr-guard`, `full-cdp-slice-tests`) passed on the pre-review commit:
-run `30751140549`, commit `29c5cdb`, 2026-08-02T14:00:14Z, conclusion
-`success`. (The first attempt at that commit failed only on a transient
-Docker Hub registry timeout pulling `pgvector/pgvector:pg16` inside
-GitHub's runner infrastructure, unrelated to this change; a rerun of the
-same commit passed cleanly.) `RFC Index Integrity` also ran (no `rfc/`
-files touched this session) and passed.
+**GitHub Actions:** confirmed on the reviewed, final commit. Both jobs
+(`pr-guard`, `full-cdp-slice-tests`) passed: run `30770996059`, commit
+`ba8f5a9`, 2026-08-02T22:50:53Z, conclusion `success`. `RFC Index
+Integrity` also ran (no `rfc/` files touched this session) and passed.
+
+Earlier runs, kept here for the record: the pre-review implementation
+passed as run `30751140549` on commit `29c5cdb`, 2026-08-02T14:00:14Z
+(the first attempt at that commit failed only on a transient Docker Hub
+registry timeout pulling `pgvector/pgvector:pg16` inside GitHub's runner
+infrastructure, unrelated to this change; a rerun of the same commit
+passed cleanly). The first review-correction commit, `8333801`,
+correctly caught a test-design bug in CI (run `30770796503` failed --
+`test_apply_001_through_013_then_014_twice_is_idempotent` wrongly
+assumed database isolation the shared CI test database doesn't provide,
+fixed in the next commit; see §5's design note). `ba8f5a9` above is the
+commit that actually merges.
 
 ## 6. Evidence level reached
 
-**Integration Tested (E4)** as of the pre-review commit `29c5cdb`
-(`evidence/000-current-state.md`, CI run `30751140549`). The
-review-correction commits are re-verified against CI before merge --
-see `evidence/000-current-state.md` for the citation once that run
-passes, matching the discipline sessions 026-030 followed: E4
-specifically means CI-confirmed, not locally-confirmed.
+**Integration Tested (E4)**, per `evidence/000-current-state.md`, cited
+to CI run `30770996059` on commit `ba8f5a9` -- the reviewed and
+corrected, final commit -- the same discipline sessions 026-030
+followed: E4 specifically means CI-confirmed, not locally-confirmed.
 
 ## 7. Known limitations
 
