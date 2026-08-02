@@ -31,6 +31,15 @@ requires submitted_by_actor_id to hold an active, unexpired PROPOSE
 authority grant scoped to the decision's registry_name/decision_class_id,
 issued via POST /authority-grants by the seeded GRANT_ISSUER_ACTOR_ID
 below -- see test_attested_decision_without_authority_grant_returns_403.
+
+Caller authentication (session 032, RFC-CDP-030 SS6 / RFC-CDP-031 SS7):
+every route that accepts an actor-asserting field now also requires an
+Authorization: Bearer <token> header matching that actor's active token.
+_register_actor returns (actor_id, token); the two bounded system actors
+(RECOGNITION_AUTHORITY_ACTOR_ID, GRANT_ISSUER_ACTOR_ID) use the fixed
+seed tokens db/ddl/014-caller-authentication.sql publishes for local/
+dev/test use -- see test_caller_authentication_* below for the dedicated
+coverage of missing/wrong/mismatched tokens.
 """
 
 from __future__ import annotations
@@ -56,15 +65,23 @@ RECOGNITION_AUTHORITY_ACTOR_ID = "cdp_identity_recognition_authority"
 # tests.
 GRANT_ISSUER_ACTOR_ID = "cdp_authority_grant_issuer"
 
+# Fixed seed tokens for the two bounded system actors above, published in
+# db/ddl/014-caller-authentication.sql's header for local/dev/test use --
+# never use these outside a local/test/demo environment.
+RECOGNITION_AUTHORITY_TOKEN = (
+    "seed-token-recognition-authority-local-dev-only-do-not-use-in-production"
+)
+GRANT_ISSUER_TOKEN = "seed-token-grant-issuer-local-dev-only-do-not-use-in-production"
 
-def _request(method: str, url: str, payload: dict | None = None) -> tuple[int, dict]:
+
+def _request(
+    method: str, url: str, payload: dict | None = None, *, token: str | None = None
+) -> tuple[int, dict]:
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
-    request = urllib.request.Request(
-        url,
-        data=data,
-        headers={"Content-Type": "application/json"},
-        method=method,
-    )
+    headers = {"Content-Type": "application/json"}
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    request = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
             return response.status, json.loads(response.read().decode("utf-8"))
@@ -74,8 +91,8 @@ def _request(method: str, url: str, payload: dict | None = None) -> tuple[int, d
         pytest.fail(f"Could not reach {url}. Is the local Docker stack running? {exc}")
 
 
-def _post_json(url: str, payload: dict) -> tuple[int, dict]:
-    return _request("POST", url, payload)
+def _post_json(url: str, payload: dict, *, token: str | None = None) -> tuple[int, dict]:
+    return _request("POST", url, payload, token=token)
 
 
 def _get_json(url: str) -> tuple[int, dict]:
@@ -86,7 +103,7 @@ def _unique(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:12]}"
 
 
-def _register_actor(display_mode: str = "public") -> str:
+def _register_actor(display_mode: str = "public") -> tuple[str, str]:
     actor_id = _unique("iaa-api-actor")
     status, body = _post_json(
         f"{API_URL}/actors",
@@ -98,11 +115,12 @@ def _register_actor(display_mode: str = "public") -> str:
         },
     )
     assert status == 201, f"expected 201, got {status}: {body}"
-    return actor_id
+    return actor_id, body["bearer_token"]
 
 
 def _submit_claim(
     actor_id: str,
+    token: str,
     *,
     purpose_scope: str = "decision_creation",
     scope_registry_name: str | None = None,
@@ -120,15 +138,20 @@ def _submit_claim(
     if scope_decision_class_id is not None:
         payload["scope_decision_class_id"] = scope_decision_class_id
 
-    status, body = _post_json(f"{API_URL}/identity-claims", payload)
+    status, body = _post_json(f"{API_URL}/identity-claims", payload, token=token)
     assert status == 201, f"expected 201, got {status}: {body}"
     return body["identity_claim"]["claim_id"]
 
 
-def _recognize_claim(claim_id: str, decided_by_actor_id: str = RECOGNITION_AUTHORITY_ACTOR_ID) -> None:
+def _recognize_claim(
+    claim_id: str,
+    decided_by_actor_id: str = RECOGNITION_AUTHORITY_ACTOR_ID,
+    token: str = RECOGNITION_AUTHORITY_TOKEN,
+) -> None:
     status, body = _post_json(
         f"{API_URL}/identity-claims/{claim_id}/recognize",
         {"decided_by_actor_id": decided_by_actor_id, "rationale": "Looks good."},
+        token=token,
     )
     assert status == 200, f"expected 200, got {status}: {body}"
 
@@ -150,6 +173,7 @@ def _grant_propose_authority(
             "issued_by_actor_id": GRANT_ISSUER_ACTOR_ID,
             "basis": "policy",
         },
+        token=GRANT_ISSUER_TOKEN,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
 
@@ -179,14 +203,16 @@ def _attested_decision_payload(
 
 
 def test_full_actor_claim_attestation_round_trip_and_governed_mutation_succeeds() -> None:
-    actor_id = _register_actor()
-    claim_id = _submit_claim(actor_id)
+    actor_id, token = _register_actor()
+    claim_id = _submit_claim(actor_id, token)
     _recognize_claim(claim_id)
     _grant_propose_authority(actor_id)
     decision_id = _unique("iaa-api-decision")
 
     status, body = _post_json(
-        f"{API_URL}/attested-decisions", _attested_decision_payload(actor_id, claim_id, decision_id)
+        f"{API_URL}/attested-decisions",
+        _attested_decision_payload(actor_id, claim_id, decision_id),
+        token=token,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
     assert body["decision"]["decision_id"] == decision_id
@@ -232,9 +258,9 @@ def test_attested_decision_attestor_and_subject_may_differ() -> None:
     """The proof path the v0.2 review asked for: Alice attests, the
     decision concerns Bob. Both roles are independently preserved -- no
     collapse of attestor into subject or vice versa."""
-    alice_actor_id = _register_actor()
-    bob_actor_id = _register_actor()
-    claim_id = _submit_claim(alice_actor_id)
+    alice_actor_id, alice_token = _register_actor()
+    bob_actor_id, _bob_token = _register_actor()
+    claim_id = _submit_claim(alice_actor_id, alice_token)
     _recognize_claim(claim_id)
     _grant_propose_authority(alice_actor_id)
     decision_id = _unique("iaa-api-decision-distinct-roles")
@@ -242,6 +268,7 @@ def test_attested_decision_attestor_and_subject_may_differ() -> None:
     status, body = _post_json(
         f"{API_URL}/attested-decisions",
         _attested_decision_payload(alice_actor_id, claim_id, decision_id, subject_actor_id=bob_actor_id),
+        token=alice_token,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
     assert body["decision"]["subject_actor_id"] == bob_actor_id
@@ -305,15 +332,15 @@ def test_decision_authority_evaluations_list_against_missing_decision_returns_40
 
 
 def test_attested_decision_missing_credential_reference_returns_422() -> None:
-    actor_id = _register_actor()
-    claim_id = _submit_claim(actor_id)
+    actor_id, token = _register_actor()
+    claim_id = _submit_claim(actor_id, token)
     _recognize_claim(claim_id)
     decision_id = _unique("iaa-api-decision-missing-cred")
 
     payload = _attested_decision_payload(actor_id, claim_id, decision_id)
     payload["credential_reference"] = ""
 
-    status, body = _post_json(f"{API_URL}/attested-decisions", payload)
+    status, body = _post_json(f"{API_URL}/attested-decisions", payload, token=token)
     assert status == 422, f"expected 422, got {status}: {body}"
 
     get_status, _ = _get_json(f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}")
@@ -321,12 +348,14 @@ def test_attested_decision_missing_credential_reference_returns_422() -> None:
 
 
 def test_attested_decision_with_unrecognized_claim_returns_409() -> None:
-    actor_id = _register_actor()
-    claim_id = _submit_claim(actor_id)  # never recognized
+    actor_id, token = _register_actor()
+    claim_id = _submit_claim(actor_id, token)  # never recognized
     decision_id = _unique("iaa-api-decision-unrecognized")
 
     status, body = _post_json(
-        f"{API_URL}/attested-decisions", _attested_decision_payload(actor_id, claim_id, decision_id)
+        f"{API_URL}/attested-decisions",
+        _attested_decision_payload(actor_id, claim_id, decision_id),
+        token=token,
     )
     assert status == 409, f"expected 409, got {status}: {body}"
 
@@ -335,14 +364,16 @@ def test_attested_decision_with_unrecognized_claim_returns_409() -> None:
 
 
 def test_attested_decision_without_authority_grant_returns_403() -> None:
-    actor_id = _register_actor()
-    claim_id = _submit_claim(actor_id)
+    actor_id, token = _register_actor()
+    claim_id = _submit_claim(actor_id, token)
     _recognize_claim(claim_id)
     # Deliberately no _grant_propose_authority call.
     decision_id = _unique("iaa-api-decision-noauth")
 
     status, body = _post_json(
-        f"{API_URL}/attested-decisions", _attested_decision_payload(actor_id, claim_id, decision_id)
+        f"{API_URL}/attested-decisions",
+        _attested_decision_payload(actor_id, claim_id, decision_id),
+        token=token,
     )
     assert status == 403, f"expected 403, got {status}: {body}"
 
@@ -351,28 +382,32 @@ def test_attested_decision_without_authority_grant_returns_403() -> None:
 
 
 def test_attested_decision_with_matching_registry_scoped_claim_succeeds() -> None:
-    actor_id = _register_actor()
-    claim_id = _submit_claim(actor_id, scope_registry_name=REGISTRY_NAME)
+    actor_id, token = _register_actor()
+    claim_id = _submit_claim(actor_id, token, scope_registry_name=REGISTRY_NAME)
     _recognize_claim(claim_id)
     _grant_propose_authority(actor_id)
     decision_id = _unique("iaa-api-decision-scoped")
 
     status, body = _post_json(
-        f"{API_URL}/attested-decisions", _attested_decision_payload(actor_id, claim_id, decision_id)
+        f"{API_URL}/attested-decisions",
+        _attested_decision_payload(actor_id, claim_id, decision_id),
+        token=token,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
     assert body["decision"]["decision_id"] == decision_id
 
 
 def test_attested_decision_with_wrong_registry_scoped_claim_returns_409() -> None:
-    actor_id = _register_actor()
-    claim_id = _submit_claim(actor_id, scope_registry_name="some_other_registry")
+    actor_id, token = _register_actor()
+    claim_id = _submit_claim(actor_id, token, scope_registry_name="some_other_registry")
     _recognize_claim(claim_id)
     _grant_propose_authority(actor_id)
     decision_id = _unique("iaa-api-decision-wrongscope")
 
     status, body = _post_json(
-        f"{API_URL}/attested-decisions", _attested_decision_payload(actor_id, claim_id, decision_id)
+        f"{API_URL}/attested-decisions",
+        _attested_decision_payload(actor_id, claim_id, decision_id),
+        token=token,
     )
     assert status == 409, f"expected 409, got {status}: {body}"
 
@@ -380,25 +415,36 @@ def test_attested_decision_with_wrong_registry_scoped_claim_returns_409() -> Non
     assert get_status == 404, "no decision should have been created"
 
 
-def test_attested_decision_with_unknown_actor_returns_404() -> None:
+def test_attested_decision_with_unknown_actor_returns_403_via_caller_binding() -> None:
+    """Since session 032, ActorNotFound is no longer directly reachable
+    through this route's HTTP surface: an actor that was never
+    registered also never received a bearer token, so any token
+    presented on its behalf necessarily belongs to someone else, and
+    caller-binding (checked first) rejects with 403 before the
+    service-layer ActorNotFound check is ever reached. ActorNotFound
+    itself remains directly exercised at the service layer
+    (tests/identify_attest_standing/test_attestation_service.py)."""
     unknown_actor_id = _unique("iaa-api-unknown-actor")
     decision_id = _unique("iaa-api-decision-unknown-actor")
+    _, some_registered_token = _register_actor()
 
     status, body = _post_json(
         f"{API_URL}/attested-decisions",
         _attested_decision_payload(unknown_actor_id, str(uuid.uuid4()), decision_id),
+        token=some_registered_token,
     )
-    assert status == 404, f"expected 404, got {status}: {body}"
+    assert status == 403, f"expected 403 (token does not belong to unknown actor), got {status}: {body}"
 
 
 def test_recognize_claim_by_unauthorized_actor_returns_403() -> None:
-    actor_id = _register_actor()
-    unrelated_actor_id = _register_actor()
-    claim_id = _submit_claim(actor_id)
+    actor_id, actor_token = _register_actor()
+    unrelated_actor_id, unrelated_token = _register_actor()
+    claim_id = _submit_claim(actor_id, actor_token)
 
     status, body = _post_json(
         f"{API_URL}/identity-claims/{claim_id}/recognize",
         {"decided_by_actor_id": unrelated_actor_id, "rationale": "I say it's fine."},
+        token=unrelated_token,
     )
     assert status == 403, f"expected 403, got {status}: {body}"
 
@@ -408,18 +454,19 @@ def test_recognize_claim_by_unauthorized_actor_returns_403() -> None:
 
 
 def test_self_recognition_returns_403() -> None:
-    actor_id = _register_actor()
+    actor_id, token = _register_actor()
 
     status, body = _post_json(
-        f"{API_URL}/identity-claims/{_submit_claim(actor_id)}/recognize",
+        f"{API_URL}/identity-claims/{_submit_claim(actor_id, token)}/recognize",
         {"decided_by_actor_id": actor_id, "rationale": "I recognize myself."},
+        token=token,
     )
     assert status == 403, f"expected 403, got {status}: {body}"
 
 
 def test_protected_actor_identity_claim_response_redacts_descriptor_and_evidence() -> None:
-    actor_id = _register_actor(display_mode="protected")
-    claim_id = _submit_claim(actor_id)
+    actor_id, token = _register_actor(display_mode="protected")
+    claim_id = _submit_claim(actor_id, token)
 
     status, body = _get_json(f"{API_URL}/identity-claims/{claim_id}")
     assert status == 200
@@ -431,7 +478,7 @@ def test_protected_actor_identity_claim_response_redacts_descriptor_and_evidence
 
 
 def test_pseudonymous_actor_display_mode_visible_via_get_actor() -> None:
-    actor_id = _register_actor(display_mode="pseudonymous")
+    actor_id, _token = _register_actor(display_mode="pseudonymous")
     status, body = _get_json(f"{API_URL}/actors/{actor_id}")
     assert status == 200
     assert body["display_mode"] == "pseudonymous"
@@ -457,12 +504,13 @@ def test_get_missing_attestation_returns_404() -> None:
 
 
 def test_deny_identity_claim_preserves_it_and_is_visible_via_get() -> None:
-    actor_id = _register_actor()
-    claim_id = _submit_claim(actor_id)
+    actor_id, token = _register_actor()
+    claim_id = _submit_claim(actor_id, token)
 
     status, body = _post_json(
         f"{API_URL}/identity-claims/{claim_id}/deny",
         {"decided_by_actor_id": RECOGNITION_AUTHORITY_ACTOR_ID, "rationale": "Insufficient evidence."},
+        token=RECOGNITION_AUTHORITY_TOKEN,
     )
     assert status == 200, f"expected 200, got {status}: {body}"
     assert body["identity_claim"]["recognition_status"] == "denied"
@@ -470,3 +518,103 @@ def test_deny_identity_claim_preserves_it_and_is_visible_via_get() -> None:
     get_status, get_body = _get_json(f"{API_URL}/identity-claims/{claim_id}")
     assert get_status == 200, "denied claim must still be retrievable, not erased"
     assert get_body["recognition_status"] == "denied"
+
+
+# --- Caller authentication (session 032) -----------------------------------
+
+
+def test_register_actor_response_includes_a_one_time_bearer_token() -> None:
+    actor_id = _unique("iaa-api-token-actor")
+    status, body = _post_json(
+        f"{API_URL}/actors",
+        {"actor_id": actor_id, "actor_type": "human", "display_label": "Token check actor"},
+    )
+    assert status == 201
+    assert isinstance(body["bearer_token"], str)
+    assert len(body["bearer_token"]) > 20
+
+
+def test_identity_claim_submission_without_token_returns_401() -> None:
+    actor_id, _token = _register_actor()
+    status, body = _post_json(
+        f"{API_URL}/identity-claims",
+        {
+            "actor_id": actor_id,
+            "claimant_actor_id": actor_id,
+            "claimed_identity_descriptor": "No token presented.",
+            "purpose_scope": "decision_creation",
+        },
+    )
+    assert status == 401, f"expected 401, got {status}: {body}"
+
+
+def test_identity_claim_submission_with_wrong_actors_token_returns_403() -> None:
+    actor_id, _token = _register_actor()
+    _other_actor_id, other_token = _register_actor()
+    status, body = _post_json(
+        f"{API_URL}/identity-claims",
+        {
+            "actor_id": actor_id,
+            "claimant_actor_id": actor_id,
+            "claimed_identity_descriptor": "Wrong actor's token presented.",
+            "purpose_scope": "decision_creation",
+        },
+        token=other_token,
+    )
+    assert status == 403, f"expected 403, got {status}: {body}"
+
+
+def test_attested_decision_with_mismatched_token_returns_403() -> None:
+    actor_id, _token = _register_actor()
+    _other_actor_id, other_token = _register_actor()
+    claim_id = _submit_claim(actor_id, _token)
+    _recognize_claim(claim_id)
+    _grant_propose_authority(actor_id)
+    decision_id = _unique("iaa-api-decision-tokenmismatch")
+
+    status, body = _post_json(
+        f"{API_URL}/attested-decisions",
+        _attested_decision_payload(actor_id, claim_id, decision_id),
+        token=other_token,
+    )
+    assert status == 403, f"expected 403, got {status}: {body}"
+
+    get_status, _ = _get_json(f"{API_URL}/decisions/{REGISTRY_NAME}/{decision_id}")
+    assert get_status == 404, "no decision should have been created"
+
+
+def test_revoke_token_then_reuse_returns_401() -> None:
+    actor_id, token = _register_actor()
+    revoke_status, revoke_body = _post_json(
+        f"{API_URL}/actors/{actor_id}/tokens/revoke", {}, token=token
+    )
+    assert revoke_status == 200, f"expected 200, got {revoke_status}: {revoke_body}"
+
+    status, body = _post_json(
+        f"{API_URL}/identity-claims",
+        {
+            "actor_id": actor_id,
+            "claimant_actor_id": actor_id,
+            "claimed_identity_descriptor": "Should be rejected -- token revoked.",
+            "purpose_scope": "decision_creation",
+        },
+        token=token,
+    )
+    assert status == 401, f"expected 401, got {status}: {body}"
+
+
+def test_revoke_token_without_presenting_current_token_returns_401() -> None:
+    actor_id, _token = _register_actor()
+    status, body = _post_json(f"{API_URL}/actors/{actor_id}/tokens/revoke", {})
+    assert status == 401, f"expected 401, got {status}: {body}"
+
+
+def test_revoke_token_twice_returns_404_the_second_time() -> None:
+    actor_id, token = _register_actor()
+    first_status, _ = _post_json(f"{API_URL}/actors/{actor_id}/tokens/revoke", {}, token=token)
+    assert first_status == 200
+
+    second_status, second_body = _post_json(
+        f"{API_URL}/actors/{actor_id}/tokens/revoke", {}, token=token
+    )
+    assert second_status == 401, f"expected 401 (token already revoked), got {second_status}: {second_body}"

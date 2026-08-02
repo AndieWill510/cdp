@@ -150,5 +150,160 @@ class RegisterActorTests(unittest.TestCase):
             self.assertEqual(result["actor"]["display_mode"], display_mode)
 
 
+@unittest.skipUnless(os.environ.get("CDP_TEST_DATABASE_URL"), "set CDP_TEST_DATABASE_URL to run")
+class CallerAuthenticationTests(unittest.TestCase):
+    """Session 032 (RFC-CDP-030 SS6 / RFC-CDP-031 SS7): register_actor now
+    also issues a bearer token, and verify_bearer_token /
+    revoke_actor_bearer_token are the standalone boundary-check functions
+    the API layer calls before every actor-asserting mutating route --
+    see db/ddl/014-caller-authentication.sql and
+    cdp/core/services.py's Caller Authentication section header."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        os.environ.setdefault("DATABASE_URL", _database_url())
+        if not _actor_table_exists():
+            raise unittest.SkipTest(
+                "010-identity-and-attestation.sql is not applied to CDP_TEST_DATABASE_URL yet"
+            )
+        with psycopg.connect(_database_url()) as conn, conn.cursor() as cursor:
+            cursor.execute("SELECT to_regclass('cdp_core.actor_bearer_token')")
+            if cursor.fetchone()[0] is None:
+                raise unittest.SkipTest(
+                    "014-caller-authentication.sql is not applied to CDP_TEST_DATABASE_URL yet"
+                )
+
+    def test_register_actor_issues_a_token_stored_only_as_a_hash(self) -> None:
+        import hashlib
+
+        from cdp.core.services import ActorInput, register_actor
+
+        actor_id = _unique_actor_id("iaa-actor-token")
+        result = register_actor(
+            ActorInput(actor_id=actor_id, actor_type="human", display_label="Token actor")
+        )
+
+        token = result["bearer_token"]
+        self.assertIsInstance(token, str)
+        self.assertGreater(len(token), 20)
+
+        expected_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        with psycopg.connect(_database_url(), row_factory=dict_row) as conn, conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT token_hash, status FROM cdp_core.actor_bearer_token WHERE actor_id = %s",
+                (actor_id,),
+            )
+            row = cursor.fetchone()
+            self.assertIsNotNone(row, "no actor_bearer_token row was created")
+            self.assertEqual(row["token_hash"], expected_hash)
+            self.assertEqual(row["status"], "active")
+            self.assertNotEqual(row["token_hash"], token, "plaintext must never be stored")
+
+    def test_verify_bearer_token_succeeds_for_the_correct_actor(self) -> None:
+        from cdp.core.services import ActorInput, register_actor, verify_bearer_token
+
+        actor_id = _unique_actor_id("iaa-actor-verify-ok")
+        result = register_actor(
+            ActorInput(actor_id=actor_id, actor_type="human", display_label="Verify actor")
+        )
+
+        verify_bearer_token(
+            authorization_header=f"Bearer {result['bearer_token']}", expected_actor_id=actor_id
+        )  # must not raise
+
+    def test_verify_bearer_token_missing_header_raises(self) -> None:
+        from cdp.core.services import BearerTokenMissing, verify_bearer_token
+
+        with self.assertRaises(BearerTokenMissing):
+            verify_bearer_token(authorization_header=None, expected_actor_id="anyone")
+
+        with self.assertRaises(BearerTokenMissing):
+            verify_bearer_token(authorization_header="", expected_actor_id="anyone")
+
+        with self.assertRaises(BearerTokenMissing):
+            verify_bearer_token(
+                authorization_header="NotBearer sometoken", expected_actor_id="anyone"
+            )
+
+    def test_verify_bearer_token_unknown_token_raises_invalid(self) -> None:
+        from cdp.core.services import BearerTokenInvalid, verify_bearer_token
+
+        with self.assertRaises(BearerTokenInvalid):
+            verify_bearer_token(
+                authorization_header="Bearer this-token-was-never-issued",
+                expected_actor_id="anyone",
+            )
+
+    def test_verify_bearer_token_wrong_actor_raises_mismatch(self) -> None:
+        from cdp.core.services import (
+            ActorInput,
+            BearerTokenActorMismatch,
+            register_actor,
+            verify_bearer_token,
+        )
+
+        actor_id = _unique_actor_id("iaa-actor-verify-mismatch")
+        other_actor_id = _unique_actor_id("iaa-actor-verify-other")
+        result = register_actor(
+            ActorInput(actor_id=actor_id, actor_type="human", display_label="Mismatch actor")
+        )
+
+        with self.assertRaises(BearerTokenActorMismatch):
+            verify_bearer_token(
+                authorization_header=f"Bearer {result['bearer_token']}",
+                expected_actor_id=other_actor_id,
+            )
+
+    def test_revoke_then_verify_raises_invalid(self) -> None:
+        from cdp.core.services import (
+            ActorInput,
+            BearerTokenInvalid,
+            register_actor,
+            revoke_actor_bearer_token,
+            verify_bearer_token,
+        )
+
+        actor_id = _unique_actor_id("iaa-actor-revoke")
+        result = register_actor(
+            ActorInput(actor_id=actor_id, actor_type="human", display_label="Revoke actor")
+        )
+        token = result["bearer_token"]
+
+        revoke_result = revoke_actor_bearer_token(actor_id)
+        self.assertEqual(revoke_result["actor_bearer_token"]["status"], "revoked")
+        self.assertIsNotNone(revoke_result["actor_bearer_token"]["revoked_at"])
+
+        with self.assertRaises(BearerTokenInvalid):
+            verify_bearer_token(authorization_header=f"Bearer {token}", expected_actor_id=actor_id)
+
+    def test_revoke_with_no_active_token_raises(self) -> None:
+        from cdp.core.services import (
+            ActorInput,
+            NoActiveBearerToken,
+            register_actor,
+            revoke_actor_bearer_token,
+        )
+
+        actor_id = _unique_actor_id("iaa-actor-revoke-twice")
+        register_actor(ActorInput(actor_id=actor_id, actor_type="human", display_label="X"))
+        revoke_actor_bearer_token(actor_id)
+
+        with self.assertRaises(NoActiveBearerToken):
+            revoke_actor_bearer_token(actor_id)
+
+    def test_token_row_cannot_be_deleted_at_the_database_level(self) -> None:
+        from cdp.core.services import ActorInput, register_actor
+
+        actor_id = _unique_actor_id("iaa-actor-token-forbid-delete")
+        register_actor(ActorInput(actor_id=actor_id, actor_type="human", display_label="X"))
+
+        with psycopg.connect(_database_url()) as conn, conn.cursor() as cursor:
+            with self.assertRaises(psycopg.errors.RaiseException):
+                cursor.execute(
+                    "DELETE FROM cdp_core.actor_bearer_token WHERE actor_id = %s", (actor_id,)
+                )
+            conn.rollback()
+
+
 if __name__ == "__main__":
     unittest.main()

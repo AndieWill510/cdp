@@ -6,12 +6,25 @@ Follows the pattern in tests/identify_attest_standing/test_identity_attestation_
 assumes the local Docker stack (`make up-build`) is already running, and
 talks to it over plain HTTP with no cdp import required.
 
-Requires 001 and 011 already applied to the database cdp-api is using.
+Requires 001, 011, and 014 already applied to the database cdp-api is
+using.
 
 Cleanup note: cdp_core.authority_grant rows cannot be deleted (011
 enforces this at the database level) -- see
 tests/identify_attest_standing/test_actor_service.py's module docstring
 for the same reasoning applied there.
+
+Caller authentication (session 032): POST /authority-grants and POST
+/authority-grants/{grant_id}/revoke both also require an Authorization:
+Bearer <token> header matching cdp_authority_grant_issuer's own fixed
+seed token, published in db/ddl/014-caller-authentication.sql's header
+for local/dev/test use. A request presenting a *different*, still-valid
+actor's token now fails caller-binding (403) before ever reaching the
+service-layer AuthorityGrantIssuerRequired check -- see
+test_grant_by_unauthorized_actor_returns_403 and
+test_revoke_by_unauthorized_actor_returns_403 below, which now use the
+unrelated actor's own real token specifically so the test still exercises
+AuthorityGrantIssuerRequired, not just caller-binding.
 """
 
 from __future__ import annotations
@@ -31,15 +44,20 @@ API_URL = os.getenv("CDP_TEST_API_URL", "http://localhost:8000")
 # tests.
 GRANT_ISSUER_ACTOR_ID = "cdp_authority_grant_issuer"
 
+# Fixed seed token for GRANT_ISSUER_ACTOR_ID, published in
+# db/ddl/014-caller-authentication.sql's header for local/dev/test use --
+# never use this outside a local/test/demo environment.
+GRANT_ISSUER_TOKEN = "seed-token-grant-issuer-local-dev-only-do-not-use-in-production"
 
-def _request(method: str, url: str, payload: dict | None = None) -> tuple[int, dict]:
+
+def _request(
+    method: str, url: str, payload: dict | None = None, *, token: str | None = None
+) -> tuple[int, dict]:
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
-    request = urllib.request.Request(
-        url,
-        data=data,
-        headers={"Content-Type": "application/json"},
-        method=method,
-    )
+    headers = {"Content-Type": "application/json"}
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    request = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
             return response.status, json.loads(response.read().decode("utf-8"))
@@ -49,8 +67,8 @@ def _request(method: str, url: str, payload: dict | None = None) -> tuple[int, d
         pytest.fail(f"Could not reach {url}. Is the local Docker stack running? {exc}")
 
 
-def _post_json(url: str, payload: dict) -> tuple[int, dict]:
-    return _request("POST", url, payload)
+def _post_json(url: str, payload: dict, *, token: str | None = None) -> tuple[int, dict]:
+    return _request("POST", url, payload, token=token)
 
 
 def _get_json(url: str) -> tuple[int, dict]:
@@ -61,14 +79,14 @@ def _unique(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:12]}"
 
 
-def _register_actor() -> str:
+def _register_actor() -> tuple[str, str]:
     actor_id = _unique("iaa-api-authority-actor")
     status, body = _post_json(
         f"{API_URL}/actors",
         {"actor_id": actor_id, "actor_type": "human", "display_label": f"Authority test actor {actor_id}"},
     )
     assert status == 201, f"expected 201, got {status}: {body}"
-    return actor_id
+    return actor_id, body["bearer_token"]
 
 
 def _grant_payload(actor_id: str, **overrides) -> dict:
@@ -86,9 +104,11 @@ def _grant_payload(actor_id: str, **overrides) -> dict:
 
 
 def test_grant_get_and_revoke_round_trip() -> None:
-    actor_id = _register_actor()
+    actor_id, _token = _register_actor()
 
-    status, body = _post_json(f"{API_URL}/authority-grants", _grant_payload(actor_id))
+    status, body = _post_json(
+        f"{API_URL}/authority-grants", _grant_payload(actor_id), token=GRANT_ISSUER_TOKEN
+    )
     assert status == 201, f"expected 201, got {status}: {body}"
     grant = body["authority_grant"]
     assert grant["actor_id"] == actor_id
@@ -103,6 +123,7 @@ def test_grant_get_and_revoke_round_trip() -> None:
     revoke_status, revoke_body = _post_json(
         f"{API_URL}/authority-grants/{grant_id}/revoke",
         {"revoked_by_actor_id": GRANT_ISSUER_ACTOR_ID, "reason": "API round-trip test cleanup."},
+        token=GRANT_ISSUER_TOKEN,
     )
     assert revoke_status == 200, f"expected 200, got {revoke_status}: {revoke_body}"
     assert revoke_body["authority_grant"]["status"] == "revoked"
@@ -113,57 +134,66 @@ def test_grant_get_and_revoke_round_trip() -> None:
 
 
 def test_wildcard_scope_grant_has_null_decision_class() -> None:
-    actor_id = _register_actor()
+    actor_id, _token = _register_actor()
     status, body = _post_json(
-        f"{API_URL}/authority-grants", _grant_payload(actor_id, scope_decision_class_id=None)
+        f"{API_URL}/authority-grants",
+        _grant_payload(actor_id, scope_decision_class_id=None),
+        token=GRANT_ISSUER_TOKEN,
     )
     assert status == 201, f"expected 201, got {status}: {body}"
     assert body["authority_grant"]["scope_decision_class_id"] is None
 
 
 def test_grant_by_unauthorized_actor_returns_403() -> None:
-    actor_id = _register_actor()
-    unrelated_actor_id = _register_actor()
+    actor_id, _token = _register_actor()
+    unrelated_actor_id, unrelated_token = _register_actor()
 
     status, body = _post_json(
-        f"{API_URL}/authority-grants", _grant_payload(actor_id, issued_by_actor_id=unrelated_actor_id)
+        f"{API_URL}/authority-grants",
+        _grant_payload(actor_id, issued_by_actor_id=unrelated_actor_id),
+        token=unrelated_token,
     )
     assert status == 403, f"expected 403, got {status}: {body}"
 
 
 def test_grant_for_unknown_actor_returns_404() -> None:
     unknown_actor_id = _unique("iaa-api-authority-unknown")
-    status, body = _post_json(f"{API_URL}/authority-grants", _grant_payload(unknown_actor_id))
+    status, body = _post_json(
+        f"{API_URL}/authority-grants", _grant_payload(unknown_actor_id), token=GRANT_ISSUER_TOKEN
+    )
     assert status == 404, f"expected 404, got {status}: {body}"
 
 
 def test_revoke_by_unauthorized_actor_returns_403() -> None:
-    actor_id = _register_actor()
-    unrelated_actor_id = _register_actor()
-    grant_id = _post_json(f"{API_URL}/authority-grants", _grant_payload(actor_id))[1][
-        "authority_grant"
-    ]["authority_grant_id"]
+    actor_id, _token = _register_actor()
+    unrelated_actor_id, unrelated_token = _register_actor()
+    grant_id = _post_json(
+        f"{API_URL}/authority-grants", _grant_payload(actor_id), token=GRANT_ISSUER_TOKEN
+    )[1]["authority_grant"]["authority_grant_id"]
 
     status, body = _post_json(
         f"{API_URL}/authority-grants/{grant_id}/revoke",
         {"revoked_by_actor_id": unrelated_actor_id, "reason": "I say so."},
+        token=unrelated_token,
     )
     assert status == 403, f"expected 403, got {status}: {body}"
 
 
 def test_revoke_already_revoked_grant_returns_409() -> None:
-    actor_id = _register_actor()
-    grant_id = _post_json(f"{API_URL}/authority-grants", _grant_payload(actor_id))[1][
-        "authority_grant"
-    ]["authority_grant_id"]
+    actor_id, _token = _register_actor()
+    grant_id = _post_json(
+        f"{API_URL}/authority-grants", _grant_payload(actor_id), token=GRANT_ISSUER_TOKEN
+    )[1]["authority_grant"]["authority_grant_id"]
     _post_json(
         f"{API_URL}/authority-grants/{grant_id}/revoke",
         {"revoked_by_actor_id": GRANT_ISSUER_ACTOR_ID, "reason": "First revocation."},
+        token=GRANT_ISSUER_TOKEN,
     )
 
     status, body = _post_json(
         f"{API_URL}/authority-grants/{grant_id}/revoke",
         {"revoked_by_actor_id": GRANT_ISSUER_ACTOR_ID, "reason": "Second revocation."},
+        token=GRANT_ISSUER_TOKEN,
     )
     assert status == 409, f"expected 409, got {status}: {body}"
 
@@ -172,6 +202,7 @@ def test_revoke_unknown_grant_returns_404() -> None:
     status, body = _post_json(
         f"{API_URL}/authority-grants/{uuid.uuid4()}/revoke",
         {"revoked_by_actor_id": GRANT_ISSUER_ACTOR_ID, "reason": "N/A"},
+        token=GRANT_ISSUER_TOKEN,
     )
     assert status == 404, f"expected 404, got {status}: {body}"
 
@@ -180,3 +211,25 @@ def test_get_missing_authority_grant_returns_404() -> None:
     status, body = _get_json(f"{API_URL}/authority-grants/{uuid.uuid4()}")
     assert status == 404
     assert "detail" in body
+
+
+# --- Caller authentication (session 032) -----------------------------------
+
+
+def test_grant_without_token_returns_401() -> None:
+    actor_id, _token = _register_actor()
+    status, body = _post_json(f"{API_URL}/authority-grants", _grant_payload(actor_id))
+    assert status == 401, f"expected 401, got {status}: {body}"
+
+
+def test_revoke_without_token_returns_401() -> None:
+    actor_id, _token = _register_actor()
+    grant_id = _post_json(
+        f"{API_URL}/authority-grants", _grant_payload(actor_id), token=GRANT_ISSUER_TOKEN
+    )[1]["authority_grant"]["authority_grant_id"]
+
+    status, body = _post_json(
+        f"{API_URL}/authority-grants/{grant_id}/revoke",
+        {"revoked_by_actor_id": GRANT_ISSUER_ACTOR_ID, "reason": "No token presented."},
+    )
+    assert status == 401, f"expected 401, got {status}: {body}"

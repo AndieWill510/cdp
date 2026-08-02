@@ -26,6 +26,14 @@ so a protected or pseudonymous actor's claimed identity descriptor and
 evidence references never leak through a public/API response -- only
 actor_id, actor_type, display_mode, actor_status, and the actor's chosen
 display_label are ever exposed for such actors.
+
+Caller authentication (session 032, db/ddl/014-caller-authentication.sql):
+POST /actors returns a one-time bearer_token in its response. Every route
+below that accepts an actor-asserting field (claimant_actor_id,
+decided_by_actor_id, submitted_by_actor_id) now also requires an
+`Authorization: Bearer <token>` header matching that exact actor's active
+token -- see verify_bearer_token's docstring in cdp/core/services.py for
+what this does and does not prove.
 """
 
 from __future__ import annotations
@@ -35,7 +43,7 @@ from datetime import datetime
 from typing import Any
 
 import psycopg
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from cdp.core import db
@@ -50,6 +58,9 @@ from cdp.core.services import (
     AttestationInput,
     AttestedDecisionInput,
     AuthorityNotGranted,
+    BearerTokenActorMismatch,
+    BearerTokenInvalid,
+    BearerTokenMissing,
     DecisionClassNotConfigured,
     DecisionInput,
     IdentityClaimActorMismatch,
@@ -59,6 +70,7 @@ from cdp.core.services import (
     IdentityClaimNotFound,
     IdentityClaimNotRecognized,
     IdentityClaimScopeInsufficient,
+    NoActiveBearerToken,
     RecognitionAuthorityRequired,
     SelfRecognitionForbidden,
     WorkflowStageNotConfigured,
@@ -67,10 +79,21 @@ from cdp.core.services import (
     deny_identity_claim,
     recognize_identity_claim,
     register_actor,
+    revoke_actor_bearer_token,
     submit_identity_claim,
+    verify_bearer_token,
 )
 
 router = APIRouter(tags=["identity"])
+
+
+def _require_caller(authorization: str | None, expected_actor_id: str) -> None:
+    try:
+        verify_bearer_token(authorization_header=authorization, expected_actor_id=expected_actor_id)
+    except (BearerTokenMissing, BearerTokenInvalid) as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except BearerTokenActorMismatch as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 def _redact_claim_if_protected(
@@ -133,6 +156,23 @@ def get_actor(actor_id: str) -> dict[str, Any]:
     }
 
 
+@router.post("/actors/{actor_id}/tokens/revoke")
+def revoke_actor_token(
+    actor_id: str, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
+    """Revoke actor_id's own bearer token -- self-service, like a logout.
+    Requires the caller to already present that actor's own current
+    token; there is no separate revoking-authority role for this route.
+    """
+    _require_caller(authorization, actor_id)
+    try:
+        return revoke_actor_bearer_token(actor_id)
+    except NoActiveBearerToken as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
 class IdentityClaimCreateRequest(BaseModel):
     actor_id: str
     claimant_actor_id: str
@@ -145,7 +185,10 @@ class IdentityClaimCreateRequest(BaseModel):
 
 
 @router.post("/identity-claims", status_code=201)
-def create_identity_claim(request: IdentityClaimCreateRequest) -> dict[str, Any]:
+def create_identity_claim(
+    request: IdentityClaimCreateRequest, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
+    _require_caller(authorization, request.claimant_actor_id)
     try:
         return submit_identity_claim(IdentityClaimInput(**request.model_dump()))
     except ActorNotFound as exc:
@@ -223,22 +266,31 @@ def _handle_claim_decision(
 
 @router.post("/identity-claims/{claim_id}/recognize")
 def recognize_claim_route(
-    claim_id: uuid.UUID, request: IdentityClaimDecisionRequest
+    claim_id: uuid.UUID,
+    request: IdentityClaimDecisionRequest,
+    authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
+    _require_caller(authorization, request.decided_by_actor_id)
     return _handle_claim_decision(claim_id, request, recognize_identity_claim)
 
 
 @router.post("/identity-claims/{claim_id}/deny")
 def deny_claim_route(
-    claim_id: uuid.UUID, request: IdentityClaimDecisionRequest
+    claim_id: uuid.UUID,
+    request: IdentityClaimDecisionRequest,
+    authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
+    _require_caller(authorization, request.decided_by_actor_id)
     return _handle_claim_decision(claim_id, request, deny_identity_claim)
 
 
 @router.post("/identity-claims/{claim_id}/contest")
 def contest_claim_route(
-    claim_id: uuid.UUID, request: IdentityClaimDecisionRequest
+    claim_id: uuid.UUID,
+    request: IdentityClaimDecisionRequest,
+    authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
+    _require_caller(authorization, request.decided_by_actor_id)
     return _handle_claim_decision(claim_id, request, contest_identity_claim)
 
 
@@ -294,7 +346,10 @@ _DECISION_FIELDS = (
 
 
 @router.post("/attested-decisions", status_code=201)
-def create_attested_decision(request: AttestedDecisionCreateRequest) -> dict[str, Any]:
+def create_attested_decision(
+    request: AttestedDecisionCreateRequest, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
+    _require_caller(authorization, request.submitted_by_actor_id)
     payload = request.model_dump()
     decision_input = DecisionInput(**{key: payload[key] for key in _DECISION_FIELDS})
     attestation_input = AttestationInput(
