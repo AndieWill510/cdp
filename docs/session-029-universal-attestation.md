@@ -1,12 +1,11 @@
 # Session 029 — Universal Attestation
 
-Status: implementation complete, verified locally against a live Docker
-Compose stack (fresh migration apply, live `uvicorn`, live Postgres), and
-confirmed passing in CI (run `30729249209` on head commit `2c9d5fb`, see
-§5). PR #43 (session 028) has since merged to main and PR #44 has been
-rebased onto it, so PR #44 is no longer stacked. Not yet reviewed/merged.
-This file documents what already exists in the working tree, not a plan
-for future work.
+Status: merged. Implementation complete, verified locally against a live
+Docker Compose stack (fresh migration apply, live `uvicorn`, live
+Postgres), and confirmed passing in CI (run `30729249209` on head commit
+`2c9d5fb`, see §5). PR #43 (session 028) merged to main first; PR #44 was
+rebased cleanly onto it, then merged as `7311c8c`. This file documents
+what already exists on `main`, not a plan for future work.
 
 Scope: **Universal Attestation** (RFC-CDP-031 §2: "All mutating acts MUST
 be attested"), extending the attest+authority proof path sessions 027/028
