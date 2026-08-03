@@ -12,11 +12,13 @@ established, applied here from the start.
 
 Caller authentication (session 032, db/ddl/014-caller-authentication.sql):
 both routes also require an `Authorization: Bearer <token>` header
-matching cdp_authority_grant_issuer's own token (seeded by that
-migration for local/dev/test use -- see its header) -- previously an
-arbitrary request body could simply assert issued_by_actor_id/
-revoked_by_actor_id equal to that actor_id with nothing checking the
-caller actually controlled it.
+matching cdp_authority_grant_issuer's own token. The canonical migration
+(db/ddl/014) provisions no credentials for this actor -- local/dev/test
+credentials are provisioned separately by
+db/seed/dev-caller-authentication-tokens.sql (never applied to a real
+deployment; see that file's header) -- previously an arbitrary request
+body could simply assert issued_by_actor_id/revoked_by_actor_id equal to
+that actor_id with nothing checking the caller actually controlled it.
 """
 
 from __future__ import annotations

@@ -27,8 +27,10 @@ from __future__ import annotations
 import os
 import re
 import unittest
+import uuid
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -228,6 +230,88 @@ class Migration014PostgresSmokeTests(unittest.TestCase):
             raise unittest.SkipTest(
                 "install psycopg or psycopg2 to run Postgres DDL smoke test"
             ) from exc
+
+
+BOOTSTRAP_SQL = REPO_ROOT / "docker" / "postgres" / "init" / "01-init-cdp.sql"
+
+
+class Migration014IsolatedDatabaseTests(unittest.TestCase):
+    """Advisory follow-up from the post-merge review of PR #48: proves the
+    strongest invariant -- applying only the canonical migration path
+    (docker/postgres/init/01-init-cdp.sql, then every db/ddl/*.sql in
+    order) to a genuinely fresh, isolated database leaves
+    cdp_identity_recognition_authority and cdp_authority_grant_issuer
+    with zero bearer tokens -- as an automated CI assertion, not only a
+    one-time manual check (which is how this property was first verified,
+    see docs/session-032-caller-authentication.md SS5).
+
+    Unlike Migration014PostgresSmokeTests (which shares CDP_TEST_DATABASE_URL's
+    database with the rest of the suite, and so cannot assume isolation --
+    see that test's own comments), this test creates and drops its own
+    scratch database on the same Postgres server, so it can assert the
+    exact zero count without CI's "Seed dev/test-only data" step (which
+    intentionally applies db/seed/ for other tests in the same run)
+    interfering. Applies every db/ddl/*.sql file present on disk, not a
+    hardcoded list, so a future migration that accidentally seeds a
+    token is caught here without needing this test file updated first.
+    """
+
+    def test_fresh_isolated_database_with_only_canonical_ddl_has_zero_privileged_tokens(
+        self,
+    ) -> None:
+        database_url = os.environ.get("CDP_TEST_DATABASE_URL")
+        if not database_url:
+            self.skipTest("set CDP_TEST_DATABASE_URL to run Postgres DDL smoke test")
+
+        connect = Migration014PostgresSmokeTests._connect
+        scratch_db_name = f"cdp_isolated_verify_{uuid.uuid4().hex[:12]}"
+
+        admin_url = self._replace_database_name(database_url, "postgres")
+        admin_conn = connect(admin_url)
+        admin_conn.autocommit = True
+        try:
+            admin_cursor = admin_conn.cursor()
+            admin_cursor.execute(f'CREATE DATABASE "{scratch_db_name}"')
+
+            # DROP DATABASE must run even if the assertions below fail --
+            # a failing regression check should not also leak a database
+            # on every CI run until someone notices. This nested
+            # try/finally, not just the outer one, is the fix for a real
+            # bug caught during manual review: an earlier version of this
+            # test only dropped the scratch database on the success path,
+            # confirmed by deliberately injecting a token-seeding
+            # regression and observing the database survive the failure.
+            try:
+                scratch_url = self._replace_database_name(database_url, scratch_db_name)
+                scratch_conn = connect(scratch_url)
+                try:
+                    scratch_cursor = scratch_conn.cursor()
+                    scratch_cursor.execute(read_sql(BOOTSTRAP_SQL))
+                    for ddl_file in sorted((REPO_ROOT / "db" / "ddl").glob("*.sql")):
+                        scratch_cursor.execute(read_sql(ddl_file))
+
+                    scratch_cursor.execute(
+                        "SELECT count(*) FROM cdp_core.actor_bearer_token "
+                        "WHERE actor_id IN ('cdp_identity_recognition_authority', 'cdp_authority_grant_issuer')"
+                    )
+                    self.assertEqual(
+                        scratch_cursor.fetchone()[0],
+                        0,
+                        "a fresh database with only the canonical migration path applied "
+                        "must leave both bounded system actors with zero bearer tokens",
+                    )
+                    scratch_conn.rollback()
+                finally:
+                    scratch_conn.close()
+            finally:
+                admin_cursor.execute(f'DROP DATABASE IF EXISTS "{scratch_db_name}" WITH (FORCE)')
+        finally:
+            admin_conn.close()
+
+    @staticmethod
+    def _replace_database_name(database_url: str, database_name: str) -> str:
+        parts = urlsplit(database_url)
+        return urlunsplit(parts._replace(path=f"/{database_name}"))
 
 
 if __name__ == "__main__":

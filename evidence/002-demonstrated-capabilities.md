@@ -1,6 +1,6 @@
 # Demonstrated Capabilities
 
-Status: Draft v0.1 — as of 2026-08-02, session 032 (Caller Authentication) working tree, building on main `680f0f4`
+Status: Draft v0.1 — as of 2026-08-02, post-merge state reflecting main `660e744` (sessions 020-032 merged, including PR #48's pre-merge review corrections)
 
 This document describes only capabilities that have cleared at least E2
 (Structurally Tested) per [`README.md`](README.md). It contains no roadmap,
@@ -300,9 +300,18 @@ authorizes -- a check/use gap recorded in
 fixed in this session; see that section for the full reasoning.
 
 Demonstrated by `tests/migration/test_migration_014_caller_authentication.py`
-(a static test asserting the migration's SQL text seeds *no* tokens, plus
-a Postgres smoke test asserting rerunning the migration never changes
-the bounded actors' token count, whatever it already was) and the new
+(a static test asserting the migration's SQL text seeds *no* tokens; a
+Postgres smoke test asserting rerunning the migration never changes the
+bounded actors' token count, whatever it already was; and, added in a
+post-merge review pass, `Migration014IsolatedDatabaseTests`, which
+creates and drops its own scratch database on the same Postgres server,
+applies the full canonical migration path -- every `db/ddl/*.sql` file
+present on disk, not a hardcoded list -- and asserts the exact
+zero-privileged-tokens property automatically in CI, closing the gap
+where that property was previously proven only by a one-time manual
+check; verified to actually catch a regression by deliberately injecting
+a token-seeding statement into 014 and confirming the test fails, then
+reverting) and the new
 `tests/migration/test_dev_seed_caller_authentication_tokens.py` (static
 + Postgres smoke, including a direct assertion that the published
 seed-token plaintext actually hashes to the value stored in that file,
@@ -321,10 +330,13 @@ revoke round trip, and (added in the pre-merge review pass) a direct
 assertion that the revoke response never contains `token_hash`. The full
 combined suite (this session's new and updated tests plus every
 unaffected test from sessions 020-031) passes locally against a live
-Docker Compose stack with zero unexplained regressions, and is confirmed
-passing in CI job `full-cdp-slice-tests`, run `30770996059` on this
-branch's reviewed, final head commit `ba8f5a9`, 2026-08-02T22:50:53Z,
-conclusion `success`.
+Docker Compose stack with zero unexplained regressions, and (for the
+pre-merge review corrections) was confirmed passing in CI job
+`full-cdp-slice-tests`, run `30770996059` on commit `ba8f5a9`,
+2026-08-02T22:50:53Z, conclusion `success`. The post-merge review
+corrections (this section's `Migration014IsolatedDatabaseTests` addition
+and the documentation fixes) are re-verified against CI separately --
+see `000-current-state.md` for that citation.
 
 ## Audit trail
 
