@@ -1,6 +1,6 @@
 # Demonstrated Capabilities
 
-Status: Draft v0.1 — as of 2026-08-02, post-merge state reflecting main `660e744` (sessions 020-032 merged, including PR #48's pre-merge review corrections)
+Status: Draft v0.1 — as of 2026-08-03, post-merge state reflecting main `199c934` (sessions 020-032 merged; 027-032 closed as the Identity/Attestation/Authority/Authentication sequence -- see docs/session-027-032-identity-authority-closure.md)
 
 This document describes only capabilities that have cleared at least E2
 (Structurally Tested) per [`README.md`](README.md). It contains no roadmap,
@@ -330,13 +330,13 @@ revoke round trip, and (added in the pre-merge review pass) a direct
 assertion that the revoke response never contains `token_hash`. The full
 combined suite (this session's new and updated tests plus every
 unaffected test from sessions 020-031) passes locally against a live
-Docker Compose stack with zero unexplained regressions, and (for the
-pre-merge review corrections) was confirmed passing in CI job
-`full-cdp-slice-tests`, run `30770996059` on commit `ba8f5a9`,
-2026-08-02T22:50:53Z, conclusion `success`. The post-merge review
-corrections (this section's `Migration014IsolatedDatabaseTests` addition
-and the documentation fixes) are re-verified against CI separately --
-see `000-current-state.md` for that citation.
+Docker Compose stack with zero unexplained regressions, and is confirmed
+passing in CI job `full-cdp-slice-tests`, run `30779064311` on merge
+commit `199c934` (main, push-triggered), 2026-08-03T02:20:39Z,
+conclusion `success` -- the closure-state citation, superseding the two
+earlier PR-head citations (`30770996059`/`ba8f5a9` for the pre-merge
+review fixes, `30778872564`/`7766879` for the post-merge review fixes)
+now that both PRs (#48, #49) are merged.
 
 ## Audit trail
 

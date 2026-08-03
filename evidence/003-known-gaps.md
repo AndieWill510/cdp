@@ -1,6 +1,6 @@
 # Known Gaps
 
-Status: Draft v0.4 -- as of 2026-08-02, post-merge state reflecting main `660e744` (sessions 020-032 merged, including PR #48's pre-merge review corrections)
+Status: Draft v0.4 -- as of 2026-08-03, post-merge state reflecting main `199c934` (sessions 020-032 merged; 027-032 closed as the Identity/Attestation/Authority/Authentication sequence -- see docs/session-027-032-identity-authority-closure.md)
 
 This document describes known gaps, limitations, and evidence boundaries:
 capabilities the constitutional or architecture layer expects but that are

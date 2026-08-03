@@ -1,6 +1,6 @@
 # Current State
 
-Status: Draft v0.1 — as of 2026-08-02, post-merge state reflecting main `660e744` (sessions 020-032 merged, including PR #48's pre-merge review corrections)
+Status: Draft v0.1 — as of 2026-08-03, post-merge state reflecting main `199c934` (sessions 020-032 merged; 027-032 closed as the Identity/Attestation/Authority/Authentication sequence -- see docs/session-027-032-identity-authority-closure.md)
 
 This document classifies each governance step against the evidence levels
 defined in [`README.md`](README.md). Classification follows the *strongest
@@ -32,6 +32,50 @@ rating, not two different systems:
 - **Integration Tested (E4)** — tested through the live API against a live database, confirmed passing in CI.
 - **Production Demonstrated (E5)** — observed operating in production.
 
+## Closure note: Identity, Attestation, Authority, and Caller Authentication (sessions 027-032)
+
+Sessions 027 through 032 form one continuous arc -- Identity and
+Attestation (027), Authority and Delegation (028), Universal Attestation
+(029), Identity Claim Scope (030), RFC-CDP-030/031 spec updates (031),
+and Caller Authentication (032), the last reviewed twice (pre-merge as
+PR #48, post-merge as PR #49) before this closure. As of main `199c934`,
+this arc is **closed**: the bounded scope it set out to cover is
+implemented, tested, reviewed, corrected, and merged. See
+`docs/session-027-032-identity-authority-closure.md` for the full
+closure statement; the summary:
+
+**What this arc provides, at Integration Tested (E4):** governed actor
+registration; identity claims with recognition, denial, contest,
+preservation, and protected/pseudonymous display; purpose-scope plus
+optional registry/decision-class scope on identity claims; attestation
+across the five governed-act proof paths this repository implements;
+scoped Authority Grants for the RFC-CDP-032 §19 Minimal Compliance
+profile; real HTTP-caller-to-actor possession binding via bearer tokens;
+self-service token revocation with a redacted response; a canonical
+migration path that provisions no privileged credentials (the two
+bounded system actors are unreachable through the HTTP API until an
+operator provisions credentials out of band) -- all confirmed through
+the live API against live Postgres in CI.
+
+**What this arc deliberately does not provide** (named boundaries, not
+hidden defects -- see the per-slice rows below and
+`evidence/003-known-gaps.md` for the full list): OAuth/OIDC/SAML;
+sessions or account recovery; token rotation; cryptographic request
+signing; production secrets provisioning; full RFC-CDP-032 delegation,
+quorum, separation-of-duties, or authority decay; Standing and Recusal
+(RFC-CDP-033, still Not Implemented/E0 -- see below); Production
+Demonstrated (E5) evidence for any capability in this repository.
+
+Continuing to extend authentication/authorization further without a new,
+explicit scope decision would risk turning a deliberately bounded
+prototype slice into an open-ended auth project. The next constitutional
+gap this repository should address is Standing and Recusal
+(RFC-CDP-033): identity answers "who is this actor," attestation answers
+"is the act recorded and by whom," and authority answers "is this actor
+currently permitted to perform this act" -- but nothing yet answers
+"may this particular actor properly participate in this particular
+matter," which is a different, upstream question from all three.
+
 ## Identity and Standing (RFC-CDP-030 series)
 
 | Step | Classification | Evidence |
@@ -62,7 +106,7 @@ rating, not two different systems:
 
 | Step | Classification | Evidence |
 |---|---|---|
-| Bearer-token caller binding on actor-asserting mutating routes | Integration Tested (E4) | DDL: `db/ddl/014-caller-authentication.sql` (`cdp_core.actor_bearer_token`, SHA-256 hash only, anti-delete trigger, one-active-token-per-actor partial unique index; seeds no tokens itself -- review correction, see below). Local/dev/test bootstrap: `db/seed/dev-caller-authentication-tokens.sql` (not part of the migration path -- applied only by local Docker init and CI's test job). Service: `register_actor` additively issues a one-time bearer token (`cdp/core/services.py`); `verify_bearer_token` (standalone, not called from inside any other service function) and `revoke_actor_bearer_token`. Routes: `POST /actors` response gains `bearer_token`; new `POST /actors/{actor_id}/tokens/revoke` (response redacted to `{actor_id, token_id, status, revoked_at}`, review correction); nine existing actor-asserting mutating routes across `cdp/api/identity.py`, `authority.py`, `decisions.py` now require a matching `Authorization: Bearer` header. Tests: `tests/migration/test_migration_014_caller_authentication.py` (static test asserts 014's SQL text seeds no tokens; `Migration014PostgresSmokeTests` asserts rerunning 014 never changes the bounded actors' token count; `Migration014IsolatedDatabaseTests`, added in a post-merge review pass, creates and drops its own scratch database, applies the full canonical migration path, and asserts the exact zero-token property automatically in CI rather than only by one-time manual check -- verified to actually catch a regression by deliberately injecting a token-seeding statement and confirming failure, then reverting) + `tests/migration/test_dev_seed_caller_authentication_tokens.py`, 8 cases in `tests/identify_attest_standing/test_actor_service.py`'s `CallerAuthenticationTests`, plus every existing API test in `test_identity_attestation_api.py`/`test_authority_grant_api.py`/`test_universal_attestation_api.py` updated to present the correct token, plus API cases covering missing/mismatched tokens and the token_hash-redaction assertion. Confirmed passing in CI job `full-cdp-slice-tests`: run `30778872564`, commit `7766879` (this PR's head), 2026-08-03T02:15:49Z, conclusion `success`, alongside the full pre-existing suite with no regressions. This proves the HTTP caller controls a token issued to the actor_id it asserts; it is not OAuth/OIDC, not cryptographic signing (RFC-CDP-031 §4 remains unmet), and has no rotation mechanism. **Pre-merge review correction (PR #48):** the canonical `db/ddl/` migration path no longer seeds privileged tokens (an earlier version did, which meant any deployment applying normal migrations was born with known, active, privileged credentials); the revoke response no longer exposes `token_hash`; and a check/use transaction-boundary gap between `verify_bearer_token` and the governed mutation it authorizes is documented in `evidence/003-known-gaps.md` rather than fixed. **Post-merge review correction:** `cdp/api/authority.py`'s docstring, this document's own header, and `evidence/003-known-gaps.md` all carried stale text after the merge; corrected, and the zero-token invariant above is now CI-enforced, not just manually checked. See `docs/session-032-caller-authentication.md` §1, §2.1, §2.3, §2.5, and §7 for the full boundary statement. |
+| Bearer-token caller binding on actor-asserting mutating routes | Integration Tested (E4) | DDL: `db/ddl/014-caller-authentication.sql` (`cdp_core.actor_bearer_token`, SHA-256 hash only, anti-delete trigger, one-active-token-per-actor partial unique index; seeds no tokens itself -- review correction, see below). Local/dev/test bootstrap: `db/seed/dev-caller-authentication-tokens.sql` (not part of the migration path -- applied only by local Docker init and CI's test job). Service: `register_actor` additively issues a one-time bearer token (`cdp/core/services.py`); `verify_bearer_token` (standalone, not called from inside any other service function) and `revoke_actor_bearer_token`. Routes: `POST /actors` response gains `bearer_token`; new `POST /actors/{actor_id}/tokens/revoke` (response redacted to `{actor_id, token_id, status, revoked_at}`, review correction); nine existing actor-asserting mutating routes across `cdp/api/identity.py`, `authority.py`, `decisions.py` now require a matching `Authorization: Bearer` header. Tests: `tests/migration/test_migration_014_caller_authentication.py` (static test asserts 014's SQL text seeds no tokens; `Migration014PostgresSmokeTests` asserts rerunning 014 never changes the bounded actors' token count; `Migration014IsolatedDatabaseTests`, added in a post-merge review pass, creates and drops its own scratch database, applies the full canonical migration path, and asserts the exact zero-token property automatically in CI rather than only by one-time manual check -- verified to actually catch a regression by deliberately injecting a token-seeding statement and confirming failure, then reverting) + `tests/migration/test_dev_seed_caller_authentication_tokens.py`, 8 cases in `tests/identify_attest_standing/test_actor_service.py`'s `CallerAuthenticationTests`, plus every existing API test in `test_identity_attestation_api.py`/`test_authority_grant_api.py`/`test_universal_attestation_api.py` updated to present the correct token, plus API cases covering missing/mismatched tokens and the token_hash-redaction assertion. Confirmed passing in CI job `full-cdp-slice-tests`: run `30779064311`, merge commit `199c934` (main, push-triggered), 2026-08-03T02:20:39Z, conclusion `success`, alongside the full pre-existing suite with no regressions. This proves the HTTP caller controls a token issued to the actor_id it asserts; it is not OAuth/OIDC, not cryptographic signing (RFC-CDP-031 §4 remains unmet), and has no rotation mechanism. **Pre-merge review correction (PR #48):** the canonical `db/ddl/` migration path no longer seeds privileged tokens (an earlier version did, which meant any deployment applying normal migrations was born with known, active, privileged credentials); the revoke response no longer exposes `token_hash`; and a check/use transaction-boundary gap between `verify_bearer_token` and the governed mutation it authorizes is documented in `evidence/003-known-gaps.md` rather than fixed. **Post-merge review correction:** `cdp/api/authority.py`'s docstring, this document's own header, and `evidence/003-known-gaps.md` all carried stale text after the merge; corrected, and the zero-token invariant above is now CI-enforced, not just manually checked. See `docs/session-032-caller-authentication.md` §1, §2.1, §2.3, §2.5, and §7 for the full boundary statement. |
 
 ## Decision Lifecycle (RFC-CDP-040–048)
 
