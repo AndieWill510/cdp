@@ -1,12 +1,13 @@
 # Session 032 — Real Authentication / Caller Binding
 
-Status: implementation complete, verified locally against a live Docker
-Compose stack (fresh migration apply, live `uvicorn`, live Postgres), and
-confirmed passing in CI (run `30751140549` on head commit `29c5cdb`, see
-§5). Reviewed before merging PR #48 -- two corrections applied (§2.1,
-§2.5) and one gap recorded rather than fixed (§7's transaction-boundary
-bullet). This file documents what already exists in the working tree,
-not a plan for future work.
+Status: merged (PR #48, merge commit `660e744`). Reviewed before merge --
+two corrections applied (§2.1, §2.5) and one gap recorded rather than
+fixed (§7's transaction-boundary bullet). Reviewed a second time after
+merge, at `660e744` -- three more corrections applied: stale docstring
+text in `cdp/api/authority.py` (§2.3), this file's and the evidence
+docs' stale pre-merge header metadata, and a new isolated CI test for
+the zero-privileged-tokens invariant (§5). This file documents what
+exists on `main`, not a plan for future work.
 
 Scope: binds an HTTP caller to the actor_id it asserts on every mutating
 route that accepts one, closing the gap every prior session (027-031)
@@ -121,6 +122,14 @@ unattested route (`POST /decisions`, `POST .../challenges`,
 `POST .../execution-records` without the `attested-` prefix) -- these
 remain exactly as unauthenticated as they were in every prior session.
 
+**Post-merge review correction:** `cdp/api/authority.py`'s module
+docstring described `cdp_authority_grant_issuer`'s bearer token as
+"seeded by that migration for local/dev/test use" -- true when written,
+false after the pre-merge fix in §2.1 moved that seeding out of
+`db/ddl/014` into `db/seed/`. Corrected to name the actual source
+(`db/seed/dev-caller-authentication-tokens.sql`) and state plainly that
+the canonical migration provisions no credentials for this actor.
+
 ### 2.4 Revocation: `POST /actors/{actor_id}/tokens/revoke`
 
 Self-service only, like a logout: the route requires the caller to
@@ -168,14 +177,21 @@ migration apply, live Postgres, live `uvicorn`):
   (4/4, including the seed-token-plaintext-matches-hash assertion moved
   from 014, and a direct assertion that the file lives outside `db/ddl/`
   and its header warns unmistakably against deployment use) -- all pass.
-- **Postgres/service**: `Migration014PostgresSmokeTests` (1, now
-  asserting applying 001-014 alone leaves *zero* tokens for either
-  bounded system actor -- the property the review required -- and still
-  asserting the partial unique index rejects a second active token for a
-  synthetic actor) +
-  `DevSeedCallerAuthenticationTokensPostgresSmokeTests` (1, asserting the
-  seed file actually activates both bounded actors' tokens and is
-  rerun-safe) + 8 new cases in
+- **Postgres/service**: `Migration014PostgresSmokeTests` (1, asserting
+  rerunning 014 never changes the bounded actors' token count, whatever
+  it already was -- see §5's design note above for why this doesn't
+  assert an exact zero) + `Migration014IsolatedDatabaseTests` (1, added
+  in the post-merge review pass: creates and drops its own scratch
+  database on the same Postgres server, applies the full canonical
+  migration path -- `docker/postgres/init/01-init-cdp.sql` then every
+  `db/ddl/*.sql` file present on disk, not a hardcoded list -- and
+  asserts the exact zero-token property directly, automatically, in CI,
+  rather than only by the one-time manual check this session originally
+  relied on; verified to actually catch a regression by deliberately
+  injecting a token-seeding statement into 014 and confirming the test
+  fails, then reverting) + `DevSeedCallerAuthenticationTokensPostgresSmokeTests`
+  (1, asserting the seed file actually activates both bounded actors'
+  tokens and is rerun-safe) + 8 new cases in
   `tests/identify_attest_standing/test_actor_service.py`'s new
   `CallerAuthenticationTests` class (token issued as hash-only, `verify_bearer_token`
   success/missing/invalid/mismatch, revoke-then-verify-fails,
@@ -192,10 +208,12 @@ migration apply, live Postgres, live `uvicorn`):
   a direct assertion (added in the pre-merge review pass) that the
   revoke response never contains `token_hash`. All pass.
 - **Full combined suite, unchanged**: every test from sessions 020-031
-  continues to pass -- 118 static (pr-guard's exact list) + 119
-  Postgres/service (full-cdp-slice-tests' exact list) + 56 API
-  (full-cdp-slice-tests' exact list) = 293 tests, zero regressions in any
-  test that did not need updating for the new auth requirement.
+  continues to pass -- 118 static (pr-guard's exact list) + 120
+  Postgres/service (full-cdp-slice-tests' exact list, +1 for
+  `Migration014IsolatedDatabaseTests`, added in the post-merge review
+  pass) + 56 API (full-cdp-slice-tests' exact list) = 294 tests, zero
+  regressions in any test that did not need updating for the new auth
+  requirement.
   **Design note, discovered mid-review:** an earlier version of
   `test_apply_001_through_013_then_014_twice_is_idempotent` asserted the
   two bounded actors have *exactly zero* tokens after applying 001-014 --

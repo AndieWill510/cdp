@@ -1,6 +1,6 @@
 # Known Gaps
 
-Status: Draft v0.4 -- as of 2026-08-02, session 032 (Caller Authentication) working tree, building on main `680f0f4`
+Status: Draft v0.4 -- as of 2026-08-02, post-merge state reflecting main `660e744` (sessions 020-032 merged, including PR #48's pre-merge review corrections)
 
 This document describes known gaps, limitations, and evidence boundaries:
 capabilities the constitutional or architecture layer expects but that are
@@ -222,12 +222,16 @@ claim that RFC-CDP-032 is implemented in full:
   documented limitation session 027 v0.2 accepted for the identity
   recognition authority, applied here from the start. Widening it
   requires a code change, not a governed act.
-- **Caller authentication is bearer-token based as of session 032, using
-  the same seeded, published, local/dev/test-only token as the grant
-  issuer identity itself** -- see the Caller Authentication section
-  below. `POST /authority-grants` and `.../revoke` both require the
-  caller to present `cdp_authority_grant_issuer`'s own token, not merely
-  assert that actor_id in the request body.
+- **Caller authentication is bearer-token based as of session 032.**
+  `POST /authority-grants` and `.../revoke` both require the caller to
+  present `cdp_authority_grant_issuer`'s own token, not merely assert
+  that actor_id in the request body. The canonical migration
+  (`db/ddl/014-caller-authentication.sql`) provisions no credential for
+  this actor; the local/dev/test-only token this repository's own tests
+  and Docker stack use comes from
+  `db/seed/dev-caller-authentication-tokens.sql`, published in plaintext
+  there and never applied to a real deployment -- see the Caller
+  Authentication section below.
 - **No production deployment evidence exists for this slice.**
 
 ## Universal Attestation (RFC-CDP-031 §2) -- known limitations of the session 029 slice

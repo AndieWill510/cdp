@@ -173,6 +173,7 @@ jobs:
             tests/migration/test_migration_012_universal_attestation.py::Migration012PostgresSmokeTests \
             tests/migration/test_migration_013_identity_claim_scope.py::Migration013PostgresSmokeTests \
             tests/migration/test_migration_014_caller_authentication.py::Migration014PostgresSmokeTests \
+            tests/migration/test_migration_014_caller_authentication.py::Migration014IsolatedDatabaseTests \
             tests/migration/test_dev_seed_caller_authentication_tokens.py::DevSeedCallerAuthenticationTokensPostgresSmokeTests \
             tests/nemawashi/test_nemawashi_workflow_rules_ddl.py::NemawashiWorkflowRulesDDLPostgresSmokeTests \
             tests/db/test_postgres_init_contract.py::test_postgres_bootstrap_runtime_marker_is_unique \
