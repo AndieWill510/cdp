@@ -16,7 +16,7 @@
     {"number":"030","title":"Identify Protocol","file":"RFC-CDP-030-Identify-Protocol.md","status":"Draft","band":"030-039"},
     {"number":"031","title":"Attest Protocol","file":"RFC-CDP-031-Attest-Protocol.md","status":"Draft","band":"030-039"},
     {"number":"032","title":"Authority and Delegation Model","file":"RFC-CDP-032-Authority-and-Delegation-Model.md","status":"Draft","band":"030-039"},
-    {"number":"033","title":"Standing and Recusal Model","file":"RFC-CDP-033-Standing-and-Recusal-Model.md","status":"Draft v0.6","band":"030-039"},
+    {"number":"033","title":"Standing and Recusal Model","file":"RFC-CDP-033-Standing-and-Recusal-Model.md","status":"Draft v0.7","band":"030-039"},
     {"number":"034","title":"Participation Integrity Attestation","file":"RFC-CDP-034-Participation-Integrity-Attestation.md","status":"Draft v0.1","band":"030-039"},
     {"number":"040","title":"Nemawashi Protocol","file":"RFC-CDP-040-Nemawashi-Protocol.md","status":"Draft","band":"040-049"},
     {"number":"041","title":"Propose Protocol","file":"RFC-CDP-041-Propose-Protocol.md","status":"Draft v0.4","band":"040-049"},

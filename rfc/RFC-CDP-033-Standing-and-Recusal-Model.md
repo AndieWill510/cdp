@@ -1,11 +1,12 @@
 # RFC-CDP-033 — Standing and Recusal Model
 
 Author: Kevin “Andie” Williams  
-Status: Draft v0.6  
+Status: Draft v0.7  
 Series: Constitutional Decision Plane (CDP)  
-Date: July 29, 2026  
-Depends On: RFC-CDP-001, RFC-CDP-025, RFC-CDP-030, RFC-CDP-031, RFC-CDP-032, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074, RFC-CDP-075  
-Related: RFC-CDP-040, RFC-CDP-041, RFC-CDP-045, RFC-CDP-050, RFC-CDP-052, RFC-CDP-060, RFC-CDP-062
+Date: July 29, 2026; revised August 6, 2026  
+Depends On: RFC-CDP-001, RFC-CDP-025, RFC-CDP-030, RFC-CDP-031, RFC-CDP-032, RFC-CDP-070, RFC-CDP-071, RFC-CDP-072, RFC-CDP-073, RFC-CDP-074  
+Related: RFC-CDP-040, RFC-CDP-041, RFC-CDP-045, RFC-CDP-050, RFC-CDP-052, RFC-CDP-060, RFC-CDP-062, RFC-CDP-078  
+Reserved, not a dependency: RFC-CDP-075 (Rematriation and Land/Resource Return Protocol) does not yet exist as a drafted RFC. This RFC does not depend on its content and will cite it if and when it is drafted.
 
 ## Abstract
 
@@ -105,6 +106,12 @@ Standing is stage-specific.
 A participant may have standing to Challenge but not to Adjudicate.
 
 A participant may have standing to clarify a proposal but not to legitimize it.
+
+### 3.5 Relationship Type
+
+`RFC-CDP-078-Relationship-Taxonomy-and-Recognition-Model.md` classifies what kind of relationship exists between actors.
+
+Relationship Type is explanatory, not gating. It MUST NOT be treated as a prerequisite for Standing, and unresolved or contested Relationship Type classification MUST NOT suspend, delay, diminish, or defeat a Standing determination, per `RFC-CDP-078` §8.2's non-suspension rule. A Standing claim MAY be evaluated and recognized before, without, or independently of any Relationship Type classification of the same underlying relationship.
 
 ---
 
@@ -269,43 +276,94 @@ An AI participant's Functional Standing at any stage MUST be bounded by a respon
 
 ## 9. Standing Record Seed
 
-The following schema is a seed for discussion and implementation alignment.
+The following four schemas are a seed for discussion and implementation alignment. They are included to prevent prose-only drift, but remain Draft until separately stabilized.
 
-It is included to prevent prose-only drift, but remains Draft until separately stabilized.
+Standing Claim, Standing Recognition, Recusal, and Contest are four distinct acts, made by different parties at different times, each with its own epistemic status. A single mutable record that overwrites earlier fields when a later act occurs would erase the disagreement, timing, and provenance those acts are supposed to preserve. This RFC therefore requires four separate, append-only records rather than one record updated in place. Implementations MAY store them in separate tables or as separate immutable rows in a shared table; they MUST NOT collapse them into a single row that a later act overwrites.
+
+### 9.1 Standing Claim
+
+Created when an actor asserts a basis for Standing. Immutable once created; a correction or withdrawal is a new record, not an edit.
 
 ```yaml
-standing_record:
-  standing_id: <uuid>
+standing_claim:
+  claim_id: <uuid>
   decision_id: <uuid>
   stage: <propose|challenge|test|adjudicate|legitimize|execute|record|learn>
   actor_id: <uuid>
   actor_type: <human|ai|institution|collective>
+  standing_type: <constitutional_affected_party|constitutional_evidence_custodian|constitutional_record_keeper|delegated|emergency|repair|appeal>
   standing_basis:
     - role: <string>
     - accountability: <string>
     - contextual_relationship: <string>
-  conflicts_declared: <boolean>
-  conflict_description: <string|null>
-  recusal_required: <boolean>
-  recusal_scope: <none|partial|full>
-  recusal_basis: <string|null>
-  standing_recognized_by: <actor_id>
-  standing_recognized_at: <timestamp>
-  standing_contestable_until: <timestamp>
-  contested: <boolean>
-  contest_record_id: <uuid|null>
+  submitted_at: <timestamp>
+  withdrawn_at: <timestamp|null>
   notes: <string|null>
 ```
 
-Minimum viable fields:
+Minimum viable fields: `decision_id`, `stage`, `actor_id`, `actor_type`, `standing_type`, `standing_basis`, `submitted_at`.
 
-- `decision_id`
-- `stage`
-- `actor_id`
-- `actor_type`
-- `standing_basis`
-- `recusal_required`
-- `recusal_scope`
+### 9.2 Standing Recognition Determination
+
+Created when a binding recognition act (Section 11.5) confirms, narrows, defers, rejects, or denies a Standing Claim. References the claim it determines; never edits it. A later determination on the same claim (correction, contest outcome) is a new record referencing the prior determination, not an overwrite of it.
+
+```yaml
+standing_recognition_determination:
+  determination_id: <uuid>
+  claim_id: <uuid>
+  outcome: <recognized|narrowed|deferred|rejected|denied>
+  outcome_scope: <string|null>
+  outcome_basis: <string>
+  determined_by: <actor_id>
+  determined_at: <timestamp>
+  supersedes_determination_id: <uuid|null>
+  contestable_until: <timestamp>
+  notes: <string|null>
+```
+
+Minimum viable fields: `claim_id`, `outcome`, `outcome_basis`, `determined_by`, `determined_at`.
+
+Section 11.8 defines `recognized`, `narrowed`, `deferred`, `rejected`, and `denied` precisely, including which outcomes may trigger the automatic Breach Record rule in Section 11.6.
+
+### 9.3 Recusal Declaration or Determination
+
+Created independently of a Standing Claim or Recognition Determination — an actor may hold otherwise-valid Standing and still be subject to a Recusal record limiting or suspending it for a specific decision and stage.
+
+```yaml
+recusal_record:
+  recusal_id: <uuid>
+  decision_id: <uuid>
+  stage: <propose|challenge|test|adjudicate|legitimize|execute|record|learn>
+  actor_id: <uuid>
+  conflict_description: <string>
+  recusal_scope: <none|partial|full>
+  self_declared: <boolean>
+  determined_by: <actor_id|null>
+  determined_at: <timestamp|null>
+  notes: <string|null>
+```
+
+Minimum viable fields: `decision_id`, `stage`, `actor_id`, `conflict_description`, `recusal_scope`, `self_declared`. A self-declared recusal (`self_declared: true`, `determined_by: null`) is evidence, not final disposition, per Section 10; it takes effect as a precaution pending confirmation, but a later contest or review MAY narrow, extend, or overturn it via its own new record.
+
+### 9.4 Standing Contest Record
+
+Created when a participant contests a Standing determination or Recusal determination under Section 10. References what it contests; never edits it.
+
+```yaml
+standing_contest_record:
+  contest_id: <uuid>
+  contests_determination_id: <uuid|null>
+  contests_recusal_id: <uuid|null>
+  raised_by_actor_id: <uuid>
+  grounds: <string>
+  raised_at: <timestamp>
+  resolution: <pending|upheld|overturned|narrowed>
+  resolved_by: <actor_id|null>
+  resolved_at: <timestamp|null>
+  notes: <string|null>
+```
+
+Minimum viable fields: exactly one of `contests_determination_id` or `contests_recusal_id`, `raised_by_actor_id`, `grounds`, `raised_at`, `resolution`.
 
 ---
 
@@ -396,6 +454,10 @@ Subtypes:
 
 Arises when a decision may materially affect an actor, which makes the decision answerable to that actor. The claim of potential impact is sufficient for preliminary standing, subject to scope challenge. No actor may deny affected-party standing on the grounds that impact has not yet been proven.
 
+A minimally sufficient claim — one that identifies a possible consequence and the relationship that makes the actor answerable to it — creates **provisional Standing** immediately upon submission. Provisional Standing is sufficient to participate in the stage claimed, including raising the first protected act (for example, a Challenge), without waiting for a binding recognition determination. Binding recognition (Section 11.5) MAY later confirm, narrow, defer, reject, or deny that claim (Section 11.8), but a pending determination MUST NOT itself block the act the provisional claim was sufficient for. This is the operational consequence of treating existence as prior to recognition (Section 11.2): if the first protected act had to wait on recognition, recognition would function as creation in practice, which Section 11.1 already forbids in principle.
+
+A claim that fails minimal sufficiency — one that identifies no possible consequence and no relationship that could make the decision answerable to the claimant — does not acquire provisional Standing. Failing to recognize such a claim does not trigger Section 11.6's Breach Record rule: a claim that never cleared minimal sufficiency was never a sufficient claim to deny. This is distinct from denial of a claim that did clear minimal sufficiency, which Section 11.8 governs precisely.
+
 **Evidence-Custodian Standing**
 
 Arises from custody of decision-relevant records, evidence, or data, which makes the decision answerable to the custodian's ability to verify it. Bounded to stages where that evidence is relevant.
@@ -444,17 +506,28 @@ Arises when a completed decision is formally contested. Governed by `RFC-CDP-070
 
 Constitutional Standing is recognized, not granted: the underlying answerability relationship precedes CDP and CDP cannot revoke what it did not create. Delegated Standing is genuinely granted: the authority itself is brought into being by an authorizing act and can be revoked as that act permits. Emergency, Repair, and Appeal Standing are recognized by CDP as procedural responses to conditions — emergency, breach, contestation — that themselves reveal or renew an answerability relationship requiring urgent or renewed procedural attention.
 
+"Recognized by the CDP framework" in the table above names a role, not a mechanism left open. A binding Standing recognition determination MUST be made by an actor or process that is:
+
+- **bounded** — explicitly identified in advance, not inferred from participation in the matter being decided;
+- **non-self-interested** — never the actor whose own Standing, claim, or proposal is under determination, and never an actor whose own conduct is the subject of the answerability relationship being recognized;
+- **procedurally authorized** — holding that role through a recorded act (for example, a seeded constitutional role, an Authority Grant under `RFC-CDP-032`, or an equivalent governed appointment), not through unrecorded custom or informal practice;
+- **auditable** — every determination it makes MUST be recorded, attributed to it by identity, and reachable by the contestability mechanism in Section 10 and Section 11.7.
+
+This closes the regress named in Section 11.1 without collapsing into either extreme it warns against: the recognizing role does not originate Standing (it is bound by the same existence/recognition/scope distinction as every other recognition act), and it is not ambient (an arbitrary actor asserting a relationship cannot bind CDP merely by asserting it). This RFC does not itself name the specific actor(s) that hold this role for a given deployment — that is an implementation decision, analogous to how `RFC-CDP-030` and `RFC-CDP-032` each bind their own recognition and grant-issuance roles to a specific, bounded, seeded actor rather than leaving either ambient. An implementation MUST document which actor(s) hold the Standing recognition role and MUST be able to show that determination satisfies the four properties above.
+
 ---
 
 ### 11.6 Constitutional Standing Protection
 
 Denial of recognition for Constitutional Standing is a governance breach.
 
+"Denial" here has the precise meaning Section 11.8 defines, distinguishing it from a `rejected`, `narrowed`, or `deferred` outcome and from a claim that never cleared minimal sufficiency under Section 11.4. Only a `denied` outcome triggers this section.
+
 Because Constitutional Standing recognizes rather than creates an answerability relationship, denying recognition does not extinguish that relationship. It compounds the original answerability with a second, independent breach: the failure to recognize it.
 
 Any attempt by an actor to prevent an affected party, evidence custodian, or record-keeper from exercising their Constitutional Standing is subject to the CDP Repair plane.
 
-Denial of Constitutional Standing MUST automatically generate a Breach Record under `RFC-CDP-072-Breach-Record-and-Repair-Agenda-Schema.md`. This MUST NOT require action by the affected party.
+Denial of Constitutional Standing MUST automatically generate a Breach Record under `RFC-CDP-072-Breach-Record-and-Repair-Agenda-Schema.md`. This MUST NOT require action by the affected party. The Breach Record MUST be generated by the same actor or process that records the `denied` outcome (Section 9.2, Section 11.8), as part of recording that determination itself — this is what makes generation automatic rather than dependent on a further act by the affected party, who by definition may lack a recognized basis at that moment to initiate a Repair process on their own.
 
 The record of the denial MUST be preserved.
 
@@ -481,6 +554,22 @@ Standing contests MUST be raised before or during the relevant stage.
 Post-execution standing contests belong to the Appeal and Repair planes.
 
 An uncontested standing determination becomes stable for that decision. It remains subject to appeal but does not reopen the decision process.
+
+---
+
+### 11.8 Recognition Outcomes
+
+A binding Standing recognition determination (Section 9.2) MUST record exactly one of the following outcomes:
+
+- **recognized** — the claim is confirmed as presented; Standing is established at the scope claimed.
+- **narrowed** — the claim is confirmed but at a smaller scope than claimed (a different stage, a different decision, a different role): Standing exists, bounded differently than asserted.
+- **deferred** — the determination is postponed, typically pending evidence or a concurrent process (for example, an unresolved Sovereignty Claim under `RFC-CDP-074`). Provisional Standing established under Section 11.4 continues to apply while deferred, unless the deferral itself states a reasoned basis for suspending it.
+- **rejected** — the claim, having cleared minimal sufficiency, is found on the merits not to describe an existing answerability relationship, applying Answerability Test Question 5 (Section 11.3). Rejection is a finding about this claim, not a declaration that no such relationship could exist, and does not immunize the determination from later correction under Section 10.
+- **denied** — for Constitutional Standing only: the claim, having cleared minimal sufficiency and correctly describing an existing answerability relationship, is refused recognition anyway; or the recognition process fails to act on a sufficient claim within a reasonable period; or a recognized claim's protection is defeated by an actor's conduct. Denial is what Section 11.6's automatic Breach Record rule attaches to.
+
+**Denial, precisely.** "Denial of Constitutional Standing" in Section 11.6 means a **denied** outcome as defined here — not a **rejected** outcome (the claim did not hold up on the merits after clearing minimal sufficiency), not a claim that never cleared minimal sufficiency in the first place (Section 11.4), and not a **narrowed** or **deferred** outcome, both of which preserve some or all of the claimed Standing rather than refusing it. A good-faith determination that a claim is **rejected** under Question 5, recorded with its basis and open to contest under Section 10, is not itself a breach. A refusal to recognize a claim the Answerability Test would sustain, or a failure to determine a sufficient claim at all, is. Distinguishing a mistaken-but-good-faith rejection from a denial-in-substance is itself a contestable determination (Section 10, Section 11.7) — this RFC does not resolve every case in advance, and an implementation MUST record the basis for classifying an outcome as `denied` rather than `rejected` so that classification is itself reviewable.
+
+Delegated, Emergency, Repair, and Appeal Standing use the same five-value outcome vocabulary where a binding determination is made, except that `denied` in Section 11.6's automatic-breach sense applies only to Constitutional Standing. A denied Delegated, Emergency, Repair, or Appeal claim is contestable under the ordinary mechanisms named for each (Section 11.7, and — for Repair and Appeal — the governing RFCs in the `RFC-CDP-070` band) without itself generating a further, independent Breach Record.
 
 ---
 
@@ -561,13 +650,23 @@ Promoted into Draft v0.6, following review that found the v0.5 recognition model
 - Question 5 clarified to test the claim of existence, not to place existence beyond examination;
 - Delegated Standing clarified as a genuinely granted capacity to represent or participate, distinct from the underlying answerability relationship it represents, which delegation does not manufacture.
 
+Promoted into Draft v0.7, following a reconnaissance pass (Session 033) that found the v0.6 recognition model conceptually sound but not yet precise enough to implement without inventing policy in code:
+
+- the Standing recognition role's required properties made explicit — bounded, non-self-interested, procedurally authorized, auditable — closing the regress named in Section 11.1 without naming a specific implementation actor (Section 11.5);
+- provisional affected-party Standing formalized: a minimally sufficient claim creates provisional Standing sufficient for the first protected act, without waiting on binding recognition (Section 11.4);
+- a five-value recognition outcome vocabulary (`recognized | narrowed | deferred | rejected | denied`), with `denied` precisely defined for Section 11.6's automatic Breach Record rule and distinguished from `rejected`, from `narrowed`/`deferred`, and from a claim that never cleared minimal sufficiency (Section 11.8);
+- the Standing Record Seed split into four separate, append-only records — Standing Claim, Standing Recognition Determination, Recusal Record, Standing Contest Record — replacing the single mutable seed row (Section 9);
+- `RFC-CDP-078` cited directly (Section 3.5) so Relationship Type cannot become a Standing prerequisite;
+- `RFC-CDP-075`, which does not yet exist as a drafted RFC, removed from `Depends On` and noted separately as reserved.
+
 Not yet resolved:
 
-- whether the schema belongs here or in a separate schema RFC;
 - how risk classes determine recusal depth;
 - how this model updates lifecycle protocol RFCs;
 - how Functional Standing relates to `RFC-CDP-062-HITL-AIITL-Role-Boundaries.md`;
-- how implementation profiles enforce projection atomicity.
+- how implementation profiles enforce projection atomicity;
+- which specific actor(s) satisfy the Standing recognition role's four required properties (Section 11.5) for a given implementation — this RFC states the properties, not a name;
+- the abuse or anti-flooding threshold referenced in Section 11.4 for provisional affected-party claims is not yet specified.
 
 ---
 

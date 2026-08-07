@@ -21,6 +21,13 @@ No code exists under a canonical implementation path (`cdp/`) for these:
   Claim recognition (RFC-CDP-030/033 §11.2) is not Standing: a recognized
   claim establishes who an actor is for a governed purpose, not whether
   that actor has the right to participate in a specific decision stage.
+  Session 034 (`docs/session-034-rfc-033-standing-recognition-clarification.md`)
+  clarified RFC-CDP-033 to Draft v0.7 -- naming the required properties of
+  a legitimate Standing recognition role, formalizing provisional
+  affected-party Standing, defining a five-value recognition outcome
+  vocabulary, and splitting the seed schema into four append-only records
+  -- but this is a specification change only; no code exists under `cdp/`
+  for any of it.
 - **Test Protocol** (RFC-CDP-043) — no code implements this as a discrete
   evidence-gathering step distinct from adjudication.
 - **Legitimize** (RFC-CDP-045) — no corresponding route, service function,
