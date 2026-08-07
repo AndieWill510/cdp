@@ -54,6 +54,16 @@ Evaluation Result, and a single bounded actor authorized to issue or
 revoke grants -- no delegation, no quorum, no separation-of-duties
 enforcement. See db/ddl/011-authority-and-delegation.sql for the full
 boundary statement.
+
+submit_affected_party_standing_claim, recognize_standing_claim,
+narrow_standing_claim, deny_standing_claim, and
+attest_and_raise_challenge's optional Standing gate are the Standing slice
+(RFC-CDP-033, session 035), scoped to Constitutional Affected-Party
+Standing for the Challenge stage only: a governed Standing Claim, a
+governed Standing Recognition Determination as a separate append-only
+record, a single bounded actor authorized to determine claims, and an
+optional (not mandatory) gate on attest_and_raise_challenge. No Recusal.
+See db/ddl/015-standing-and-recusal.sql for the full boundary statement.
 """
 
 from __future__ import annotations
@@ -79,6 +89,7 @@ from cdp.core.repositories import decisions as decisions_repo
 from cdp.core.repositories import execution_authorizations as execution_authorizations_repo
 from cdp.core.repositories import execution_records as execution_records_repo
 from cdp.core.repositories import identity_claims as identity_claims_repo
+from cdp.core.repositories import standing as standing_repo
 from cdp.core.repositories import workflows as workflows_repo
 
 # No workflow_stage or rule_definition yet gates challenges through an
@@ -220,6 +231,54 @@ class AuthorityGrantNotActive(Exception):
 
 class AuthorityNotGranted(Exception):
     """No active, unexpired, in-scope authority grant covers this act."""
+
+
+class StandingClaimNotFound(Exception):
+    """No standing claim exists for the given claim_id."""
+
+
+class StandingStageNotSupported(Exception):
+    """This slice's service layer only accepts Standing Claims for the
+    'challenge' stage -- see 015-standing-and-recusal.sql's header."""
+
+
+class StandingTypeNotSupported(Exception):
+    """This slice's service layer only accepts
+    'constitutional_affected_party' Standing Claims -- see
+    015-standing-and-recusal.sql's header."""
+
+
+class StandingRecognitionAuthorityRequired(Exception):
+    """The determining actor is not the seeded Standing recognition
+    authority."""
+
+
+class SelfStandingRecognitionForbidden(Exception):
+    """An actor cannot determine its own standing claim, even if it is the
+    seeded Standing recognition authority."""
+
+
+class StandingClaimAlreadyDetermined(Exception):
+    """This slice permits exactly one Standing Recognition Determination
+    per claim -- see 015-standing-and-recusal.sql's header."""
+
+
+class StandingClaimActorMismatch(Exception):
+    """The standing claim referenced by an attested challenge does not
+    belong to the attesting actor."""
+
+
+class StandingClaimDecisionMismatch(Exception):
+    """The standing claim referenced by an attested challenge does not
+    match this decision and stage."""
+
+
+class StandingClaimNotSufficient(Exception):
+    """The standing claim referenced by an attested challenge has a
+    'denied' determination against it and cannot ground participation.
+    'recognized' and 'narrowed' outcomes, and a claim with no determination
+    yet (still provisional), all permit -- see
+    attest_and_raise_challenge's docstring."""
 
 
 # A workflow that has been (re-)blocked by a new challenge raised after
@@ -1480,6 +1539,244 @@ def revoke_authority(revoke_input: RevokeAuthorityInput) -> dict[str, Any]:
     return {"authority_grant": revoked}
 
 
+# ---------------------------------------------------------------------------
+# Standing (RFC-CDP-033), scoped to the narrowest slice that reaches E4:
+# Constitutional Affected-Party Standing for the Challenge stage only. See
+# db/ddl/015-standing-and-recusal.sql's header for the full boundary
+# statement -- in one line: a governed Standing Claim, a governed Standing
+# Recognition Determination as a *separate* append-only record (never an
+# in-place edit of the claim), a single bounded actor authorized to
+# determine claims, and an optional (not mandatory) Standing gate on
+# attest_and_raise_challenge -- see that function's docstring below for
+# why mandatory would be constitutionally wrong for this slice's scope.
+#
+# No Recusal is implemented here at all -- RFC-CDP-033 SS7/SS10 remain
+# unenforced code.
+
+_STANDING_RECOGNITION_AUTHORITY_ACTOR_ID = "cdp_standing_recognition_authority"
+_SUPPORTED_STANDING_STAGE = "challenge"
+_SUPPORTED_STANDING_TYPE = "constitutional_affected_party"
+
+
+@dataclass(frozen=True)
+class StandingClaimInput:
+    decision_registry_name: str
+    decision_id: str
+    actor_id: str
+    claimed_impact: str
+    standing_basis_role: str | None = None
+    standing_basis_accountability: str | None = None
+    standing_basis_contextual_relationship: str | None = None
+    stage: str = _SUPPORTED_STANDING_STAGE
+    standing_type: str = _SUPPORTED_STANDING_TYPE
+
+
+def submit_affected_party_standing_claim(claim_input: StandingClaimInput) -> dict[str, Any]:
+    """Submit a Constitutional Affected-Party Standing Claim for the
+    Challenge stage of an existing decision.
+
+    Minimal sufficiency (RFC-CDP-033 SS11.4, as clarified in Draft v0.7:
+    "identifies a possible consequence and the relationship that makes the
+    actor answerable to it") is enforced at the database layer by
+    cdp_core.standing_claim's own CHECK constraints, not re-checked here --
+    a row that inserts successfully is, by construction, minimally
+    sufficient and grounds provisional Standing immediately, independent
+    of whether a Standing Recognition Determination is ever made. See
+    015-standing-and-recusal.sql's header.
+
+    This slice's service layer accepts only stage='challenge' and
+    standing_type='constitutional_affected_party' -- any other value
+    raises StandingStageNotSupported / StandingTypeNotSupported rather
+    than silently accepting a claim this slice cannot enforce anywhere.
+
+    Runs inside exactly one transaction: the claim row and its audit event
+    commit or roll back together.
+    """
+    if claim_input.stage != _SUPPORTED_STANDING_STAGE:
+        raise StandingStageNotSupported(
+            f"This slice only accepts Standing Claims for stage "
+            f"{_SUPPORTED_STANDING_STAGE!r}, not {claim_input.stage!r}"
+        )
+    if claim_input.standing_type != _SUPPORTED_STANDING_TYPE:
+        raise StandingTypeNotSupported(
+            f"This slice only accepts standing_type {_SUPPORTED_STANDING_TYPE!r}, "
+            f"not {claim_input.standing_type!r}"
+        )
+
+    with db.transaction() as cursor:
+        actor = actors_repo.fetch_actor(cursor, actor_id=claim_input.actor_id)
+        if actor is None:
+            raise ActorNotFound(f"No registered actor {claim_input.actor_id!r}")
+
+        decision = decisions_repo.fetch_decision(
+            cursor,
+            registry_name=claim_input.decision_registry_name,
+            decision_id=claim_input.decision_id,
+        )
+        if decision is None:
+            raise DecisionNotFound(
+                f"No decision {claim_input.decision_registry_name}.{claim_input.decision_id}"
+            )
+
+        claim = standing_repo.insert_claim(
+            cursor,
+            decision_registry_name=claim_input.decision_registry_name,
+            decision_id=claim_input.decision_id,
+            stage=claim_input.stage,
+            actor_id=claim_input.actor_id,
+            standing_type=claim_input.standing_type,
+            claimed_impact=claim_input.claimed_impact,
+            standing_basis_role=claim_input.standing_basis_role,
+            standing_basis_accountability=claim_input.standing_basis_accountability,
+            standing_basis_contextual_relationship=claim_input.standing_basis_contextual_relationship,
+        )
+
+        audit_repo.append_event(
+            cursor,
+            event_type="standing_claim.submitted",
+            aggregate_type="standing_claim",
+            aggregate_id=str(claim["claim_id"]),
+            payload={
+                "actor_id": claim_input.actor_id,
+                "decision_registry_name": claim_input.decision_registry_name,
+                "decision_id": claim_input.decision_id,
+                "stage": claim_input.stage,
+                "standing_type": claim_input.standing_type,
+            },
+        )
+
+    return {"standing_claim": claim}
+
+
+@dataclass(frozen=True)
+class StandingDeterminationInput:
+    claim_id: uuid.UUID
+    determined_by_actor_id: str
+    outcome_basis: str
+
+
+def _determine_standing_claim(
+    determination_input: StandingDeterminationInput,
+    *,
+    outcome: str,
+    event_type: str,
+) -> dict[str, Any]:
+    """Shared fetch/authorize/determine/audit body for
+    recognize/narrow/deny_standing_claim.
+
+    Two authorization checks run before any write, mirroring
+    _decide_identity_claim exactly:
+
+    1. the determining actor must be the seeded
+       _STANDING_RECOGNITION_AUTHORITY_ACTOR_ID (fails closed with
+       StandingRecognitionAuthorityRequired otherwise);
+    2. the determining actor must not be the claim's own claimant (fails
+       closed with SelfStandingRecognitionForbidden otherwise).
+
+    This slice permits exactly one determination per claim
+    (cdp_core.standing_recognition_determination's UNIQUE(claim_id)) --
+    a second attempt raises StandingClaimAlreadyDetermined rather than
+    silently overwriting the first (which the schema would not even
+    permit, since determinations are never updated in place).
+    """
+    with db.transaction() as cursor:
+        claim = standing_repo.fetch_claim(cursor, claim_id=determination_input.claim_id)
+        if claim is None:
+            raise StandingClaimNotFound(f"No standing claim {determination_input.claim_id}")
+
+        determiner = actors_repo.fetch_actor(
+            cursor, actor_id=determination_input.determined_by_actor_id
+        )
+        if determiner is None:
+            raise ActorNotFound(
+                f"No registered actor {determination_input.determined_by_actor_id!r}"
+            )
+
+        if determination_input.determined_by_actor_id != _STANDING_RECOGNITION_AUTHORITY_ACTOR_ID:
+            raise StandingRecognitionAuthorityRequired(
+                f"Actor {determination_input.determined_by_actor_id!r} is not the Standing "
+                "recognition authority and cannot determine standing claims"
+            )
+
+        if determination_input.determined_by_actor_id == claim["actor_id"]:
+            raise SelfStandingRecognitionForbidden(
+                f"Actor {determination_input.determined_by_actor_id!r} cannot determine its "
+                "own standing claim"
+            )
+
+        existing_determination = standing_repo.fetch_determination_for_claim(
+            cursor, claim_id=determination_input.claim_id
+        )
+        if existing_determination is not None:
+            raise StandingClaimAlreadyDetermined(
+                f"Standing claim {determination_input.claim_id} already has a "
+                f"{existing_determination['outcome']!r} determination"
+            )
+
+        determination = standing_repo.insert_determination(
+            cursor,
+            claim_id=determination_input.claim_id,
+            outcome=outcome,
+            outcome_basis=determination_input.outcome_basis,
+            determined_by_actor_id=determination_input.determined_by_actor_id,
+        )
+
+        audit_repo.append_event(
+            cursor,
+            event_type=event_type,
+            aggregate_type="standing_recognition_determination",
+            aggregate_id=str(determination["determination_id"]),
+            payload={
+                "claim_id": str(determination_input.claim_id),
+                "actor_id": claim["actor_id"],
+                "determined_by_actor_id": determination_input.determined_by_actor_id,
+                "outcome": outcome,
+            },
+        )
+
+    return {"standing_recognition_determination": determination}
+
+
+def recognize_standing_claim(determination_input: StandingDeterminationInput) -> dict[str, Any]:
+    """Recognize a standing claim as presented. See
+    _determine_standing_claim for the shared fetch/determine/audit shape."""
+    return _determine_standing_claim(
+        determination_input,
+        outcome="recognized",
+        event_type="standing_claim.recognized",
+    )
+
+
+def narrow_standing_claim(determination_input: StandingDeterminationInput) -> dict[str, Any]:
+    """Confirm a standing claim at a smaller scope than claimed. This
+    slice does not record what the narrowed scope actually is
+    (outcome_scope is not part of the SS9.2 seed this slice implements) --
+    see 015-standing-and-recusal.sql's header. A narrowed claim still
+    grounds participation on attest_and_raise_challenge's Standing gate,
+    exactly like a recognized one -- see that function's docstring."""
+    return _determine_standing_claim(
+        determination_input,
+        outcome="narrowed",
+        event_type="standing_claim.narrowed",
+    )
+
+
+def deny_standing_claim(determination_input: StandingDeterminationInput) -> dict[str, Any]:
+    """Deny a standing claim that cleared minimal sufficiency but is
+    refused recognition (RFC-CDP-033 SS11.8's precise 'denied' meaning).
+    This does NOT automatically generate a Breach Record -- RFC-CDP-033
+    SS11.6's automatic Breach Record rule is explicitly deferred to a
+    future session, since RFC-CDP-072 (Breach Record and Repair Agenda
+    Schema) itself remains E0 in this repository. See
+    docs/session-035-affected-party-standing-challenge.md for why this is
+    a named non-goal, not a silent omission."""
+    return _determine_standing_claim(
+        determination_input,
+        outcome="denied",
+        event_type="standing_claim.denied",
+    )
+
+
 def _evaluate_authority(
     cursor: Any,
     *,
@@ -1825,6 +2122,12 @@ _RECORD_AUTHORITY = "RECORD"
 class AttestedChallengeInput:
     challenge_input: ChallengeInput
     attestation_input: AttestationInput
+    # Optional: a Standing Claim (see the Standing section above) the
+    # attesting actor asserts grounds this specific challenge as an
+    # affected party. Deliberately not required -- see
+    # attest_and_raise_challenge's docstring below for why a mandatory
+    # gate would be constitutionally wrong for this slice's scope.
+    standing_claim_id: uuid.UUID | None = None
 
 
 def attest_and_raise_challenge(attested_input: AttestedChallengeInput) -> dict[str, Any]:
@@ -1837,6 +2140,41 @@ def attest_and_raise_challenge(attested_input: AttestedChallengeInput) -> dict[s
     failure leaves nothing persisted. See the Universal Attestation
     section header above for the shared shape every attest_and_* function
     follows.
+
+    Standing gate (RFC-CDP-033, session 035), optional: RFC-CDP-033 SS6's
+    stage-specific Standing matrix names several distinct bases for
+    Challenge standing (affected party, domain expert, governance
+    authority) -- this slice implements only Affected-Party Standing.
+    Making a standing_claim_id mandatory for every caller would therefore
+    functionally deny standing to every legitimate non-affected-party
+    challenger this slice does not model, which is exactly what
+    RFC-CDP-033 SS11.2 forbids (non-recognition must never be read as
+    non-existence). So the gate only runs when attested_input.standing_claim_id
+    is supplied -- an actor asserting a basis this slice doesn't track
+    continues to rely solely on the Identity/Authority checks above,
+    unchanged from before this slice existed.
+
+    When a standing_claim_id IS supplied, three checks run, in order,
+    before the challenge is raised:
+
+    1. the claim must belong to the attesting actor
+       (StandingClaimActorMismatch otherwise);
+    2. the claim must match this decision and the 'challenge' stage
+       (StandingClaimDecisionMismatch otherwise);
+    3. the claim must not have a 'denied' determination against it
+       (StandingClaimNotSufficient otherwise). A claim with no
+       determination yet (still provisional -- RFC-CDP-033 SS11.4), or
+       with a 'recognized' or 'narrowed' determination, both permit --
+       provisional Standing from a minimally sufficient claim is
+       sufficient to raise this, the first protected act, without waiting
+       on binding recognition. Minimal sufficiency itself is never
+       re-checked here -- it is already guaranteed by
+       cdp_core.standing_claim's own CHECK constraints at claim-submission
+       time (015-standing-and-recusal.sql).
+
+    A successful exercise of a standing claim is recorded as its own audit
+    event (standing_claim.exercised), linking the claim to the resulting
+    challenge, in addition to the usual attestation/authority audit trail.
     """
     challenge_input = attested_input.challenge_input
     attestation_input = attested_input.attestation_input
@@ -1861,6 +2199,35 @@ def attest_and_raise_challenge(attested_input: AttestedChallengeInput) -> dict[s
             scope_registry_name=challenge_input.registry_name,
             scope_decision_class_id=decision["decision_class_id"],
         )
+
+        standing_claim = None
+        if attested_input.standing_claim_id is not None:
+            standing_claim = standing_repo.fetch_claim(
+                cursor, claim_id=attested_input.standing_claim_id
+            )
+            if standing_claim is None or standing_claim["actor_id"] != attestation_input.actor_id:
+                raise StandingClaimActorMismatch(
+                    f"Standing claim {attested_input.standing_claim_id} does not belong to "
+                    f"actor {attestation_input.actor_id!r}"
+                )
+            if (
+                standing_claim["decision_registry_name"] != challenge_input.registry_name
+                or standing_claim["decision_id"] != challenge_input.decision_id
+                or standing_claim["stage"] != _SUPPORTED_STANDING_STAGE
+            ):
+                raise StandingClaimDecisionMismatch(
+                    f"Standing claim {attested_input.standing_claim_id} does not match "
+                    f"decision {challenge_input.registry_name}.{challenge_input.decision_id} "
+                    f"at stage {_SUPPORTED_STANDING_STAGE!r}"
+                )
+            determination = standing_repo.fetch_determination_for_claim(
+                cursor, claim_id=attested_input.standing_claim_id
+            )
+            if determination is not None and determination["outcome"] == "denied":
+                raise StandingClaimNotSufficient(
+                    f"Standing claim {attested_input.standing_claim_id} has a 'denied' "
+                    "determination and cannot ground this challenge"
+                )
 
         authority_result, matched_grant_id, authority_failure_reason = _evaluate_authority(
             cursor,
@@ -1890,10 +2257,25 @@ def attest_and_raise_challenge(attested_input: AttestedChallengeInput) -> dict[s
             matched_authority_grant_id=matched_grant_id,
         )
 
+        if standing_claim is not None:
+            audit_repo.append_event(
+                cursor,
+                event_type="standing_claim.exercised",
+                aggregate_type="standing_claim",
+                aggregate_id=str(standing_claim["claim_id"]),
+                payload={
+                    "actor_id": attestation_input.actor_id,
+                    "registry_name": challenge_input.registry_name,
+                    "decision_id": challenge_input.decision_id,
+                    "challenge_id": str(challenge_result["challenge"]["challenge_id"]),
+                },
+            )
+
     return {
         **challenge_result,
         "attestation": attestation,
         "authority_evaluation": authority_evaluation,
+        "standing_claim": standing_claim,
     }
 
 
