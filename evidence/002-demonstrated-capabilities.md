@@ -338,6 +338,70 @@ earlier PR-head citations (`30770996059`/`ba8f5a9` for the pre-merge
 review fixes, `30778872564`/`7766879` for the post-merge review fixes)
 now that both PRs (#48, #49) are merged.
 
+## Standing (Constitutional Affected-Party, Challenge stage)
+
+An actor can submit a Constitutional Affected-Party Standing Claim
+against an existing decision (`POST /standing-claims`,
+`submit_affected_party_standing_claim` in `cdp/core/services.py`), and
+that claim can be separately recognized, narrowed, or denied by a single
+seeded, bounded recognition authority (`cdp_standing_recognition_authority`,
+`POST /standing-claims/{claim_id}/{recognize,narrow,deny}`) -- never
+determined by the claimant itself or by any other actor
+(`db/ddl/015-standing-and-recusal.sql`). The claim and its determination
+are two separate, immutable database rows -- both forbid-delete *and*
+forbid-update triggers fire on real `DELETE`/`UPDATE` attempts against
+either table, not just on DDL text inspection -- and this slice permits
+exactly one determination per claim, rejecting a second attempt.
+
+Minimal sufficiency (RFC-CDP-033 §11.4: "identifies a possible
+consequence and the relationship that makes the actor answerable to it")
+is enforced by the database itself, not application code: a claim insert
+fails closed unless `claimed_impact` is non-blank and at least one of
+`standing_basis_role`/`standing_basis_accountability`/
+`standing_basis_contextual_relationship` is also non-blank.
+
+The load-bearing capability this slice exists to prove: `POST
+/decisions/{registry_name}/{decision_id}/attested-challenges` accepts an
+**optional** `standing_claim_id`. When supplied, a minimally sufficient
+claim with **no recognition determination yet** -- still provisional --
+is sufficient to raise the Challenge; a `recognized` or `narrowed`
+determination also permits it; only a `denied` determination blocks it
+(`403`). This is the exact correction requested during review of the
+session-033 reconnaissance doc, now implemented and proven end to end,
+not merely documented as an intention. When `standing_claim_id` is
+omitted, challenge-raising is completely unaffected -- this is additive
+to the existing attested-challenge path, not a new blanket requirement,
+because RFC-CDP-033 §6 names several distinct bases for Challenge
+standing (affected party, domain expert, governance authority) and this
+slice implements only one of them; a mandatory gate would functionally
+deny standing to every legitimate challenger this slice does not model.
+
+Demonstrated by `tests/standing/test_standing_claim_service.py` (21
+cases, split into claim/determination coverage and a dedicated
+`ProvisionalStandingChallengeGateTests` class proving the pending-claim,
+recognized-claim, narrowed-claim, and denied-claim outcomes against a
+real `attest_and_raise_challenge` call, plus that omitting
+`standing_claim_id` is unaffected) and
+`tests/standing/test_standing_claim_api.py` (14 cases: full submit/
+recognize/narrow/deny round trips, self-determination and
+unauthorized-determination both returning `403`, a second determination
+returning `409`, and the same provisional/recognized/narrowed/denied
+Challenge-gating proof exercised through the live HTTP API), alongside
+`tests/migration/test_migration_015_standing_and_recusal.py` (13 static +
+2 Postgres smoke tests). The full combined suite (this session's new
+tests plus every test from sessions 020-034) passes locally against a
+live Docker Compose stack with zero regressions, and is confirmed passing
+in CI job `full-cdp-slice-tests`, run `31146632317` on this branch's head
+commit `868f191`, 2026-08-07T04:11:29Z, conclusion `success`.
+
+This is not Recusal, which has no code at all; not any Standing type
+other than Constitutional Affected-Party; not automatic Breach Record
+generation on a `denied` outcome (RFC-CDP-072 itself remains E0, so there
+is nothing to generate a Breach Record into); and not the
+enforcement-projection half of RFC-CDP-033 §12's two-layer persistence
+model. See `docs/session-035-affected-party-standing-challenge.md` for
+the full scope statement.
+
 ## Audit trail
 
 Every one of the above operations writes to an append-only audit trail
