@@ -207,6 +207,20 @@ commitment made by this session.
   preliminary standing... no actor may deny... on the grounds that impact
   has not yet been proven," §11.4), and it is the type the architecture
   doc's Proposal Sufficiency Gate section already assumes exists.
+- **Provisional Standing vs. binding recognition:** the slice must keep
+  these two acts distinct, not sequential-and-blocking. Submission of a
+  minimally sufficient affected-party standing claim creates **provisional
+  Standing** to raise the initial Challenge. Separately, a **binding
+  Standing recognition** determination — made by whatever recognition
+  mechanism is resolved below — may later confirm, narrow, reject, or
+  contest that claim. Pending recognition MUST NOT block the initial
+  Challenge unless the claim fails a minimal sufficiency check (identifies
+  no possible consequence or answerability relationship) or a separately
+  specified abuse threshold applies (not defined in this slice — see
+  finding 4.2(f)). This follows directly from §11.4's rule that a claim of
+  potential impact is sufficient for preliminary standing: the first
+  protected act cannot depend on prior institutional recognition without
+  contradicting that rule.
 - **Lifecycle stage:** Challenge (RFC-CDP-042), which is already
   Integration Tested (E4) and already has an attested proof path
   (`attest_and_raise_challenge`, session 029). Standing would gate whether
@@ -238,12 +252,28 @@ commitment made by this session.
   `recognize_identity_claim` / `deny_identity_claim`'s existing shape).
 - **Enforcement point:** a Standing gate added to
   `attest_and_raise_challenge`, analogous to the Authority gate already
-  added to `attest_and_create_decision`.
-- **Negative cases:** claim submitted for a nonexistent actor or decision;
-  an actor attempting to recognize their own claim; recognition attempted
-  by an actor other than the bounded recognition actor; a challenge raised
-  without any standing claim on file; a denial attempted on the grounds
-  that impact hasn't been proven yet (must be rejected per §11.4).
+  added to `attest_and_create_decision`. The gate checks for a minimally
+  sufficient pending or recognized standing claim, not for a completed
+  binding recognition — consistent with the provisional-Standing rule
+  above.
+- **Negative cases:**
+  - challenge attempted with no Standing claim on file at all → reject;
+  - challenge attempted with a minimally sufficient, still-pending
+    affected-party claim → permit provisionally, pending later binding
+    recognition;
+  - claim submitted for a nonexistent actor or decision → reject;
+  - an actor attempting to recognize their own claim → reject;
+  - recognition attempted by an actor other than the bounded recognition
+    actor → reject;
+  - a materially incomplete claim that identifies no possible consequence
+    or answerability relationship → reject as failing minimal
+    sufficiency, not as "denial of Constitutional Standing" (§11.6's
+    automatic-breach rule attaches to denial of an already-sufficient
+    claim, not to a claim that never cleared the sufficiency floor);
+  - a later narrowing or rejection of a previously provisional claim →
+    preserved as its own governed determination record, linked to the
+    original claim and contestable under §10/§11.7, never an in-place
+    overwrite of the claim record.
 - **Non-goals for this slice:** listed in §6.
 - **What remains E0 after this slice:** Recusal in its entirety; every
   Standing type other than Affected-Party (Evidence-Custodian,
