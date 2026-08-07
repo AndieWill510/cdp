@@ -54,6 +54,9 @@ from cdp.core.services import (
     IdentityClaimActorMismatch,
     IdentityClaimNotRecognized,
     IdentityClaimScopeInsufficient,
+    StandingClaimActorMismatch,
+    StandingClaimDecisionMismatch,
+    StandingClaimNotSufficient,
     WorkflowStageNotConfigured,
     adjudicate_challenge,
     attest_and_adjudicate_challenge,
@@ -243,6 +246,12 @@ class AttestedChallengeCreateRequest(BaseModel):
     credential_reference: str
     issued_at: datetime
 
+    # Optional (session 035, RFC-CDP-033): a Standing Claim the caller
+    # asserts grounds this challenge as an affected party. See
+    # attest_and_raise_challenge's docstring in cdp/core/services.py for
+    # why this is optional, not mandatory.
+    standing_claim_id: uuid.UUID | None = None
+
 
 @router.post("/decisions/{registry_name}/{decision_id}/attested-challenges", status_code=201)
 def create_attested_challenge(
@@ -275,7 +284,9 @@ def create_attested_challenge(
     try:
         return attest_and_raise_challenge(
             AttestedChallengeInput(
-                challenge_input=challenge_input, attestation_input=attestation_input
+                challenge_input=challenge_input,
+                attestation_input=attestation_input,
+                standing_claim_id=payload["standing_claim_id"],
             )
         )
     except DecisionNotFound as exc:
@@ -290,6 +301,12 @@ def create_attested_challenge(
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except IdentityClaimScopeInsufficient as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except StandingClaimActorMismatch as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except StandingClaimDecisionMismatch as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except StandingClaimNotSufficient as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except AuthorityNotGranted as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ChallengeNotPermitted as exc:

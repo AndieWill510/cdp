@@ -6,9 +6,10 @@
 -- VERSION CONTROL. It provides ZERO secrecy. It exists solely so this
 -- repository's own automated tests and local Docker Compose stack can
 -- exercise caller-binding (db/ddl/014-caller-authentication.sql) against
--- the two bounded system actors below without a chicken-and-egg problem
--- (they are seeded directly by SQL in db/ddl/010 and db/ddl/011, not
--- through register_actor, so they have no token from that path).
+-- the three bounded system actors below without a chicken-and-egg problem
+-- (they are seeded directly by SQL in db/ddl/010, db/ddl/011, and
+-- db/ddl/015, not through register_actor, so they have no token from
+-- that path).
 -- ============================================================================
 --
 -- Why this file is not part of db/ddl/: db/ddl/ is the canonical
@@ -34,7 +35,7 @@
 --     "Seed canonical schema" step that mirrors what a real deployment
 --     would run.
 --   - Nowhere else. A real deployment's migration path applies only
---     db/ddl/*.sql and must provision credentials for these two actors
+--     db/ddl/*.sql and must provision credentials for these three actors
 --     through its own out-of-band mechanism this repository does not
 --     provide (see db/ddl/014-caller-authentication.sql's header for the
 --     same limitation restated: this slice has no token rotation
@@ -51,5 +52,9 @@ VALUES
     -- cdp_authority_grant_issuer
     -- plaintext (local/dev/test only, published, not a secret):
     -- seed-token-grant-issuer-local-dev-only-do-not-use-in-production
-    ('cdp_authority_grant_issuer', '42d009f04ee5e8a531669e3af23a0b193683b9b8d39c30004a03559948a9fe2f')
+    ('cdp_authority_grant_issuer', '42d009f04ee5e8a531669e3af23a0b193683b9b8d39c30004a03559948a9fe2f'),
+    -- cdp_standing_recognition_authority (RFC-CDP-033, session 035)
+    -- plaintext (local/dev/test only, published, not a secret):
+    -- seed-token-standing-recognition-authority-local-dev-only-do-not-use-in-production
+    ('cdp_standing_recognition_authority', '9881e65640b26313daac685f5efb43b0a394d6763b30f6f4e662be505361a1f8')
 ON CONFLICT (token_hash) DO NOTHING;

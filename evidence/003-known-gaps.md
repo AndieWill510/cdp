@@ -15,19 +15,20 @@ does not propose how to close any gap.
 
 No code exists under a canonical implementation path (`cdp/`) for these:
 
-- **Standing and Recusal** (RFC-CDP-033) — no standing/recusal code.
-  Deliberately out of scope for the Identity and Attestation slice — see
-  Non-Goals in `docs/session-027-identity-and-attestation.md`. Identity
-  Claim recognition (RFC-CDP-030/033 §11.2) is not Standing: a recognized
-  claim establishes who an actor is for a governed purpose, not whether
-  that actor has the right to participate in a specific decision stage.
-  Session 034 (`docs/session-034-rfc-033-standing-recognition-clarification.md`)
-  clarified RFC-CDP-033 to Draft v0.7 -- naming the required properties of
-  a legitimate Standing recognition role, formalizing provisional
-  affected-party Standing, defining a five-value recognition outcome
-  vocabulary, and splitting the seed schema into four append-only records
-  -- but this is a specification change only; no code exists under `cdp/`
-  for any of it.
+- **Standing and Recusal** (RFC-CDP-033), general model — Recusal has no
+  code at all, and no Standing type other than Constitutional
+  Affected-Party (gating Challenge-raising only) has any code either.
+  Identity Claim recognition (RFC-CDP-030/033 §11.2) is not Standing: a
+  recognized claim establishes who an actor is for a governed purpose,
+  not whether that actor has the right to participate in a specific
+  decision stage. Session 034
+  (`docs/session-034-rfc-033-standing-recognition-clarification.md`)
+  clarified RFC-CDP-033 to Draft v0.7; session 035
+  (`docs/session-035-affected-party-standing-challenge.md`) then
+  implemented the bounded slice both prior sessions proposed, now
+  Integration Tested (E4) -- see its own "known limitations" section
+  below and `evidence/000-current-state.md`'s dedicated Standing section
+  for the E4 citation. Everything else this RFC describes remains E0.
 - **Test Protocol** (RFC-CDP-043) — no code implements this as a discrete
   evidence-gathering step distinct from adjudication.
 - **Legitimize** (RFC-CDP-045) — no corresponding route, service function,
@@ -390,6 +391,84 @@ cryptographic signing; see `docs/session-032-caller-authentication.md`
   other service function).
 - **No rate limiting, no session/cookie model, no authentication of GET
   routes** (all reads remain open, unchanged).
+- **No production deployment evidence exists for this slice.**
+
+## Standing (RFC-CDP-033) -- known limitations of the session 035 slice
+
+Session 035 rates Constitutional Affected-Party Standing gating
+Challenge-raising at Integration Tested (E4) in `000-current-state.md`,
+cited to CI run `31183454972` on PR #53 head commit
+`44d3b6cdd51e0beaa2a2f59f12712ce3abfa56f7`, taken after the pre-merge
+`narrowed`-deferral correction described below and in
+`docs/session-035-affected-party-standing-challenge.md` §2.1 (an earlier
+run, `31146632317` on commit `868f191`, confirmed the pre-correction
+implementation and is superseded by this citation). The items below are
+the honest boundaries of that scope, not a claim that RFC-CDP-033 is
+implemented in full -- see
+`docs/session-035-affected-party-standing-challenge.md` for the full
+statement:
+
+- **No Recusal whatsoever.** RFC-CDP-033 §7 (proposer recusal) and §10
+  (contestability of recusal) have no table, no check, no route. Nothing
+  in this repository currently limits or suspends anyone's participation
+  on conflict-of-interest grounds.
+- **Only one Standing type, for one stage.** Constitutional Affected-Party
+  Standing gating Challenge-raising is the entire implemented surface.
+  Evidence-Custodian, Record-Keeper, Delegated, Emergency, Repair, Appeal,
+  and AI Functional Standing are all still E0. The `standing_type`
+  vocabulary seeds all seven RFC-CDP-033 §11.4 types; the service layer
+  (`submit_affected_party_standing_claim`) accepts exactly one, raising
+  `StandingTypeNotSupported` for any other.
+- **The Standing gate on `attest_and_raise_challenge` is opt-in, not
+  mandatory.** A caller that omits `standing_claim_id` is completely
+  unaffected -- this is a deliberate scope decision (RFC-CDP-033 §6 names
+  several distinct bases for Challenge standing and this slice implements
+  only one), not an oversight. See that function's own docstring in
+  `cdp/core/services.py` for the reasoning.
+- **Automatic Breach Record generation on `denied` is not implemented.**
+  RFC-CDP-033 §11.6 requires it; `deny_standing_claim` does not do it,
+  because RFC-CDP-072 (Breach Record and Repair Agenda Schema) itself
+  remains E0 in this repository -- there is no Breach Record shape to
+  generate into yet.
+- **Only two of five recognition outcomes are reachable.**
+  `standing_recognition_outcome` seeds `recognized`, `narrowed`,
+  `deferred`, `rejected`, `denied` (RFC-CDP-033 §11.8's full vocabulary),
+  but `cdp_core.standing_recognition_determination`'s own CHECK constraint
+  restricts the column to `recognized`/`denied` -- `narrowed`, `deferred`,
+  and `rejected` are seeded, not yet written by any service function,
+  mirroring `authority_evaluation_result`'s identical precedent for
+  `conditional`/`escalated`. `narrowed` is withheld for a distinct reason
+  from the other two: this table has no `outcome_scope` column
+  (RFC-CDP-033 §9.2) to record what a narrowing actually narrows to. A
+  pre-merge review of PR #53 found the first version of this slice wrote
+  `narrowed` anyway, with the Challenge gate treating it identically to
+  `recognized` -- enforcement-indistinguishable while still asserting a
+  narrowing the system could not describe. `narrow_standing_claim` and its
+  route were removed before merge; see
+  `docs/session-035-affected-party-standing-challenge.md` §2.1.
+- **Exactly one determination per claim, not a chained/corrected
+  history.** RFC-CDP-033 §9.2's general model allows a later determination
+  to supersede an earlier one via `supersedes_determination_id`. This
+  slice's `UNIQUE(claim_id)` constraint permits only one determination
+  ever, ending in `StandingClaimAlreadyDetermined` on a second attempt --
+  a deliberate narrowing, not a claim that the RFC's fuller model isn't
+  needed eventually.
+- **No enforcement-projection layer.** RFC-CDP-033 §12's two-layer
+  persistence model (canonical governed artifact plus queryable
+  enforcement projection) is not implemented here -- only the canonical
+  claim/determination shape exists. There is no `cdp_standing_record`
+  projection table, and no database-level non-revocation enforcement for
+  Constitutional Standing (not yet applicable, since nothing here is ever
+  revoked, only determined once).
+- **No anti-flooding or anti-retaliation bound on claim submission.**
+  Session 033's reconnaissance (finding 4.2(f)) named this gap in the RFC
+  itself; this slice does not close it -- nothing bounds how many Standing
+  Claims a given actor may submit.
+- **The bounded recognition actor is a single hardcoded seeded actor, not
+  RFC-CDP-032 Authority** -- the same documented limitation sessions 027
+  and 028 accepted for identity recognition and grant issuance, applied
+  here identically. Widening who may hold this role requires a code
+  change, not a governed act.
 - **No production deployment evidence exists for this slice.**
 
 ## RFC index/manifest verification -- known limitation of a working check
