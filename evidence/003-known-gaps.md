@@ -398,10 +398,14 @@ cryptographic signing; see `docs/session-032-caller-authentication.md`
 Session 035 rates Constitutional Affected-Party Standing gating
 Challenge-raising at Integration Tested (E4) in `000-current-state.md`,
 cited to CI run `31146632317` on PR #53 head commit
-`868f191161f928e1cc3c4896737d5853a1d9b2be`. The items below are the
-honest boundaries of that scope, not a claim that RFC-CDP-033 is
-implemented in full -- see `docs/session-035-affected-party-standing-challenge.md`
-for the full statement:
+`868f191161f928e1cc3c4896737d5853a1d9b2be` -- a commit that predates the
+pre-merge `narrowed`-deferral correction described below and in
+`docs/session-035-affected-party-standing-challenge.md` §2.1; see that
+evidence file for whichever citation is current as of the commit actually
+merged. The items below are the honest boundaries of that scope, not a
+claim that RFC-CDP-033 is implemented in full -- see
+`docs/session-035-affected-party-standing-challenge.md` for the full
+statement:
 
 - **No Recusal whatsoever.** RFC-CDP-033 §7 (proposer recusal) and §10
   (contestability of recusal) have no table, no check, no route. Nothing
@@ -425,14 +429,22 @@ for the full statement:
   because RFC-CDP-072 (Breach Record and Repair Agenda Schema) itself
   remains E0 in this repository -- there is no Breach Record shape to
   generate into yet.
-- **Only three of five recognition outcomes are reachable.**
+- **Only two of five recognition outcomes are reachable.**
   `standing_recognition_outcome` seeds `recognized`, `narrowed`,
   `deferred`, `rejected`, `denied` (RFC-CDP-033 §11.8's full vocabulary),
   but `cdp_core.standing_recognition_determination`'s own CHECK constraint
-  restricts the column to `recognized`/`narrowed`/`denied` -- `deferred`
+  restricts the column to `recognized`/`denied` -- `narrowed`, `deferred`,
   and `rejected` are seeded, not yet written by any service function,
   mirroring `authority_evaluation_result`'s identical precedent for
-  `conditional`/`escalated`.
+  `conditional`/`escalated`. `narrowed` is withheld for a distinct reason
+  from the other two: this table has no `outcome_scope` column
+  (RFC-CDP-033 §9.2) to record what a narrowing actually narrows to. A
+  pre-merge review of PR #53 found the first version of this slice wrote
+  `narrowed` anyway, with the Challenge gate treating it identically to
+  `recognized` -- enforcement-indistinguishable while still asserting a
+  narrowing the system could not describe. `narrow_standing_claim` and its
+  route were removed before merge; see
+  `docs/session-035-affected-party-standing-challenge.md` §2.1.
 - **Exactly one determination per claim, not a chained/corrected
   history.** RFC-CDP-033 §9.2's general model allows a later determination
   to supersede an earlier one via `supersedes_determination_id`. This

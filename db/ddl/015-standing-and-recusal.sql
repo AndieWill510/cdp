@@ -150,15 +150,22 @@ VALUES
     ('standing_type', 'appeal', 'lookup_kind', 'enum_value', 'Appeal', 'RFC-CDP-033 SS11.4. Not yet implemented.', 'active'),
 
     -- standing_recognition_outcome: the full RFC-CDP-033 SS11.8 five-value
-    -- vocabulary. Only 'recognized', 'narrowed', and 'denied' are written
-    -- by this slice's service layer (cdp_core.standing_recognition_determination's
+    -- vocabulary. Only 'recognized' and 'denied' are written by this
+    -- slice's service layer (cdp_core.standing_recognition_determination's
     -- own CHECK constraint below restricts the column further, to exactly
-    -- those three, mirroring authority_evaluation_result's
+    -- those two, mirroring authority_evaluation_result's
     -- chk_authority_evaluation_result_value precedent of seeding a wider
-    -- vocabulary than a table-level CHECK currently admits). 'deferred'
-    -- and 'rejected' are reserved for a future session.
+    -- vocabulary than a table-level CHECK currently admits). 'narrowed',
+    -- 'deferred', and 'rejected' are reserved for a future session.
+    -- 'narrowed' specifically is deferred rather than implemented now
+    -- because this table has no outcome_scope column (RFC-CDP-033 SS9.2)
+    -- to record what a narrowing actually narrows to -- writing 'narrowed'
+    -- without a recorded scope would make it enforcement-indistinguishable
+    -- from 'recognized' while still claiming something the table cannot
+    -- support (review finding on PR #53; see the DDL determination-table
+    -- comment below and docs/session-035-affected-party-standing-challenge.md).
     ('standing_recognition_outcome', 'recognized', 'lookup_kind', 'enum_value', 'Recognized', 'RFC-CDP-033 SS11.8. The claim is confirmed as presented.', 'active'),
-    ('standing_recognition_outcome', 'narrowed', 'lookup_kind', 'enum_value', 'Narrowed', 'RFC-CDP-033 SS11.8. The claim is confirmed at a smaller scope than claimed.', 'active'),
+    ('standing_recognition_outcome', 'narrowed', 'lookup_kind', 'enum_value', 'Narrowed', 'RFC-CDP-033 SS11.8. The claim is confirmed at a smaller scope than claimed. Reserved: not written by this slice, which has no outcome_scope column to record the narrowed scope.', 'active'),
     ('standing_recognition_outcome', 'deferred', 'lookup_kind', 'enum_value', 'Deferred', 'RFC-CDP-033 SS11.8. Reserved: not written by this slice.', 'active'),
     ('standing_recognition_outcome', 'rejected', 'lookup_kind', 'enum_value', 'Rejected', 'RFC-CDP-033 SS11.8. Reserved: not written by this slice.', 'active'),
     ('standing_recognition_outcome', 'denied', 'lookup_kind', 'enum_value', 'Denied', 'RFC-CDP-033 SS11.6/SS11.8. The only outcome that (in a future session, once RFC-CDP-072 is implemented) triggers the automatic Breach Record rule.', 'active')
@@ -171,8 +178,8 @@ DO UPDATE SET
     status = EXCLUDED.status,
     updated_at = now();
 
--- The single, bounded, seeded actor authorized to determine (recognize,
--- narrow, or deny) a Standing Claim in this slice -- see the DDL header's
+-- The single, bounded, seeded actor authorized to determine (recognize or
+-- deny) a Standing Claim in this slice -- see the DDL header's
 -- "Recognition authority" note. Mirrors cdp_identity_recognition_authority
 -- (010) and cdp_authority_grant_issuer (011) exactly: an
 -- identifier_registry row plus a governed cdp_core.actor row, no token
@@ -185,7 +192,7 @@ INSERT INTO cdp_core.identifier_registry (
     display_label, description, status
 )
 VALUES
-    ('actor', 'cdp_standing_recognition_authority', 'actor_type', 'institution', 'CDP Standing Recognition Authority', 'The single governed process authorized to recognize, narrow, or deny Standing Claims in this slice.', 'active')
+    ('actor', 'cdp_standing_recognition_authority', 'actor_type', 'institution', 'CDP Standing Recognition Authority', 'The single governed process authorized to recognize or deny Standing Claims in this slice.', 'active')
 ON CONFLICT (registry_name, identifier_id)
 DO UPDATE SET
     identifier_type_registry_name = EXCLUDED.identifier_type_registry_name,
@@ -345,14 +352,18 @@ CREATE TABLE IF NOT EXISTS cdp_core.standing_recognition_determination (
     CONSTRAINT chk_standing_determination_outcome_registry
         CHECK (outcome_registry_name = 'standing_recognition_outcome'),
 
-    -- Only the three outcomes this slice's service layer actually writes.
-    -- 'deferred' and 'rejected' remain schema-supported in the
-    -- standing_recognition_outcome vocabulary above but are not yet
+    -- Only the two outcomes this slice's service layer actually writes.
+    -- 'narrowed', 'deferred', and 'rejected' remain schema-supported in
+    -- the standing_recognition_outcome vocabulary above but are not yet
     -- reachable through this table -- see the DDL header and
     -- authority_evaluation_result's chk_authority_evaluation_result_value
-    -- for the identical precedent.
+    -- for the identical precedent. 'narrowed' is withheld specifically
+    -- because this table has no outcome_scope column: writing 'narrowed'
+    -- without a recorded scope would be enforcement-indistinguishable
+    -- from 'recognized' while still claiming a narrowing the table cannot
+    -- describe (review finding on PR #53).
     CONSTRAINT chk_standing_determination_outcome_value
-        CHECK (outcome IN ('recognized', 'narrowed', 'denied')),
+        CHECK (outcome IN ('recognized', 'denied')),
 
     CONSTRAINT chk_standing_determination_outcome_basis_not_blank
         CHECK (btrim(outcome_basis) <> ''),

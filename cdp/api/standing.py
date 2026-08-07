@@ -3,15 +3,22 @@ reaches E4: Constitutional Affected-Party Standing for the Challenge stage
 only -- see db/ddl/015-standing-and-recusal.sql's header for the full
 boundary statement.
 
-POST /standing-claims/{claim_id}/{recognize,narrow,deny} require
+POST /standing-claims/{claim_id}/{recognize,deny} require
 determined_by_actor_id to be the single seeded Standing recognition
 authority and reject an actor determining its own claim, both with 403 --
 see _determine_standing_claim's docstring in cdp/core/services.py.
 
 Caller authentication (session 032 discipline, applied here from the
 start): POST /standing-claims requires an Authorization: Bearer <token>
-header matching the claimant actor_id's own token. The three determination
+header matching the claimant actor_id's own token. Both determination
 routes each require a header matching determined_by_actor_id.
+
+No /narrow route exists here, deliberately (review finding on PR #53):
+this table has no outcome_scope column to record what a narrowing
+narrows to, so writing a 'narrowed' determination would be enforcement-
+indistinguishable from 'recognized' while still asserting something the
+system cannot describe. See cdp/core/services.py's comment next to
+recognize_standing_claim.
 
 No Recusal route exists here at all -- this slice does not implement
 Recusal.
@@ -43,7 +50,6 @@ from cdp.core.services import (
     StandingStageNotSupported,
     StandingTypeNotSupported,
     deny_standing_claim,
-    narrow_standing_claim,
     recognize_standing_claim,
     submit_affected_party_standing_claim,
     verify_bearer_token,
@@ -165,16 +171,6 @@ def recognize_standing_claim_route(
 ) -> dict[str, Any]:
     _require_caller(authorization, request.determined_by_actor_id)
     return _handle_determination(claim_id, request, recognize_standing_claim)
-
-
-@router.post("/standing-claims/{claim_id}/narrow")
-def narrow_standing_claim_route(
-    claim_id: uuid.UUID,
-    request: StandingDeterminationRequest,
-    authorization: str | None = Header(default=None),
-) -> dict[str, Any]:
-    _require_caller(authorization, request.determined_by_actor_id)
-    return _handle_determination(claim_id, request, narrow_standing_claim)
 
 
 @router.post("/standing-claims/{claim_id}/deny")

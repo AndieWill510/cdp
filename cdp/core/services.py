@@ -56,14 +56,18 @@ enforcement. See db/ddl/011-authority-and-delegation.sql for the full
 boundary statement.
 
 submit_affected_party_standing_claim, recognize_standing_claim,
-narrow_standing_claim, deny_standing_claim, and
-attest_and_raise_challenge's optional Standing gate are the Standing slice
-(RFC-CDP-033, session 035), scoped to Constitutional Affected-Party
-Standing for the Challenge stage only: a governed Standing Claim, a
-governed Standing Recognition Determination as a separate append-only
-record, a single bounded actor authorized to determine claims, and an
-optional (not mandatory) gate on attest_and_raise_challenge. No Recusal.
-See db/ddl/015-standing-and-recusal.sql for the full boundary statement.
+deny_standing_claim, and attest_and_raise_challenge's optional Standing
+gate are the Standing slice (RFC-CDP-033, session 035), scoped to
+Constitutional Affected-Party Standing for the Challenge stage only: a
+governed Standing Claim, a governed Standing Recognition Determination as
+a separate append-only record, a single bounded actor authorized to
+determine claims, and an optional (not mandatory) gate on
+attest_and_raise_challenge. No Recusal. Only two of RFC-CDP-033 SS11.8's
+five recognition outcomes are reachable (recognized, denied) -- 'narrowed'
+is deferred until a future session adds an outcome_scope column, since
+writing 'narrowed' without a recorded scope would be enforcement-
+indistinguishable from 'recognized'. See
+db/ddl/015-standing-and-recusal.sql for the full boundary statement.
 """
 
 from __future__ import annotations
@@ -276,9 +280,10 @@ class StandingClaimDecisionMismatch(Exception):
 class StandingClaimNotSufficient(Exception):
     """The standing claim referenced by an attested challenge has a
     'denied' determination against it and cannot ground participation.
-    'recognized' and 'narrowed' outcomes, and a claim with no determination
-    yet (still provisional), all permit -- see
-    attest_and_raise_challenge's docstring."""
+    A 'recognized' outcome, and a claim with no determination yet (still
+    provisional), both permit -- see attest_and_raise_challenge's
+    docstring. ('narrowed' is not a reachable outcome in this slice -- see
+    the module docstring's Standing paragraph above.)"""
 
 
 # A workflow that has been (re-)blocked by a new challenge raised after
@@ -1662,7 +1667,7 @@ def _determine_standing_claim(
     event_type: str,
 ) -> dict[str, Any]:
     """Shared fetch/authorize/determine/audit body for
-    recognize/narrow/deny_standing_claim.
+    recognize/deny_standing_claim.
 
     Two authorization checks run before any write, mirroring
     _decide_identity_claim exactly:
@@ -1747,18 +1752,18 @@ def recognize_standing_claim(determination_input: StandingDeterminationInput) ->
     )
 
 
-def narrow_standing_claim(determination_input: StandingDeterminationInput) -> dict[str, Any]:
-    """Confirm a standing claim at a smaller scope than claimed. This
-    slice does not record what the narrowed scope actually is
-    (outcome_scope is not part of the SS9.2 seed this slice implements) --
-    see 015-standing-and-recusal.sql's header. A narrowed claim still
-    grounds participation on attest_and_raise_challenge's Standing gate,
-    exactly like a recognized one -- see that function's docstring."""
-    return _determine_standing_claim(
-        determination_input,
-        outcome="narrowed",
-        event_type="standing_claim.narrowed",
-    )
+# No narrow_standing_claim in this slice, deliberately (review finding on
+# PR #53): RFC-CDP-033 SS9.2's determination schema includes outcome_scope
+# to record what a 'narrowed' outcome actually narrows to, and this
+# table's SS9.2 implementation omits that column. Writing a 'narrowed'
+# determination without a recorded scope would be indistinguishable from
+# 'recognized' at the attest_and_raise_challenge gate while still
+# asserting a narrowing the system cannot describe -- a truth problem, not
+# just a missing feature. 'narrowed' remains seeded in the
+# standing_recognition_outcome vocabulary and forbidden by
+# cdp_core.standing_recognition_determination's own CHECK constraint
+# (015-standing-and-recusal.sql) until a future session adds outcome_scope
+# and teaches the gate to honor it.
 
 
 def deny_standing_claim(determination_input: StandingDeterminationInput) -> dict[str, Any]:
@@ -2164,13 +2169,15 @@ def attest_and_raise_challenge(attested_input: AttestedChallengeInput) -> dict[s
     3. the claim must not have a 'denied' determination against it
        (StandingClaimNotSufficient otherwise). A claim with no
        determination yet (still provisional -- RFC-CDP-033 SS11.4), or
-       with a 'recognized' or 'narrowed' determination, both permit --
-       provisional Standing from a minimally sufficient claim is
-       sufficient to raise this, the first protected act, without waiting
-       on binding recognition. Minimal sufficiency itself is never
-       re-checked here -- it is already guaranteed by
-       cdp_core.standing_claim's own CHECK constraints at claim-submission
-       time (015-standing-and-recusal.sql).
+       with a 'recognized' determination, both permit -- provisional
+       Standing from a minimally sufficient claim is sufficient to raise
+       this, the first protected act, without waiting on binding
+       recognition. Minimal sufficiency itself is never re-checked here --
+       it is already guaranteed by cdp_core.standing_claim's own CHECK
+       constraints at claim-submission time (015-standing-and-recusal.sql).
+       ('narrowed' is not a reachable outcome in this slice -- see the
+       module docstring's Standing paragraph above and
+       recognize_standing_claim's neighboring comment for why.)
 
     A successful exercise of a standing claim is recorded as its own audit
     event (standing_claim.exercised), linking the claim to the resulting

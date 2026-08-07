@@ -100,11 +100,21 @@ class Migration015StaticTests(unittest.TestCase):
         self.assertIn("uq_standing_determination_claim", self.sql)
         self.assertIn("UNIQUE (claim_id)", self.executable_sql)
 
-    def test_migration_restricts_outcome_to_the_three_outcomes_this_slice_writes(self) -> None:
+    def test_migration_restricts_outcome_to_the_two_outcomes_this_slice_writes(self) -> None:
         self.assertIn(
-            "CHECK (outcome IN ('recognized', 'narrowed', 'denied'))",
+            "CHECK (outcome IN ('recognized', 'denied'))",
             self.executable_sql,
         )
+
+    def test_migration_seeds_but_does_not_permit_narrowed(self) -> None:
+        """'narrowed' remains in the standing_recognition_outcome
+        vocabulary (for a future session that adds outcome_scope) but
+        must not appear in the determination table's own CHECK constraint
+        -- see the DDL header's review-finding note (PR #53)."""
+        self.assertIn(
+            "'standing_recognition_outcome', 'narrowed'", self.executable_sql
+        )
+        self.assertNotIn("'recognized', 'narrowed'", self.executable_sql)
 
     def test_migration_does_not_seed_any_tokens(self) -> None:
         """The canonical migration path must never insert a row into

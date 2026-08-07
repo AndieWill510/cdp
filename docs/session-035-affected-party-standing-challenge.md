@@ -34,24 +34,35 @@ Attestation, and Authority.
   permits exactly one determination per claim (`UNIQUE(claim_id)`);
   chained/corrected determinations are named future work, not silently
   allowed or forbidden.
-- Three outcomes written by this slice's service layer: `recognized`,
-  `narrowed`, `denied` (§11.8's full five-value vocabulary is seeded at
-  the database layer; `deferred` and `rejected` are reserved, not yet
+- Two outcomes written by this slice's service layer: `recognized`,
+  `denied` (§11.8's full five-value vocabulary is seeded at the database
+  layer; `narrowed`, `deferred`, and `rejected` are reserved, not yet
   reachable, mirroring `authority_evaluation_result`'s precedent of
   seeding a wider vocabulary than a table CHECK currently admits).
+  `narrowed` is withheld specifically, not merely deferred alongside the
+  other two: RFC-CDP-033 §9.2's determination schema includes
+  `outcome_scope` to record what a narrowing actually narrows to, and
+  this table omits that column. A pre-merge review of this PR correctly
+  identified that writing `narrowed` without a recorded scope would be
+  enforcement-indistinguishable from `recognized` at the Challenge gate
+  while still asserting a narrowing the system cannot describe — a truth
+  problem, not just a missing feature. `narrow_standing_claim` and the
+  `POST /standing-claims/{claim_id}/narrow` route were removed before
+  merge; the determination table's `CHECK` constraint now admits only
+  `recognized`/`denied`, and `narrowed` remains seeded in the
+  vocabulary table only, for a future session that adds `outcome_scope`.
 - A single, bounded, seeded actor — `cdp_standing_recognition_authority`
-  — is the only actor authorized to recognize, narrow, or deny a claim,
-  and may not determine a claim where it is itself the claimant. This
-  satisfies RFC-CDP-033 §11.5 (Draft v0.7)'s four required properties
-  (bounded, non-self-interested, procedurally authorized, auditable)
-  without the RFC naming a specific actor, mirroring the precedent
-  sessions 027/028 set for `cdp_identity_recognition_authority` /
+  — is the only actor authorized to recognize or deny a claim, and may
+  not determine a claim where it is itself the claimant. This satisfies
+  RFC-CDP-033 §11.5 (Draft v0.7)'s four required properties (bounded,
+  non-self-interested, procedurally authorized, auditable) without the
+  RFC naming a specific actor, mirroring the precedent sessions 027/028
+  set for `cdp_identity_recognition_authority` /
   `cdp_authority_grant_issuer`.
 - `submit_affected_party_standing_claim`, `recognize_standing_claim`,
-  `narrow_standing_claim`, `deny_standing_claim`
-  (`cdp/core/services.py`) and `POST /standing-claims`,
-  `GET /standing-claims/{claim_id}`,
-  `POST /standing-claims/{claim_id}/{recognize,narrow,deny}`
+  `deny_standing_claim` (`cdp/core/services.py`) and
+  `POST /standing-claims`, `GET /standing-claims/{claim_id}`,
+  `POST /standing-claims/{claim_id}/{recognize,deny}`
   (`cdp/api/standing.py`).
 - An **optional** Standing gate on `attest_and_raise_challenge`: a new
   `standing_claim_id` field on `AttestedChallengeInput` /
@@ -62,7 +73,7 @@ Attestation, and Authority.
   — this is additive, not a new blanket requirement.
 - Provisional Standing, proven end to end: a minimally sufficient claim
   with **no determination yet** is sufficient to raise the challenge.
-  `recognized` and `narrowed` determinations also permit; only a `denied`
+  A `recognized` determination also permits it; only a `denied`
   determination blocks. This is the specific correction requested and
   applied to PR #51's reconnaissance doc, now actually implemented and
   tested — see §5 below for the exact test that proves it.
@@ -88,6 +99,53 @@ Attestation, and Authority.
 - Any change to the plain, unattested `POST /decisions/{registry}/
   {decision}/challenges` route, or to `attest_and_create_decision`. Only
   `attest_and_raise_challenge` gained the new optional parameter.
+- The `narrowed` recognition outcome. Seeded in the
+  `standing_recognition_outcome` vocabulary; not writable by
+  `cdp_core.standing_recognition_determination`'s own `CHECK` constraint,
+  not exposed by any service function or route. See §2.1.
+
+### 2.1 Pre-merge review correction: `narrowed` deferred
+
+The version of this slice first opened as PR #53 implemented `narrowed`
+as a third writable outcome, alongside `recognized` and `denied`, and
+`attest_and_raise_challenge`'s gate treated a `narrowed` determination as
+fully sufficient to permit the Challenge — identically to `recognized`.
+
+Review before merge correctly identified this as a genuine defect, not a
+style nit: RFC-CDP-033 §9.2's Standing Recognition Determination schema
+includes `outcome_scope` specifically to record *what* a narrowing
+narrows to, and this table's implementation of that schema omits the
+column. Writing a `narrowed` determination with no recorded scope made it
+enforcement-indistinguishable from `recognized` — the Challenge gate could
+not have behaved any differently for a narrowed claim even if it wanted
+to — while the stored record still asserted that a narrowing had
+occurred. That is a truth problem: the system would have claimed to know
+something (how the claim was narrowed) that it could not actually
+express anywhere.
+
+The fix, applied before merge:
+
+- `narrow_standing_claim` (service) and the
+  `POST /standing-claims/{claim_id}/narrow` route (API) were removed
+  entirely, not merely deprecated.
+- `cdp_core.standing_recognition_determination`'s `chk_standing_determination_outcome_value`
+  constraint now admits only `'recognized'` and `'denied'`.
+- `narrowed` remains seeded in the `standing_recognition_outcome`
+  vocabulary table, annotated as reserved until a future session adds an
+  `outcome_scope` column and teaches the Challenge gate to honor it.
+- Tests updated accordingly: the two removed-outcome service tests are
+  replaced by a test pinning `narrow_standing_claim`'s absence and a test
+  proving the database itself rejects a direct `narrowed` insert; the API
+  suite gained a test proving `POST .../narrow` now 404s as an
+  unregistered route; the migration test asserting "three outcomes" was
+  replaced with one asserting exactly two, plus a test that `narrowed`
+  is still present in the vocabulary seed but absent from the
+  determination table's own `CHECK`.
+
+This is deferral, not removal of the concept — RFC-CDP-033 still
+describes `narrowed` as a legitimate outcome, and the vocabulary and RFC
+text are both untouched. What changed is that this slice no longer
+*claims* to support an outcome it cannot honestly enforce.
 
 ## 3. Why the Standing gate is optional, not mandatory
 
@@ -133,8 +191,8 @@ and by the full pre-existing test suite passing unchanged (§5).
   file and asserts zero privileged tokens in a genuinely fresh, isolated
   database — this session's 015 migration is automatically covered by
   that existing regression test without any change to it).
-- `tests/migration/test_migration_015_standing_and_recusal.py` — 15 tests
-  (13 static, 2 Postgres smoke).
+- `tests/migration/test_migration_015_standing_and_recusal.py` — 16 tests
+  (15 static, 1 Postgres smoke).
 - `tests/standing/test_standing_claim_service.py` — 21 tests, split into
   `StandingClaimTests` (submission, determination, authorization,
   immutability) and `ProvisionalStandingChallengeGateTests` (the gate
@@ -177,12 +235,47 @@ pushing:
   attempt a further challenge referencing the now-denied claim (rejected,
   403).
 
-`docs/SESSION-INDEX.md` and `evidence/000-current-state.md` /
-`evidence/003-known-gaps.md` will be updated with the actual CI run ID
-once this branch's PR has a confirmed passing `full-cdp-slice-tests` run,
-following the same discipline every prior implementation session in this
-repository used — an evidence-level claim is not made in this document
-until a citable CI run backs it.
+`docs/SESSION-INDEX.md`, `evidence/000-current-state.md`,
+`evidence/001-test-matrix.md`, `evidence/002-demonstrated-capabilities.md`,
+and `evidence/003-known-gaps.md` were updated citing CI run `31146632317`
+(commit `868f191`, `full-cdp-slice-tests` and `pr-guard` both `success`)
+once that run confirmed passing, following the same discipline every
+prior implementation session in this repository used — an evidence-level
+claim was not made in those documents until a citable CI run backed it.
+
+### 5.1 Re-verification after the `narrowed` correction (§2.1)
+
+After the `narrowed`-deferral fix described in §2.1, the full local
+verification in this section was re-run against a rebuilt `cdp-api`
+image and the same live Postgres:
+
+- `ruff check cdp` — passes, zero findings.
+- `tests/migration/test_migration_015_standing_and_recusal.py` — 16
+  tests, all pass (up from 15: the three-outcome static assertion was
+  replaced with a two-outcome assertion plus a new test confirming
+  `narrowed` is seeded but not permitted by the `CHECK` constraint).
+- `tests/standing/test_standing_claim_service.py` — 21 tests, all pass
+  (the removed `test_narrow_happy_path` and
+  `test_narrowed_claim_permits_challenge` are replaced by
+  `test_narrow_standing_claim_does_not_exist` and
+  `test_narrowed_outcome_rejected_by_the_database`).
+- `tests/standing/test_standing_claim_api.py` — 15 tests, all pass (up
+  from 14: `test_recognize_narrow_deny_each_require_a_fresh_claim` is
+  renamed and narrowed to `test_recognize_and_deny_each_require_a_fresh_claim`;
+  new `test_narrow_route_does_not_exist` confirms `POST
+  .../narrow` now returns FastAPI's own `404` for an unregistered route).
+- The full pre-existing service suite (139 tests) and API suite (71
+  tests) re-run alongside the above — zero regressions.
+
+This document's evidence citations (§5 above, and the four `evidence/`
+files) still point to CI run `31146632317`, the run that confirmed the
+implementation *before* this correction. That run remains valid evidence
+for everything it actually tested (the schema, the gate mechanics, the
+optional-parameter behavior) since none of that changed; it is simply no
+longer the complete picture for the outcome vocabulary specifically. A
+fresh CI run on the corrected commit will supersede it as the citation of
+record once available — see the evidence files for whichever citation is
+current.
 
 ## 6. What remains E0 after this session
 

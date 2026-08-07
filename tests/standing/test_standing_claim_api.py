@@ -11,10 +11,14 @@ Requires 001, 004, 010, 011, 012, 014, and 015 already applied to the
 database cdp-api is using.
 
 Caller authentication (session 032 discipline, applied here from the
-start): POST /standing-claims requires the claimant's own token. The
-three determination routes each require a header matching
+start): POST /standing-claims requires the claimant's own token. Both
+determination routes (recognize, deny) each require a header matching
 determined_by_actor_id -- see test_standing_claim_without_token_returns_401
 and test_recognize_without_token_returns_401 below.
+
+No /narrow route exists, deliberately (review finding on PR #53) -- see
+test_narrow_route_does_not_exist below and cdp/api/standing.py's module
+docstring for why.
 
 Cleanup note: cdp_core.standing_claim and
 cdp_core.standing_recognition_determination rows cannot be deleted or
@@ -268,10 +272,10 @@ def test_standing_claim_without_token_returns_401() -> None:
 # --- Determination routes ----------------------------------------------------
 
 
-def test_recognize_narrow_deny_each_require_a_fresh_claim() -> None:
+def test_recognize_and_deny_each_require_a_fresh_claim() -> None:
     actor_id, token = _register_actor()
 
-    for outcome, route in (("recognized", "recognize"), ("narrowed", "narrow"), ("denied", "deny")):
+    for outcome, route in (("recognized", "recognize"), ("denied", "deny")):
         decision_id = _unique(f"standing-api-{route}-decision")
         _create_plain_decision(decision_id, actor_id)
         claim_status, claim_body = _post_json(
@@ -296,6 +300,29 @@ def test_recognize_narrow_deny_each_require_a_fresh_claim() -> None:
         get_status, get_body = _get_json(f"{API_URL}/standing-claims/{claim_id}")
         assert get_status == 200
         assert get_body["standing_recognition_determination"]["outcome"] == outcome
+
+
+def test_narrow_route_does_not_exist() -> None:
+    """No /narrow route exists, deliberately (review finding on PR #53):
+    this table has no outcome_scope column to record what a narrowing
+    narrows to. FastAPI's own 404 for an unregistered path proves the
+    route is genuinely gone, not merely undocumented."""
+    actor_id, token = _register_actor()
+    decision_id = _unique("standing-api-no-narrow-route-decision")
+    _create_plain_decision(decision_id, actor_id)
+    claim_id = _post_json(
+        f"{API_URL}/standing-claims", _standing_claim_payload(decision_id, actor_id), token=token
+    )[1]["standing_claim"]["claim_id"]
+
+    status, _body = _post_json(
+        f"{API_URL}/standing-claims/{claim_id}/narrow",
+        {
+            "determined_by_actor_id": STANDING_AUTHORITY_ACTOR_ID,
+            "outcome_basis": "Should not exist.",
+        },
+        token=STANDING_AUTHORITY_TOKEN,
+    )
+    assert status == 404, f"expected 404 (no such route), got {status}"
 
 
 def test_self_recognition_returns_403() -> None:

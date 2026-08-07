@@ -6,11 +6,15 @@ Require CDP_TEST_DATABASE_URL pointing at a database with
 already applied.
 
 Recognition-authority-style discipline: only the single seeded
-`cdp_standing_recognition_authority` actor may recognize, narrow, or deny
-a standing claim -- mirrors identity_claim's / authority_grant's own
+`cdp_standing_recognition_authority` actor may recognize or deny a
+standing claim -- mirrors identity_claim's / authority_grant's own
 discipline, tested the same way as
 tests/identify_attest_standing/test_identity_claim_service.py and
 tests/authority/test_authority_grant_service.py.
+
+No 'narrowed' outcome is reachable in this slice, deliberately (review
+finding on PR #53) -- see cdp/core/services.py's comment next to
+recognize_standing_claim for why.
 
 Cleanup note: cdp_core.standing_claim and
 cdp_core.standing_recognition_determination rows cannot be deleted or
@@ -264,27 +268,41 @@ class StandingClaimTests(unittest.TestCase):
         self.assertEqual(determination["outcome"], "recognized")
         self.assertEqual(determination["claim_id"], claim["claim_id"])
 
-    def test_narrow_happy_path(self) -> None:
-        from cdp.core.services import (
-            StandingDeterminationInput,
-            narrow_standing_claim,
-            submit_affected_party_standing_claim,
-        )
+    def test_narrow_standing_claim_does_not_exist(self) -> None:
+        """narrow_standing_claim was removed after PR #53 review: this
+        table has no outcome_scope column to record what a narrowing
+        narrows to, so writing 'narrowed' would be enforcement-
+        indistinguishable from 'recognized' while still asserting
+        something the system cannot describe. Pinned here so
+        reintroducing it is a deliberate decision, not an accident -- see
+        the comment next to recognize_standing_claim in
+        cdp/core/services.py."""
+        import cdp.core.services as services
 
-        actor_id = _register_actor("standing-claim-narrow")
-        decision_id = _make_decision("standing-decision-narrow")
+        self.assertFalse(hasattr(services, "narrow_standing_claim"))
+
+    def test_narrowed_outcome_rejected_by_the_database(self) -> None:
+        """'narrowed' remains seeded in the standing_recognition_outcome
+        vocabulary (for a future session that adds outcome_scope) but
+        cdp_core.standing_recognition_determination's own CHECK constraint
+        rejects it directly -- not merely omitted at the service layer."""
+        from cdp.core.services import submit_affected_party_standing_claim
+
+        actor_id = _register_actor("standing-claim-narrow-db-reject")
+        decision_id = _make_decision("standing-decision-narrow-db-reject")
         claim = submit_affected_party_standing_claim(
             _make_claim_input(decision_id, actor_id)
         )["standing_claim"]
 
-        result = narrow_standing_claim(
-            StandingDeterminationInput(
-                claim_id=claim["claim_id"],
-                determined_by_actor_id=STANDING_AUTHORITY_ACTOR_ID,
-                outcome_basis="Impact is real but narrower than claimed.",
-            )
-        )
-        self.assertEqual(result["standing_recognition_determination"]["outcome"], "narrowed")
+        with psycopg.connect(_database_url()) as conn, conn.cursor() as cursor:
+            with self.assertRaises(psycopg.errors.CheckViolation):
+                cursor.execute(
+                    "INSERT INTO cdp_core.standing_recognition_determination "
+                    "(claim_id, outcome, outcome_basis, determined_by_actor_id) "
+                    "VALUES (%s, 'narrowed', 'test', %s)",
+                    (claim["claim_id"], STANDING_AUTHORITY_ACTOR_ID),
+                )
+            conn.rollback()
 
     def test_deny_happy_path(self) -> None:
         from cdp.core.services import (
@@ -550,35 +568,6 @@ class ProvisionalStandingChallengeGateTests(unittest.TestCase):
                 claim_id=standing_claim["claim_id"],
                 determined_by_actor_id=STANDING_AUTHORITY_ACTOR_ID,
                 outcome_basis="Confirmed.",
-            )
-        )
-
-        result = self._attest_and_raise(
-            actor_id=actor_id,
-            identity_claim_id=identity_claim_id,
-            decision_id=decision_id,
-            standing_claim_id=standing_claim["claim_id"],
-        )
-        self.assertIsNotNone(result["challenge"]["challenge_id"])
-
-    def test_narrowed_claim_permits_challenge(self) -> None:
-        from cdp.core.services import (
-            StandingDeterminationInput,
-            narrow_standing_claim,
-            submit_affected_party_standing_claim,
-        )
-
-        actor_id, identity_claim_id, decision_id = self._prepare_challenger(
-            "standing-gate-narrowed"
-        )
-        standing_claim = submit_affected_party_standing_claim(
-            _make_claim_input(decision_id, actor_id)
-        )["standing_claim"]
-        narrow_standing_claim(
-            StandingDeterminationInput(
-                claim_id=standing_claim["claim_id"],
-                determined_by_actor_id=STANDING_AUTHORITY_ACTOR_ID,
-                outcome_basis="Narrower than claimed but real.",
             )
         )
 
