@@ -397,13 +397,14 @@ cryptographic signing; see `docs/session-032-caller-authentication.md`
 
 Session 035 rates Constitutional Affected-Party Standing gating
 Challenge-raising at Integration Tested (E4) in `000-current-state.md`,
-cited to CI run `31146632317` on PR #53 head commit
-`868f191161f928e1cc3c4896737d5853a1d9b2be` -- a commit that predates the
-pre-merge `narrowed`-deferral correction described below and in
-`docs/session-035-affected-party-standing-challenge.md` §2.1; see that
-evidence file for whichever citation is current as of the commit actually
-merged. The items below are the honest boundaries of that scope, not a
-claim that RFC-CDP-033 is implemented in full -- see
+cited to CI run `31183454972` on PR #53 head commit
+`44d3b6cdd51e0beaa2a2f59f12712ce3abfa56f7`, taken after the pre-merge
+`narrowed`-deferral correction described below and in
+`docs/session-035-affected-party-standing-challenge.md` §2.1 (an earlier
+run, `31146632317` on commit `868f191`, confirmed the pre-correction
+implementation and is superseded by this citation). The items below are
+the honest boundaries of that scope, not a claim that RFC-CDP-033 is
+implemented in full -- see
 `docs/session-035-affected-party-standing-challenge.md` for the full
 statement:
 

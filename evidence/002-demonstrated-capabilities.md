@@ -409,14 +409,13 @@ CHECK constraint). The full combined suite (this session's new tests plus
 every test from sessions 020-034) passes locally against a live Docker
 Compose stack with zero regressions.
 
-CI job `full-cdp-slice-tests` run `31146632317` (commit `868f191`,
-2026-08-07T04:11:29Z, conclusion `success`) confirmed the implementation
-*before* the `narrowed`-deferral correction above -- the schema, gate
-mechanics, and optional-parameter behavior it verified are unchanged by
-that correction, but it does not itself cover the corrected outcome
-vocabulary. See `evidence/000-current-state.md` and
-`docs/SESSION-INDEX.md` for whichever CI citation is current as of the
-commit actually merged.
+CI job `full-cdp-slice-tests` run `31183454972` (commit `44d3b6c`,
+2026-08-07T13:36:41Z, conclusion `success`) confirms the implementation
+after the `narrowed`-deferral correction above, including the added tests
+for the removed function, the database's own rejection of a direct
+`narrowed` insert, and the `/narrow` route's `404`. An earlier run,
+`31146632317` on commit `868f191`, confirmed the pre-correction
+implementation and is superseded by this citation.
 
 This is not Recusal, which has no code at all; not any Standing type
 other than Constitutional Affected-Party; not automatic Breach Record

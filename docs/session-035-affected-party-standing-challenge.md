@@ -197,17 +197,20 @@ and by the full pre-existing test suite passing unchanged (§5).
   `StandingClaimTests` (submission, determination, authorization,
   immutability) and `ProvisionalStandingChallengeGateTests` (the gate
   itself, including the provisional-standing proof).
-- `tests/standing/test_standing_claim_api.py` — 14 API round-trip tests.
+- `tests/standing/test_standing_claim_api.py` — 15 API round-trip tests.
 - `.github/workflows/cdp-ci.yml` — registers all three new test files at
   their correct CI stage (static / Postgres smoke / service / API).
 
 ## 5. Verification performed this session
 
-No CI run had completed at the time this document was first written in
-this session — verification below was run locally against this
-repository's own Docker Compose stack (`cdp-postgres`, rebuilt `cdp-api`),
-using the exact same commands `.github/workflows/cdp-ci.yml` runs, before
-pushing:
+This section describes the verification run for this slice's initial
+submission, before the `narrowed`-deferral review correction in §2.1;
+§5.1 below describes re-verification after that fix, and carries the
+current, final test counts and CI citation. No CI run had completed at
+the time the text below was first written — verification was run locally
+against this repository's own Docker Compose stack (`cdp-postgres`,
+rebuilt `cdp-api`), using the exact same commands
+`.github/workflows/cdp-ci.yml` runs, before pushing:
 
 - `ruff check cdp` — passes, zero findings.
 - The full `pr-guard` static test list (132 tests, including all 13 new
@@ -267,15 +270,13 @@ image and the same live Postgres:
 - The full pre-existing service suite (139 tests) and API suite (71
   tests) re-run alongside the above — zero regressions.
 
-This document's evidence citations (§5 above, and the four `evidence/`
-files) still point to CI run `31146632317`, the run that confirmed the
-implementation *before* this correction. That run remains valid evidence
-for everything it actually tested (the schema, the gate mechanics, the
-optional-parameter behavior) since none of that changed; it is simply no
-longer the complete picture for the outcome vocabulary specifically. A
-fresh CI run on the corrected commit will supersede it as the citation of
-record once available — see the evidence files for whichever citation is
-current.
+A fresh CI run on the corrected commit confirmed both jobs passing: run
+`31183454972`, commit `44d3b6cdd51e0beaa2a2f59f12712ce3abfa56f7`,
+2026-08-07T13:36:41Z, conclusion `success` (`full-cdp-slice-tests` and
+`pr-guard` both `pass`). `docs/SESSION-INDEX.md` and all four
+`evidence/` files have been updated to cite this run as the citation of
+record, superseding `31146632317` on commit `868f191`, which confirmed
+the pre-correction implementation.
 
 ## 6. What remains E0 after this session
 
